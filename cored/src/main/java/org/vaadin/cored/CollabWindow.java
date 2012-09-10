@@ -6,7 +6,7 @@ import java.util.Map.Entry;
 
 import org.vaadin.aceeditor.collab.User;
 import org.vaadin.cored.LoginPanel.LoggedInCollaboratorListener;
-import org.vaadin.cored.ProjectSkeletonUtil.SkeletonType;
+import org.vaadin.facebookauth.FacebookAuth;
 
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
@@ -38,9 +38,19 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 
 	public CollabWindow(String facebookAppId) {
 		super();
-		loginPanel = new LoginPanel(facebookAppId, "Feel free to try out Cored by logging in (any nick is ok) and creating/joining a project.");
+		System.out.println("facebookAppId: "+facebookAppId);
+		FacebookAuth fbAuth;
+		if (facebookAppId != null) {
+			fbAuth = new FacebookAuth(facebookAppId);
+			windowContent.addComponent(fbAuth);
+		}
+		else {
+			fbAuth = null;
+		}
+		loginPanel = new LoginPanel("Welcome to Cored", fbAuth);
 		mainLayout.setSizeFull();
 		windowContent.setSizeFull();
+		
 		windowContent.addComponent(urifu);
 		windowContent.addComponent(mainLayout);
 		windowContent.setExpandRatio(mainLayout, 1);
@@ -123,9 +133,9 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 			public void buttonClick(ClickEvent event) {
 				String name = ((String)tf.getValue()).toLowerCase();
 				if (isValidProjectName(name)) {
-					SkeletonType skel = skBox.booleanValue() ? SkeletonType.VAADIN_APP
-							: null;
-					Project.createProjectIfNotExist(name, skel);
+					VaadinProject.Type skel = skBox.booleanValue() ? VaadinProject.Type.SKELETON
+							: VaadinProject.Type.EMPTY;
+					VaadinProject.createProjectIfNotExist(name, skel);
 					urifu.setFragment(name);
 				} else {
 					getWindow().showNotification("Not a valid project name.");
@@ -140,18 +150,20 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 	}
 
 	private void openProject(String projectName) {
-		Project project;
 
-		project = Project.createProjectIfNotExist(projectName);
-		openProject(project);
+
+		VaadinProject.createProjectIfNotExist(projectName);
+		openProject(Project.getProject(projectName));
 
 	}
 
 	private void openProject(Project project) {
 		clear();
+		
+		BuildComponent bc = project instanceof VaadinProject ? new VaadinBuildComponent((VaadinProject) project) : null;
 
 		IDE ide = new IDE(CoredApplication.getInstance().getCoredUser(),
-				project, new WarBuildComponent(project));
+				project, bc);
 
 		mainLayout.addComponent(ide);
 		mainLayout.setExpandRatio(ide, 10);

@@ -1,5 +1,6 @@
 package org.vaadin.cored;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.vaadin.aceeditor.collab.DocDiff;
@@ -12,6 +13,7 @@ import org.vaadin.cored.ProjectPanel.FileSelectListener;
 import org.vaadin.cored.Team.TeamListener;
 import org.vaadin.diffsync.Shared;
 
+import com.github.wolfie.refresher.Refresher;
 import com.vaadin.terminal.ExternalResource;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
@@ -31,7 +33,11 @@ public class IDE extends VerticalLayout implements TeamListener {
 	{
 		editorLayout.setSizeFull();
 	}
+	
+	private Refresher refresher = new Refresher();
 
+	private CoredMenuBar menuBar;
+	
 	private final User user;
 	private final Project project;
 	private final BuildComponent buildComponent;
@@ -51,7 +57,6 @@ public class IDE extends VerticalLayout implements TeamListener {
 
 	public IDE(User user, Project project, BuildComponent buildComponent) {
 		super();
-		System.err.println("new IDE(" + user + "...)");
 
 		this.user = user;
 		this.project = project;
@@ -60,9 +65,18 @@ public class IDE extends VerticalLayout implements TeamListener {
 		this.sharedChat = project.getProjectChat();
 
 		setSizeFull();
+		
 		HorizontalLayout layout = new HorizontalLayout();
 		layout.setSizeFull();
+		
+		menuBar = new CoredMenuBar(this);
+		
+		addComponent(menuBar);
+		
+		System.out.println("hehe aaaaaaa h1115ffo");
+		
 		addComponent(layout);
+		setExpandRatio(layout, 1);
 
 		rightBar.setWidth("200px");
 
@@ -86,8 +100,15 @@ public class IDE extends VerticalLayout implements TeamListener {
 		layout.addComponent(hsp);
 		layout.addComponent(rightBar);
 		layout.setExpandRatio(hsp, 1);
+		
+		refresher.setRefreshInterval(1000);
+		addComponent(refresher);
 
-		editFile(projectPanel.getSelectedFile());
+//		editFile(projectPanel.getSelectedFile());
+	}
+	
+	public Project getProject() {
+		return project;
 	}
 
 	@Override
@@ -98,12 +119,12 @@ public class IDE extends VerticalLayout implements TeamListener {
 
 		projectPanel.addListener(new FileSelectListener() {
 //			@Override
-			public void fileSelected(String name) {
-				editFile(name);
+			public void fileSelected(ProjectFile file) {
+				editFile(file);
 			}
 		});
 
-		List<String> files = project.getFileNames();
+		List<ProjectFile> files = project.getProjectFiles();
 		if (!files.isEmpty()) {
 			editFile(files.get(0));
 		}
@@ -125,25 +146,25 @@ public class IDE extends VerticalLayout implements TeamListener {
 		}
 	}
 
-	private void editFile(String name) {
-		if (name == null) {
+	private void editFile(ProjectFile file) {
+		if (file == null) {
 			editorLayout.removeAllComponents();
-		} else if (EditorUtil.isEditableWithEditor(name)) {
-			Shared<Doc, DocDiff> doc = project.getDoc(name);
+		} else if (EditorUtil.isEditableWithEditor(file)) {
+			Shared<Doc, DocDiff> doc = project.getDoc(file);
 			if (doc != null) {
-				editDoc(doc, name);
+				editDoc(doc, file);
 			} else {
 				editorLayout.removeAllComponents();
 			}
 		} else {
 			editorLayout.removeAllComponents();
-			editorLayout.addComponent(new Label(name
+			editorLayout.addComponent(new Label(file.getName()
 					+ " can't be edited here :("));
 		}
 	}
 
-	private void editDoc(Shared<Doc, DocDiff> doc, String filename) {
-		editor = EditorUtil.createEditorFor(doc, filename);
+	private void editDoc(Shared<Doc, DocDiff> doc, ProjectFile file) {
+		editor = EditorUtil.createEditorFor(doc, file);
 		editor.setSizeFull();
 		setEditorUser(user);
 		editor.setPollInterval(0); // XXX
@@ -157,11 +178,27 @@ public class IDE extends VerticalLayout implements TeamListener {
 
 		leftBar.setWidth("100%");
 
-		leftBar.addComponent(createLogoutPanel());
+//		leftBar.addComponent(createLogoutPanel());
 		leftBar.addComponent(createTeamPanel());
 		leftBar.addComponent(createProjectPanel());
-		leftBar.addComponent(createAddFilePanel());
-		leftBar.addComponent(buildComponent);
+//		leftBar.addComponent(createAddFilePanel());
+		if (buildComponent!=null) {
+			leftBar.addComponent(buildComponent);
+		}
+		
+		Button b = new Button("Tallenna");
+		b.addListener(new ClickListener() {
+			
+			public void buttonClick(ClickEvent event) {
+				try {
+					project.writeToDisk();
+				} catch (IOException e) {
+					getWindow().showNotification("Virhe!!!");
+					e.printStackTrace();
+				}
+			}
+		});
+		leftBar.addComponent(b);
 
 		return leftBar;
 	}
@@ -219,9 +256,11 @@ public class IDE extends VerticalLayout implements TeamListener {
 		}
 	}
 
-	private void leaveIDE() {
-		getWindow().open(
-				new ExternalResource(CoredApplication.getInstance().getURL()));
+	public void leaveIDE() {
+		if (user!=null) {
+			project.getTeam().kickUser(user);
+		}
+		getWindow().open(new ExternalResource(CoredApplication.getInstance().getURL()));
 	}
 
 }

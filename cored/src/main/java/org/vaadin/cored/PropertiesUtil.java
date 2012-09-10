@@ -33,15 +33,15 @@ public class PropertiesUtil {
 			}
 
 			if (warBuildTemplateDir != null) {
-				WarBuildComponent.setBuildTemplateDir(warBuildTemplateDir);
+				VaadinBuildComponent.setBuildTemplateDir(warBuildTemplateDir);
 			}
 
 			if (warDeployDir != null) {
-				WarBuildComponent.setDeployDir(warDeployDir);
+				VaadinBuildComponent.setDeployDir(warDeployDir);
 			}
 
 			if (warDeployUrl != null) {
-				WarBuildComponent.setDeployURL(warDeployUrl);
+				VaadinBuildComponent.setDeployURL(warDeployUrl);
 			}
 
 			if (facebookAppId != null) {

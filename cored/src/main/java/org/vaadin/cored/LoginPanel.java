@@ -1,7 +1,13 @@
 package org.vaadin.cored;
 
 import org.vaadin.aceeditor.collab.User;
+import org.vaadin.facebookauth.FacebookAuth;
+import org.vaadin.facebookauth.FacebookAuth.LoginStatusListener;
+import org.vaadin.facebookauth.FacebookLoginButton;
+import org.vaadin.facebookauth.gwt.shared.LoginStatus;
 
+import com.restfb.FacebookClient;
+import com.restfb.DefaultFacebookClient;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
@@ -10,34 +16,24 @@ import com.vaadin.ui.Panel;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.VerticalLayout;
 
-// FIXME: facebook login temporarily disabled
-
 @SuppressWarnings("serial")
-public class LoginPanel extends Panel {//implements LoginListener {
+public class LoginPanel extends Panel implements LoginStatusListener {
 
-	// private VerticalLayout fbLoginLayout = new VerticalLayout();
-//	private FacebookLogin fbLogin;
-	// private VerticalLayout simpleLoginLayout = new VerticalLayout();
+	
+	private FacebookLoginButton fbButton;
+
 	private VerticalLayout loginLayout = new VerticalLayout();
 	private TextField simpleLoginField;
-	private String facebookAppId;
+	private FacebookAuth fbAuth;
 	private User user;
 	private FacebookUser fbUser;
-//	private FacebookLogin.LoginStatus fbLoginStatus = FacebookLogin.LoginStatus.UNKNOWN;
+	private LoginStatus fbLoginStatus = LoginStatus.UNKNOWN;
 
 	private boolean wasLoggedOutOfFB = false;
-
-	public LoginPanel() {
-		this(null, "Login");
-	}
 	
-	public LoginPanel(String facebookAppId) {
-		this(facebookAppId, "Login");
-	}
-	
-	public LoginPanel(String facebookAppId, String title) {
+	public LoginPanel(String title, FacebookAuth fbAuth) {
 		super(title);
-		this.facebookAppId = null; // facebookAppId; FIXME
+		this.fbAuth = fbAuth;
 		this.setSizeFull();
 		loginLayout.setSizeFull();
 		this.addComponent(loginLayout);
@@ -47,7 +43,7 @@ public class LoginPanel extends Panel {//implements LoginListener {
 	private void drawLoggedOut() {
 		loginLayout.removeAllComponents();
 		if (facebookEnabled()) {
-//			initFBLogin();
+			initFBLogin();
 		} else {
 			initSimpleLogin("Nick:");
 		}
@@ -58,7 +54,6 @@ public class LoginPanel extends Panel {//implements LoginListener {
 		loginLayout.addComponent(new Label("Logged in as " + user.getName()));
 		Button logout = new Button("Log out");
 		logout.addListener(new ClickListener() {
-//			@Override
 			public void buttonClick(ClickEvent event) {
 				setLoggedInUser(null, true);
 			}
@@ -66,35 +61,36 @@ public class LoginPanel extends Panel {//implements LoginListener {
 		loginLayout.addComponent(logout);
 	}
 
-//	private void initFBLogin() {
-//		if (fbLoginStatus == FacebookLogin.LoginStatus.LOGGED_IN) {
-//			final String fbId = fbLogin.getId();
-//			final String fbName = fbLogin.getName();
-//			loginLayout.addComponent(new Label("Facebook Login: " + fbName));
-//			Button reFB = new Button("Login as " + fbName);
-//			reFB.addListener(new ClickListener() {
-//				/* @Override */
-//				public void buttonClick(ClickEvent event) {
-//					loginWithFB(fbId, fbName);
-//				}
-//			});
-//			loginLayout.addComponent(reFB);
-//			initSimpleLogin("Or type a nick:");
-//		} else {
-//			if (fbLogin == null) {
-//				fbLogin = new FacebookLogin(facebookAppId);
-//				fbLogin.setHeight("30px");
-//				fbLogin.addListener(this);
-//			}
-//			loginLayout.addComponent(fbLogin);
-//			initSimpleLogin("Or just type a nick:");
-//		}
-//	}
+	private void initFBLogin() {
+		if (fbLoginStatus == LoginStatus.CONNECTED) {
+			final String fbId = fbAuth.getAuthResponse().userID;
+			
+			final String fbName = getFacebookUserName();
+			
+			loginLayout.addComponent(new Label("Use your Facebook account (" + fbName + ")"));
+			Button reFB = new Button("Login as " + fbName);
+			reFB.addListener(new ClickListener() {
+				/* @Override */
+				public void buttonClick(ClickEvent event) {
+					loginWithFB(fbId, fbName);
+				}
+			});
+			loginLayout.addComponent(reFB);
+			initSimpleLogin("Or type a nick:");
+		} else {
+			if (fbButton == null) {
+				fbButton = new FacebookLoginButton();
+				fbAuth.addListener(this);
+			}
+			loginLayout.addComponent(new Label("Use your Facebook account:"));
+			loginLayout.addComponent(fbButton);
+			initSimpleLogin("Or just type a nick:");
+		}
+	}
 
 	private void initSimpleLogin(String nickText) {
 		Button simpleLoginButton = new Button("Login");
 		simpleLoginButton.addListener(new ClickListener() {
-			/* @Override */
 			public void buttonClick(ClickEvent event) {
 				String nick = (String) simpleLoginField.getValue();
 				if (!nick.isEmpty()) {
@@ -108,27 +104,8 @@ public class LoginPanel extends Panel {//implements LoginListener {
 	}
 
 	private boolean facebookEnabled() {
-		return facebookAppId != null;
+		return fbAuth != null;
 	}
-
-	/* @Override */
-//	public void loginStatusChanged(LoginStatus newStatus) {
-//		fbLoginStatus = newStatus;
-//		if (newStatus == LoginStatus.LOGGED_IN) {
-//			if (wasLoggedOutOfFB) {
-//				loginWithFB(fbLogin.getId(), fbLogin.getName());
-//			} else {
-//				drawLoggedOut();
-//			}
-//		} else if (newStatus == LoginStatus.LOGGED_OUT) {
-//			wasLoggedOutOfFB = true;
-//			setLoggedInUser(null, true);
-//		} else if (newStatus == LoginStatus.LOGIN_NOT_POSSIBLE) {
-//			facebookAppId = null;
-//			drawLoggedOut();
-//		}
-//
-//	}
 
 	private void loginWithFB(String fbId, String fbName) {
 		if (fbUser == null || !fbUser.getFacebookId().equals(fbId)) {
@@ -151,7 +128,6 @@ public class LoginPanel extends Panel {//implements LoginListener {
 		if (listener != null) {
 			listener.loggedInCollaboratorChanged(user);
 		}
-
 	}
 
 	public void setLoggedInUser(User user, boolean notifyListeners) {
@@ -171,6 +147,33 @@ public class LoginPanel extends Panel {//implements LoginListener {
 			if (notifyListeners)
 				fireLoggedInCollaboratorChanged(this.user);
 		}
+	}
+	
+	private String getFacebookUserId() {
+		return fbAuth.getAuthResponse().userID;
+	}
+	
+	private String getFacebookUserName() {
+		FacebookClient client = new DefaultFacebookClient(fbAuth.getAuthResponse().accessToken);
+		return client.fetchObject("me", com.restfb.types.User.class).getName();
+	}
+
+	public void loginStatusChanged(LoginStatus newStatus) {
+		fbLoginStatus = newStatus;
+		if (newStatus == LoginStatus.CONNECTED) {
+			if (wasLoggedOutOfFB) {
+				loginWithFB(getFacebookUserId(), getFacebookUserName());
+			} else {
+				drawLoggedOut();
+			}
+		} else if (newStatus == LoginStatus.LOGGED_OUT) {
+			wasLoggedOutOfFB = true;
+			setLoggedInUser(null, true);
+		} else if (newStatus == LoginStatus.LOGIN_NOT_POSSIBLE) {
+			fbAuth = null;
+			drawLoggedOut();
+		}
+
 	}
 
 }

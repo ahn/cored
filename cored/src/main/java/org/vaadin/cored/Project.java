@@ -1,7 +1,9 @@
 package org.vaadin.cored;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -9,33 +11,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.TreeSet;
 
-import org.vaadin.aceeditor.ErrorChecker;
 import org.vaadin.aceeditor.collab.DocDiff;
-import org.vaadin.aceeditor.collab.ErrorCheckTask;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
-import org.vaadin.aceeditor.java.CompilerErrorChecker;
-import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.chatbox.gwt.shared.Chat;
 import org.vaadin.chatbox.gwt.shared.ChatDiff;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
-import org.vaadin.cored.ProjectSkeletonUtil.SkeletonType;
 import org.vaadin.diffsync.Shared;
 
 public class Project {
 
 	public interface DocListener {
-		public void docCreated(String name, long collaboratorId);
-
-		public void docRemoved(String name, long collaboratorId);
+		public void docCreated(ProjectFile file, long collaboratorId);
+		public void docRemoved(ProjectFile file, long collaboratorId);
 	}
 
 	private LinkedList<DocListener> listeners = new LinkedList<DocListener>();
 
-	private String projName;
+	private final String projName;
 
-	private Map<String, ProjectFile> files = new HashMap<String, ProjectFile>();
+	private Map<ProjectFile, Shared<Doc, DocDiff>> files = new HashMap<ProjectFile, Shared<Doc, DocDiff>>();
 
 	private SharedChat projectChat;
 	private Team team = new Team();
@@ -46,14 +44,30 @@ public class Project {
 
 	private HashMap<String, SharedChat> chatsByMarkerId = new HashMap<String, SharedChat>();
 
+	
 	private static HashMap<String, Project> allProjects = new HashMap<String, Project>();
+	
+//	private HierarchicalContainer container;
 
-	private Project(String name) {
+	protected Project(String name) {
+		name = name.toLowerCase();
 		this.projName = name;
 		this.projectChat = new SharedChat();
 		getProjectDir();
 		readFromDisk();
-		allProjects.put(name, this);
+	}
+	
+	protected static boolean addProjectIfNotExist(Project p) {
+		synchronized (allProjects) {
+			Project existing = allProjects.get(p.getName());
+			if (existing != null) {
+				return false;
+			}
+			else {
+				allProjects.put(p.getName(), p);
+				return true;
+			}
+		}
 	}
 
 	public static void setProjectsRootDir(String dir) {
@@ -85,30 +99,29 @@ public class Project {
 		for (File f : projectsRootDir.listFiles()) {
 			String name = f.getName();
 			if (!name.startsWith(".")) {
-				createProjectIfNotExist(name);
+				// TODO: other kind of projects?
+				VaadinProject.createProjectIfNotExist(name);
 			}
 
 		}
 	}
 
-	public static Project createProjectIfNotExist(String name) {
-		return createProjectIfNotExist(name, null);
-	}
-
-	public static Project createProjectIfNotExist(String name,
-			SkeletonType skeletonType) {
-		Project p;
-		synchronized (allProjects) {
-			p = allProjects.get(name);
-			if (p == null) {
-				p = new Project(name);
-				if (skeletonType != null) {
-					ProjectSkeletonUtil.applyProjectSkeletonTo(p, skeletonType);
-				}
-			}
-		}
-		return p;
-	}
+//	public static Project createProjectIfNotExist(String name) {
+//		return createProjectIfNotExist(name, null);
+//	}
+//
+//	public static Project createProjectIfNotExist(String name,
+//			VaadinProject.Type type) {
+//		Project p;
+//		synchronized (allProjects) {
+//			p = allProjects.get(name);
+//			if (p == null) {
+//				p = new Project(name);
+//			}
+//			
+//		}
+//		return p;
+//	}
 
 	public void addListener(DocListener li) {
 		synchronized (listeners) {
@@ -126,56 +139,55 @@ public class Project {
 		return projName;
 	}
 
-	public Shared<Doc, DocDiff> getDoc(String name) {
+	public Shared<Doc, DocDiff> getDoc(ProjectFile file) {
 		synchronized (files) {
-			ProjectFile pf = files.get(name);
-			return pf != null ? pf.getDoc() : null;
+			return files.get(file);
 		}
 	}
 
-	public List<String> getFileNames() {
+	public List<ProjectFile> getProjectFiles() {
 		synchronized (files) {
-			return new LinkedList<String>(files.keySet());
+			return new LinkedList<ProjectFile>(files.keySet());
 		}
 	}
 
-	public Shared<Doc, DocDiff> createDoc(String name, Doc doc,
+	public Shared<Doc, DocDiff> createDoc(ProjectFile file, Doc doc,
 			long collaboratorId) {
 		Shared<Doc, DocDiff> sharedDoc;
 		synchronized (files) {
-			ProjectFile pf = files.get(name);
-			if (pf != null) {
-				if (pf.getType() == ProjectFile.Type.DOC) {
-					pf.getDoc().setValue(doc, collaboratorId);
-					return pf.getDoc();
-				} else {
-					removeFile(name);
+			if (files.containsKey(file)) {
+				sharedDoc = files.get(file);
+				if (sharedDoc != null) {
+					sharedDoc.setValue(doc, collaboratorId);
+				}
+				else {
+					removeFile(file);
 				}
 			}
+			
 			sharedDoc = new Shared<Doc, DocDiff>(doc);
-			pf = new ProjectFile(sharedDoc);
-			files.put(name, pf);
-			fireDocCreated(name, collaboratorId);
+			files.put(file, sharedDoc);
+			fireDocCreated(file, collaboratorId);
 		}
 
-		decorateDoc(name, sharedDoc);
+		decorateDoc(file, sharedDoc);
 		return sharedDoc;
 	}
 
-	public Shared<Doc, DocDiff> createDoc(String filename, String content) {
-		return createDoc(filename, new Doc(content), Shared.NO_COLLABORATOR_ID);
+	public Shared<Doc, DocDiff> createDoc(ProjectFile file, String content) {
+		return createDoc(file, new Doc(content), Shared.NO_COLLABORATOR_ID);
 	}
 
-	public Shared<Doc, DocDiff> createDoc(String filename) {
-		return createDoc(filename, new Doc(), Shared.NO_COLLABORATOR_ID);
+	public Shared<Doc, DocDiff> createDoc(ProjectFile file) {
+		return createDoc(file, new Doc(), Shared.NO_COLLABORATOR_ID);
 	}
 
-	public void removeFile(String name) {
+	public void removeFile(ProjectFile file) {
 		synchronized (files) {
-			ProjectFile pf = files.remove(name);
-			if (pf != null) {
-				getLocationOfFile(name).delete();
-				fireDocRemoved(name, Shared.NO_COLLABORATOR_ID);
+			if (files.containsKey(file)) {
+				getLocationOfFile(file).delete();
+				files.remove(file);
+				fireDocRemoved(file, Shared.NO_COLLABORATOR_ID);
 			}
 		}
 	}
@@ -216,28 +228,41 @@ public class Project {
 	public void writeToDisk() throws IOException {
 		synchronized (files) {
 			synchronized (projectDir) {
-				for (Entry<String, ProjectFile> e : files.entrySet()) {
-					e.getValue().writeToFile(getLocationOfFile(e.getKey()));
+				for (Entry<ProjectFile, Shared<Doc, DocDiff>> e : files.entrySet()) {
+					if (e.getValue()!=null) {
+						writeFileToDisk(e.getKey(), e.getValue().getValue());
+					}
 				}
 			}
 		}
 	}
 
-	public void addFile(String filename, File fromFile) {
+	private void writeFileToDisk(ProjectFile file, Doc doc) throws IOException {
+		writeFileToDisk(file, doc, getLocationOfFile(file));
+	}
+	
+	private void writeFileToDisk(ProjectFile file, Doc doc, File dest) throws IOException {
+		if (doc == null) {
+			return;
+		}
+		MyFileUtils.writeFileToDisk(dest, doc.getText());
+	}
+
+	public void addFile(ProjectFile toFile, File fromFile) {
 		synchronized (projectDir) {
-			boolean success = fromFile.renameTo(getLocationOfFile(filename));
+			boolean success = fromFile.renameTo(getLocationOfFile(toFile));
 			if (success) {
-				readFileFromDisk(filename);
+				readFileFromDisk(toFile);
 			}
 		}
 	}
 
-	public void writeToDiskInNewDir(File dir) throws IOException {
+	public void writeSourceFilesTo(File dir) throws IOException {
 		synchronized (files) {
 			synchronized (projectDir) {
-				for (Entry<String, ProjectFile> e : files.entrySet()) {
-					File dest = new File(dir, e.getKey());
-					e.getValue().writeToFile(dest);
+				for (Entry<ProjectFile, Shared<Doc, DocDiff>> e : files.entrySet()) {
+					File dest = new File(dir, e.getKey().getPath());
+					writeFileToDisk(e.getKey(), e.getValue().getValue(), dest);
 				}
 			}
 		}
@@ -249,72 +274,86 @@ public class Project {
 	}
 
 	private void readFromDisk() {
-		File[] files = getProjectDir().listFiles();
+		System.out.println("readFromDisk");
+		TreeSet<File> files = getFilesIn(getProjectDir());
 		for (File f : files) {
-			readFileFromDisk(f.getName());
+			System.out.println("Found "+f);
+			readFileFromDisk(f);
 		}
+	}
+	
+	private TreeSet<File> getFilesIn(File dir) {
+		TreeSet<File> files = new TreeSet<File>();
+		for (File f : dir.listFiles()) {
+			if (f.isDirectory()) {
+				files.addAll(getFilesIn(f));
+			}
+			else {
+				files.add(f);
+			}
+		}
+		return files;
 	}
 
 	// TODO: refactor?
-	private void decorateDoc(String filename, Shared<Doc, DocDiff> sharedDoc) {
-		System.out.println("decoratedoc!!!");
-		if (filename.endsWith(".java")) {
-			ErrorChecker checker = new CompilerErrorChecker(
-					new InMemoryCompiler());
-			ErrorCheckTask task = new ErrorCheckTask(
-					sharedDoc.newCollaboratorId(), checker);
-			System.out.println("errorchecker!!!");
-			sharedDoc.addAsyncTask(task, true);
-		}
+	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
+
 	}
 
-	private void fireDocCreated(String name, long collaboratorId) {
+	private void fireDocCreated(ProjectFile file, long collaboratorId) {
 		synchronized (listeners) {
 			for (DocListener li : listeners) {
-				li.docCreated(name, collaboratorId);
+				li.docCreated(file, collaboratorId);
 			}
 		}
 	}
 
-	private void fireDocRemoved(String name, long collaboratorId) {
+	private void fireDocRemoved(ProjectFile file, long collaboratorId) {
 		synchronized (listeners) {
 			for (DocListener li : listeners) {
-				li.docRemoved(name, collaboratorId);
+				li.docRemoved(file, collaboratorId);
 			}
 		}
 	}
 
-	private File getLocationOfFile(String filename) {
-		return new File(getProjectDir(), filename);
+	protected File getLocationOfFile(ProjectFile file) {
+		return new File(getProjectDir(), file.getPath());
+	}
+	
+	protected File getLocationOfFile(File file) {
+		return new File(getProjectDir(), file.getPath());
 	}
 
-	private boolean readFileFromDisk(String filename) {
+	private boolean readFileFromDisk(File fileFullPath) {
+		File rel = MyFileUtils.relativize(getProjectDir(), fileFullPath);
+		return readFileFromDisk(new ProjectFile(rel));
+	}
+	
+	private boolean readFileFromDisk(ProjectFile file) {
 		String content;
 		try {
-			content = readFile(getLocationOfFile(filename));
+			content = readFile(getLocationOfFile(file));
 		} catch (IOException e) {
 			return false;
 		}
 
 		synchronized (files) {
-			ProjectFile pf = files.get(filename);
-			if (EditorUtil.isEditableWithEditor(filename)) {
-				Doc doc = new Doc(content);
-				if (pf != null) {
-					pf.getDoc().setValue(doc, Shared.NO_COLLABORATOR_ID);
-				} else {
-					Shared<Doc, DocDiff> shared = new Shared<Doc, DocDiff>(doc);
-					decorateDoc(filename, shared);
-					pf = new ProjectFile(shared);
-					files.put(filename, pf);
-					fireDocCreated(filename, Shared.NO_COLLABORATOR_ID);
+			if (files.containsKey(file)) {
+				Shared<Doc, DocDiff> shared = files.get(file);
+				if (file != null) {
+					shared.setValue(new Doc(content), Shared.NO_COLLABORATOR_ID);
 				}
-			} else {
-				files.put(filename, new ProjectFile(filename));
-				fireDocCreated(filename, Shared.NO_COLLABORATOR_ID);
+			}
+			else {
+				if (EditorUtil.isEditableWithEditor(file)) {
+					Shared<Doc, DocDiff> shared = new Shared<Doc, DocDiff>(new Doc(content));
+					decorateDoc(file, shared);
+					files.put(file, shared);
+				}
+				fireDocCreated(file, Shared.NO_COLLABORATOR_ID);
 			}
 		}
-
+		
 		return true;
 	}
 
@@ -346,5 +385,17 @@ public class Project {
 		}
 		return text.toString();
 	}
+
+	public void zip(File destZipFile) {
+		try {
+			MyFileUtils.zipDir(getProjectDir(), destZipFile);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+
+
 
 }

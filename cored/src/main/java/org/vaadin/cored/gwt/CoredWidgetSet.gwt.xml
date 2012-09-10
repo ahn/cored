@@ -8,9 +8,9 @@
 
     <inherits name="org.vaadin.diffsync.gwt.DiffSyncWidgetSet" />
 
-    <inherits name="org.vaadin.aceeditor.gwt.AceEditorWidgetSet" />
+    
 
-    <inherits name="org.vaadin.aceeditor.collab.gwt.CollabAceEditorWidgetSet" />
+    
 
     <inherits name="org.vaadin.aceeditor.java.gwt.JavaAceEditorWidgetSet" />
 
@@ -19,5 +19,16 @@
     <stylesheet src="cored/styles.css" />
     
 
-    <inherits name="org.vaadin.dontpush.widgetset.DontPushOzoneWidgetset" />
+    
+
+    <inherits name="com.github.wolfie.refresher.RefresherApplicationWidgetset" />
+
+    <inherits name="org.vaadin.aceeditor.gwt.AceEditorWidgetSet" />
+
+    <inherits name="org.vaadin.aceeditor.collab.gwt.CollabAceEditorWidgetSet" />
+    
+    
+    
+
+    <inherits name="org.vaadin.facebookauth.gwt.FacebookAuthWidgetSet" />
 </module>

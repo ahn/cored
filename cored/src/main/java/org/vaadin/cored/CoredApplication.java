@@ -30,7 +30,7 @@ public class CoredApplication extends Application implements
 
 	@Override
 	public void init() {
-//		setTheme("cored");
+		setTheme("cored");
 		mainWindow = new CollabWindow(facebookAppId);
 		setMainWindow(mainWindow);
 	}

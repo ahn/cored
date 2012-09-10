@@ -1,16 +1,18 @@
 package org.vaadin.cored;
 
-import org.vaadin.aceeditor.collab.SuggestibleCollabAceEditor;
 import org.vaadin.aceeditor.collab.DocDiff;
+import org.vaadin.aceeditor.collab.SuggestibleCollabAceEditor;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.aceeditor.gwt.ace.AceMode;
+import org.vaadin.aceeditor.java.VaadinAceEditor;
 import org.vaadin.aceeditor.java.VaadinSuggester;
 import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.diffsync.Shared;
 
 public class EditorUtil {
 
-	public static boolean isEditableWithEditor(String filename) {
+	public static boolean isEditableWithEditor(ProjectFile file) {
+		String filename = file.getName();
 		int lastDot = filename.lastIndexOf(".");
 		if (lastDot == -1) {
 			return true; // ?
@@ -20,13 +22,14 @@ public class EditorUtil {
 	}
 
 	public static SuggestibleCollabAceEditor createEditorFor(
-			Shared<Doc, DocDiff> doc, String filename) {
+			Shared<Doc, DocDiff> doc, ProjectFile file) {
+		String filename = file.getName();
 
 		SuggestibleCollabAceEditor editor = new SuggestibleCollabAceEditor(doc);
 
 		AceMode mode = AceMode.forFile(filename);
 		if (mode != null) {
-			editor.setMode(mode, createModeURL(mode));
+			editor.setMode(mode);
 		}
 
 		if (filename.endsWith(".java")) {
@@ -36,10 +39,6 @@ public class EditorUtil {
 
 		return editor;
 	}
+	
 
-	private static String createModeURL(AceMode mode) {
-		// TODO FIXME XXX ?????
-		return "http://antti.virtuallypreinstalled.com/cored/VAADIN/widgetsets/org.vaadin.codeeditor.gwt.AceEditorWidgetset/ace/mode-"
-				+ mode.toString() + ".js";
-	}
 }

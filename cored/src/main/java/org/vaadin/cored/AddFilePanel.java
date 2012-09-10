@@ -65,21 +65,23 @@ public class AddFilePanel extends Panel implements SucceededListener, Receiver,
 			return;
 		}
 
-		project.addFile(event.getFilename(), uploadingToFile);
+		// TODO XXX
+//		project.addFile(new File(event.getFilename()), uploadingToFile);
 
 		uploadingToFile = null;
 	}
 
 //	@Override
 	public void buttonClick(ClickEvent event) {
-		String filename = (String) newFileField.getValue();
-		if (properFilename(filename)) {
-			project.createDoc(filename);
-			newFileField.setValue("");
-		} else {
-			getWindow().showNotification("Not a valid filename",
-					Notification.TYPE_WARNING_MESSAGE);
-		}
+		// TODO XXX
+//		String filename = (String) newFileField.getValue();
+//		if (properFilename(filename)) {
+//			project.createDoc(filename);
+//			newFileField.setValue("");
+//		} else {
+//			getWindow().showNotification("Not a valid filename",
+//					Notification.TYPE_WARNING_MESSAGE);
+//		}
 
 	}
 

@@ -25,7 +25,7 @@ import com.vaadin.ui.Panel;
 import com.vaadin.ui.VerticalLayout;
 
 @SuppressWarnings("serial")
-public class WarBuildComponent extends Panel implements BuildComponent,
+public class VaadinBuildComponent extends Panel implements BuildComponent,
 		ClickListener, DocListener {
 
 	private static final Pattern rePackage = Pattern
@@ -69,8 +69,7 @@ public class WarBuildComponent extends Panel implements BuildComponent,
 
 	private VerticalLayout layout = new VerticalLayout();
 
-	private Project project;
-	private NativeSelect buildSelect;
+	private VaadinProject project;
 	private Button buildButton = new Button("Deploy");
 
 	private Link appLink = new Link("App Deployed! Click here to open.", null);
@@ -84,7 +83,7 @@ public class WarBuildComponent extends Panel implements BuildComponent,
 		errorButton.setVisible(false);
 	}
 
-	public WarBuildComponent(Project project) {
+	public VaadinBuildComponent(VaadinProject project) {
 		super("Deploy App");
 		this.project = project;
 		setContent(layout);
@@ -95,19 +94,13 @@ public class WarBuildComponent extends Panel implements BuildComponent,
 		layout.removeAllComponents();
 
 		LinkedList<String> javaFiles = new LinkedList<String>();
-		for (String fn : project.getFileNames()) {
-			if (fn.endsWith(".java")) {
-				javaFiles.add(fn.substring(0, fn.length() - 5));
+		for (ProjectFile f : project.getProjectFiles()) {
+			String name = f.getName();
+			if (name.endsWith(".java")) {
+				javaFiles.add(name.substring(0, name.length() - 5));
 			}
 		}
 
-		buildSelect = new NativeSelect("Application Class", javaFiles);
-		buildSelect.setNullSelectionAllowed(false);
-		if (!javaFiles.isEmpty()) {
-			buildSelect.select(javaFiles.get(0));
-		}
-
-		layout.addComponent(buildSelect);
 		layout.addComponent(buildButton);
 		layout.addComponent(appLink);
 		layout.addComponent(appInfo);
@@ -126,12 +119,12 @@ public class WarBuildComponent extends Panel implements BuildComponent,
 	}
 
 //	@Override
-	public void docCreated(String name, long collaboratorId) {
+	public void docCreated(ProjectFile file, long collaboratorId) {
 		draw();
 	}
 
 //	@Override
-	public void docRemoved(String name, long collaboratorId) {
+	public void docRemoved(ProjectFile file, long collaboratorId) {
 		draw();
 	}
 
@@ -169,16 +162,6 @@ public class WarBuildComponent extends Panel implements BuildComponent,
 	private void build() throws IOException {
 		synchronized (buildTemplateDir) {
 
-			String appClass = (String) buildSelect.getValue();
-			String code;
-			try {
-				code = project.getDoc(appClass + ".java").getValue().getText();
-			} catch (NullPointerException npe) {
-				throw new IOException(appClass
-						+ ".java doesn't exist any more!");
-			}
-
-			// TODO: writing to disk when building, is this the right way to go?
 			project.writeToDisk();
 
 			writeSrcToDisk();
@@ -186,7 +169,7 @@ public class WarBuildComponent extends Panel implements BuildComponent,
 			deleteDirectory(new File(new File(buildTemplateDir, "build"),
 					"classes"));
 
-			createWebXml(appClass, code);
+			createWebXml(project.getApplicationClassName(), project.getPackageName());
 
 			antBuildWar();
 		}
@@ -197,13 +180,12 @@ public class WarBuildComponent extends Panel implements BuildComponent,
 		srcDir.mkdir();
 		deleteDirectory(srcDir);
 		srcDir.mkdir();
-		project.writeToDiskInNewDir(srcDir);
+		project.writeSourceFilesTo(srcDir);
 	}
 
-	private void createWebXml(String appClass, String code) throws IOException {
-		String pa = packageFromCode(code);
+	private void createWebXml(String appClass, String pakkage) throws IOException {
 
-		String fullClass = pa == null ? appClass : pa + "." + appClass;
+		String fullClass = pakkage == null ? appClass : pakkage + "." + appClass;
 		System.err.println("fullClass=" + fullClass);
 		String wx = webXml(appClass, fullClass);
 
@@ -213,18 +195,6 @@ public class WarBuildComponent extends Panel implements BuildComponent,
 		out.write(wx);
 		out.close();
 
-	}
-
-	// TODO: replace this ad hoc hack with something better?
-	private String packageFromCode(String code) {
-
-		Matcher matcher = rePackage.matcher(code);
-		if (matcher.find()) {
-			String pa = matcher.group(1);
-			return pa.replaceAll("\\s", "");
-		}
-
-		return null;
 	}
 
 	private void antBuildWar() {

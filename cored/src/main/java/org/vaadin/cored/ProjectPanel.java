@@ -1,39 +1,53 @@
 package org.vaadin.cored;
 
+import java.io.File;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.vaadin.cored.Project.DocListener;
 
-import com.vaadin.ui.Accordion;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.Button.ClickEvent;
-import com.vaadin.ui.Button.ClickListener;
+import com.vaadin.data.Property;
+import com.vaadin.data.Property.ValueChangeEvent;
+import com.vaadin.event.ItemClickEvent;
+import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.Panel;
-import com.vaadin.ui.TabSheet.SelectedTabChangeEvent;
-import com.vaadin.ui.TabSheet.SelectedTabChangeListener;
+import com.vaadin.ui.Tree;
 import com.vaadin.ui.VerticalLayout;
-import com.vaadin.ui.themes.BaseTheme;
 
 @SuppressWarnings("serial")
 public class ProjectPanel extends Panel implements DocListener {
 
-	private final Project project;
+	private static final String NEW_FILE_ITEM_ID = "Add New...";
+
+	private final VaadinProject project;
 
 	private VerticalLayout layout = new VerticalLayout();
 
-	private Accordion acc = new Accordion();
+//	private Accordion acc = new Accordion();
+	
+	private Tree tree = new Tree();
 
 	private boolean ignoreSelectedEvents;
 
 	private HashMap<String, Component> tabsByFile = new HashMap<String, Component>();
 
+	private Object selectedItemId;
+
 	public ProjectPanel(Project project) {
-		super("Files of " + project.getName());
-		this.project = project;
-		layout.addComponent(acc);
+		super("Project "+project.getName());
+		if (project instanceof VaadinProject) {
+			this.project = (VaadinProject) project;
+		}
+		else {
+			throw new UnsupportedOperationException("ProjectPanel only supports VaadinProjects for now.");
+		}
+		
+		layout.addComponent(tree);
 		setContent(layout);
 	}
 
@@ -41,15 +55,30 @@ public class ProjectPanel extends Panel implements DocListener {
 	public void attach() {
 		super.attach();
 		refresh();
-		acc.addListener(new SelectedTabChangeListener() {
-//			@Override
-			public void selectedTabChange(SelectedTabChangeEvent event) {
-				if (!ignoreSelectedEvents) {
-					fireFileSelected(acc.getTab(acc.getSelectedTab())
-							.getCaption()); // XXX
-				}
+		
+		tree.addListener(new Property.ValueChangeListener() {
+			
+			public void valueChange(ValueChangeEvent event) {
+				selectedItemId = event.getProperty().getValue();
 			}
 		});
+		
+		tree.addListener(new ItemClickEvent.ItemClickListener() {
+			public void itemClick(ItemClickEvent event) {
+				if (event.isDoubleClick() && selectedItemId instanceof ProjectFile) {
+					tree.select(selectedItemId);
+					fireFileSelected((ProjectFile) selectedItemId);
+				}
+				else if (event.isDoubleClick() && NEW_FILE_ITEM_ID.equals(selectedItemId)) {
+					NewVaadinFileWindow win = new NewVaadinFileWindow(project);
+					win.setWidth("400px");
+					win.setHeight("400px");
+					getWindow().addWindow(win);
+				}
+				
+			}
+		});
+
 		project.addListener(this);
 	}
 
@@ -59,67 +88,104 @@ public class ProjectPanel extends Panel implements DocListener {
 		project.removeListener(this);
 	}
 
-	public String getSelectedFile() {
-		Component sel = acc.getSelectedTab();
-		return sel == null ? null : acc.getTab(sel).getCaption();
-	}
-
-	public void setSelectedFile(String name) {
-		Component tab = tabsByFile.get(name);
-		if (tab != null) {
-			acc.setSelectedTab(tab);
-		}
-	}
+//	public String getSelectedFile() {
+//		Component sel = acc.getSelectedTab();
+//		return sel == null ? null : acc.getTab(sel).getCaption();
+//	}
+//
+//	public void setSelectedFile(String name) {
+//		Component tab = tabsByFile.get(name);
+//		if (tab != null) {
+//			acc.setSelectedTab(tab);
+//		}
+//	}
 
 //	@Override
-	public void docCreated(final String name, long collaboratorId) {
+	public void docCreated(ProjectFile file, long collaboratorId) {
 		refresh();
 	}
-
+	
 	private void refresh() {
-		tabsByFile.clear();
-		String sel = getSelectedFile();
-		boolean previousSelectStillExists = false;
-		ignoreSelectedEvents = true;
-		acc.removeAllComponents();
-		List<String> files = project.getFileNames();
-		for (final String dn : files) {
-			if (dn.equals(sel)) {
-				previousSelectStillExists = true;
+		tree.removeAllItems();
+		
+		TreeSet<ProjectFile> srcFiles = project.getSourceFiles();
+		
+		tree.addItem(project.getSourceDir());
+		tree.setItemCaption(project.getSourceDir(), "Java Source Files");
+		
+		for (ProjectFile pf : srcFiles) {
+			tree.addItem(pf);
+			tree.setItemCaption(pf, pf.getName());
+			tree.setChildrenAllowed(pf, false);
+//			tree.setItemIcon(pf, res);
+			tree.setParent(pf, project.getSourceDir());
+		}
+		
+		tree.addItem(NEW_FILE_ITEM_ID);
+		tree.setItemIcon(NEW_FILE_ITEM_ID, plusIcon);
+		tree.setParent(NEW_FILE_ITEM_ID, project.getSourceDir());
+		tree.setChildrenAllowed(NEW_FILE_ITEM_ID, false);
+		
+	}
+	
+	private void refresh2() {
+		tree.removeAllItems();
+		List<ProjectFile> files = project.getProjectFiles();
+		TreeMap<List<File>, TreeSet<String>> filesByDir = new TreeMap<List<File>, TreeSet<String>>();
+		
+		List<List<File>> heheh = new LinkedList<List<File>>();
+		
+		for (ProjectFile f : files) {
+
+			
+			File xxx = new File(f.getDir(), f.getName());
+			LinkedList<File> fs = new LinkedList<File>();
+			while (xxx != null) {
+				fs.push(xxx);
+				xxx = xxx.getParentFile();
 			}
-			Button removeButton = new Button("Remove");
-			removeButton.setStyleName(BaseTheme.BUTTON_LINK);
-			removeButton.addListener(new ClickListener() {
-//				@Override
-				public void buttonClick(ClickEvent event) {
-					project.removeFile(dn);
-					if (acc.getComponentCount() == 0) {
-						fireFileSelected(null);
-					}
+			
+			heheh.add(fs);
+
+		}
+		
+		addNth(heheh, 0);
+
+	}
+	
+	private ThemeResource plusIcon = new ThemeResource("icons/plus16.png");
+	
+	private void addNth(Collection<List<File>> dirs, int n) {
+		boolean added = false;
+		for (List<File> dir : dirs) {
+			if (dir.size()>n) {
+				File dn = dir.get(n);
+				tree.addItem(dn);
+				tree.setItemCaption(dn, dn.getName());
+				
+				if (n > 0) {
+					tree.setParent(dn, dir.get(n-1));
 				}
-			});
-			acc.addTab(removeButton, dn);
-			tabsByFile.put(dn, removeButton);
+				if (n==dir.size()-1) {
+					tree.setChildrenAllowed(dn, false);
+//					tree.setItemIcon(dn, res);
+				}
+				added = true;
+			}
 		}
-
-		// XXX
-
-		if (previousSelectStillExists) {
-			setSelectedFile(sel);
-		} else {
-			fireFileSelected(getSelectedFile());
+		if (added) {
+			addNth(dirs, n+1);
 		}
-
-		ignoreSelectedEvents = false;
 	}
 
+
 //	@Override
-	public void docRemoved(String name, long collaboratorId) {
-		refresh();
+	public void docRemoved(ProjectFile file, long collaboratorId) {
+//		refresh();
 	}
 
 	public interface FileSelectListener {
-		public void fileSelected(String name);
+		public void fileSelected(ProjectFile file);
 	}
 
 	LinkedList<FileSelectListener> listeners = new LinkedList<FileSelectListener>();
@@ -128,9 +194,9 @@ public class ProjectPanel extends Panel implements DocListener {
 		listeners.add(li);
 	}
 
-	private void fireFileSelected(String name) {
+	private void fireFileSelected(ProjectFile file) {
 		for (FileSelectListener li : listeners) {
-			li.fileSelected(name);
+			li.fileSelected(file);
 		}
 	}
 
