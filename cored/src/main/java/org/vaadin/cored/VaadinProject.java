@@ -2,6 +2,7 @@ package org.vaadin.cored;
 
 import java.io.File;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 import org.vaadin.aceeditor.ErrorChecker;
 import org.vaadin.aceeditor.collab.DocDiff;
@@ -10,12 +11,32 @@ import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.diffsync.Shared;
 
-public class VaadinProject extends Project {
+import com.vaadin.data.Validator;
+import com.vaadin.data.validator.AbstractValidator;
 
-	public enum Type {
-		EMPTY, SKELETON
+public class VaadinProject extends Project {	 
+	public static class JavaUtils {
+		
+		private static final Pattern validClass = Pattern.compile("^[A-Z][A-Za-z1-9_]+$");
+		
+		public static boolean isValidJavaClass(String s) {
+			System.out.println("isValidClass(\""+s+"\");");
+			return validClass.matcher(s).matches();
+		}
+
+		@SuppressWarnings("serial")
+		public static class JavaClassNameValidator extends AbstractValidator {
+
+			public JavaClassNameValidator() {
+				super("Class names should start with a capital letter and contain letters, numbers, _");
+			}
+
+			public boolean isValid(Object value) {
+				return value instanceof String && isValidJavaClass((String) value);
+			}	
+		}
 	}
-	
+
 	private final static File srcDir = new File("src");
 	
 	private final String packageName;
@@ -23,22 +44,22 @@ public class VaadinProject extends Project {
 	private final File srcPackageDir;
 	
 	public static Project createProjectIfNotExist(String name) {
-		return createProjectIfNotExist(name, null);
+		return createProjectIfNotExist(name);
 	}
 
 	public static VaadinProject createProjectIfNotExist(String name,
-			VaadinProject.Type type) {
-		VaadinProject p = new VaadinProject(name, type);
+			boolean createSkeleton) {
+		VaadinProject p = new VaadinProject(name, createSkeleton);
 		return addProjectIfNotExist(p) ? p : null;
 	}
 	
-	protected VaadinProject(String name, Type type) {
-		super(name);
+	protected VaadinProject(String name, boolean createSkeleton) {
+		super(name,ProjectType.vaadin);
 		packageName = "fi.tut.cs.cored."+getName();
 		srcPackageDir = new File(srcDir, ProjectFile.pathFromPackage(packageName));
 				
-		if (type==Type.SKELETON) {
-			initVaadinApp();
+		if (createSkeleton) {
+			initApp();
 		}
 	}
 	
@@ -79,8 +100,8 @@ public class VaadinProject extends Project {
 		return srcFiles;
 	}
 	
-	private void initVaadinApp() {
-		String ske = createVaadinSkeletonCode(getPackageName(), getApplicationClassName());
+	private void initApp() {
+		String ske = createSkeletonCode(getPackageName(), getApplicationClassName());
 		createDoc(getApplicationFile(), ske);
 	}
 
@@ -89,7 +110,7 @@ public class VaadinProject extends Project {
 				+ name.substring(1).toLowerCase() + "Application";
 	}
 
-	private static String createVaadinSkeletonCode(String pakkage, String cls) {
+	private static String createSkeletonCode(String pakkage, String cls) {
 		return "package "+pakkage+";\n\nimport com.vaadin.ui.Window;\n"
 				+ "import com.vaadin.ui.Label;\n\n" + "public class " + cls
 				+ " extends com.vaadin.Application {\n\n"
@@ -113,5 +134,59 @@ public class VaadinProject extends Project {
 			sharedDoc.addAsyncTask(task, true);
 		}
 	}
+	@Override
+	public String getProgrammingLanguage() {
+		return "Java";
+	}
+	@Override
+	public String getFileEnding() {
+		return ".java";
+	}
 
+	@Override
+	public Validator getClassNameValidator() {
+		return new JavaUtils.JavaClassNameValidator();
+	}
+
+	@Override
+	public String[] getExtendsClasses() {
+		final String[] components = {
+			"java.lang.Object",
+			"com.vaadin.ui.Panel",
+			"com.vaadin.ui.Window",
+			"com.vaadin.ui.CustomComponent" };
+		return components;
+	}
+
+	@Override
+	public String generateContent(String name, String base) {
+		String content = "package "+getPackageName()+";\n\n"
+				+ generateImports(base) + "\n\n"
+				+ generateClass(name, base) + "\n";
+		
+		return content;
+	}
+
+	private String generateImports(String base) {
+		if (base.equals("java.lang.Object")) {
+			return "";
+		}
+		else {
+			return "import "+base +";";
+		}
+	}
+	
+
+	private String generateClass(String name, String base) {
+		if (base.equals("java.lang.Object")) {
+			return "class "+name+" {\n"
+					+ "    \n}\n";
+		}
+		else {
+			return "class "+name+" extends "+base.substring(base.lastIndexOf(".")+1)+" {\n"
+					+ "    \n}\n";
+		}
+	}
+	
+	
 }

@@ -1,17 +1,18 @@
 package org.vaadin.cored;
 
-import java.io.BufferedWriter;
+
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Map.Entry;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.TreeSet;
 
 import org.vaadin.aceeditor.collab.DocDiff;
@@ -20,15 +21,32 @@ import org.vaadin.chatbox.SharedChat;
 import org.vaadin.chatbox.gwt.shared.Chat;
 import org.vaadin.chatbox.gwt.shared.ChatDiff;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
+import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.diffsync.Shared;
 
-public class Project {
+import com.vaadin.data.Validator;
 
+public abstract class Project {
+
+	public enum ProjectType {
+		vaadin, python, generic;
+	}
+	
 	public interface DocListener {
 		public void docCreated(ProjectFile file, long collaboratorId);
 		public void docRemoved(ProjectFile file, long collaboratorId);
 	}
 
+	public abstract File getSourceDir();
+	public abstract ProjectFile getFileOfClass(String className);
+	public abstract String getFileEnding();
+	public abstract String getPackageName();
+	public abstract String getProgrammingLanguage();
+	public abstract TreeSet<ProjectFile> getSourceFiles();
+	public abstract Validator getClassNameValidator();
+	public abstract String[] getExtendsClasses();
+	public abstract String generateContent(String name, String base);
+	
 	private LinkedList<DocListener> listeners = new LinkedList<DocListener>();
 
 	private final String projName;
@@ -44,17 +62,20 @@ public class Project {
 
 	private HashMap<String, SharedChat> chatsByMarkerId = new HashMap<String, SharedChat>();
 
+	private ProjectType projectType;
+
 	
 	private static HashMap<String, Project> allProjects = new HashMap<String, Project>();
 	
 //	private HierarchicalContainer container;
 
-	protected Project(String name) {
+	protected Project(String name,ProjectType type) {
 		name = name.toLowerCase();
 		this.projName = name;
 		this.projectChat = new SharedChat();
 		getProjectDir();
 		readFromDisk();
+		setProjectProperties(type);
 	}
 	
 	protected static boolean addProjectIfNotExist(Project p) {
@@ -98,14 +119,64 @@ public class Project {
 
 		for (File f : projectsRootDir.listFiles()) {
 			String name = f.getName();
-			if (!name.startsWith(".")) {
-				// TODO: other kind of projects?
+			ProjectType type = getProjectType(f);
+			if (ProjectType.python.equals(type)) {
+				PythonProject.createProjectIfNotExist(name);}
+			else if (ProjectType.vaadin.equals(type)){
 				VaadinProject.createProjectIfNotExist(name);
+			}else if (ProjectType.generic.equals(type)){
+				GenericProject.createProjectIfNotExist(name);
 			}
 
 		}
 	}
 
+	
+	private ProjectType getProjectType() {
+		return this.projectType;
+	}
+	
+	private static ProjectType getProjectType(File file) {
+		class CoredPropertiesFilter implements FilenameFilter {
+		    public boolean accept(File dir, String name) {
+		        return (name.equals("project.properties"));
+		    }
+		}
+		if (file.isDirectory()){
+			FilenameFilter filter = new CoredPropertiesFilter();
+			File[] fs = file.listFiles(filter);
+			try {
+				if (fs.length==1){
+					FileInputStream stream = new FileInputStream(fs[0]);
+					Properties properties = new Properties();
+					properties.load(stream);
+					ProjectType projectType = (ProjectType) properties.get("PROJECT_TYPE");
+					return projectType;
+				}
+			} catch (Exception e) {
+			}
+		}
+		return null;
+	}
+	
+	private boolean setProjectProperties(ProjectType type){		
+		projectType = type;
+		Properties properties=new Properties();
+		properties.setProperty("PROJECT_TYPE", type.toString());
+		String fileName="project.properties";
+		File tagFile=new File(projectDir,fileName);
+		try {
+			if(!tagFile.exists()){
+					tagFile.createNewFile();
+			}
+			properties.store(new FileOutputStream(tagFile.getAbsolutePath()), null);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return true;
+	}
+	
 //	public static Project createProjectIfNotExist(String name) {
 //		return createProjectIfNotExist(name, null);
 //	}
@@ -395,7 +466,11 @@ public class Project {
 		}
 	}
 
-
-
-
+	public BuildComponent getBuildComponent(DeployType deployType) {
+		if (getProjectType().equals(ProjectType.vaadin)){
+			return new VaadinBuildComponent((VaadinProject) this, deployType);	
+		}else{
+			return null;
+		}
+	}
 }

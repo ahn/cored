@@ -24,7 +24,7 @@ public class ProjectPanel extends Panel implements DocListener {
 
 	private static final String NEW_FILE_ITEM_ID = "Add New...";
 
-	private final VaadinProject project;
+	private final Project project;
 
 	private VerticalLayout layout = new VerticalLayout();
 
@@ -42,8 +42,11 @@ public class ProjectPanel extends Panel implements DocListener {
 		super("Project "+project.getName());
 		if (project instanceof VaadinProject) {
 			this.project = (VaadinProject) project;
-		}
-		else {
+		}else if(project instanceof PythonProject){
+			this.project = (PythonProject) project;
+		}else if(project instanceof GenericProject){
+			this.project = (GenericProject) project;
+		}else {
 			throw new UnsupportedOperationException("ProjectPanel only supports VaadinProjects for now.");
 		}
 		
@@ -70,7 +73,7 @@ public class ProjectPanel extends Panel implements DocListener {
 					fireFileSelected((ProjectFile) selectedItemId);
 				}
 				else if (event.isDoubleClick() && NEW_FILE_ITEM_ID.equals(selectedItemId)) {
-					NewVaadinFileWindow win = new NewVaadinFileWindow(project);
+					NewFileWindow win = new NewFileWindow(project);
 					win.setWidth("400px");
 					win.setHeight("400px");
 					getWindow().addWindow(win);
@@ -111,7 +114,7 @@ public class ProjectPanel extends Panel implements DocListener {
 		TreeSet<ProjectFile> srcFiles = project.getSourceFiles();
 		
 		tree.addItem(project.getSourceDir());
-		tree.setItemCaption(project.getSourceDir(), "Java Source Files");
+		tree.setItemCaption(project.getSourceDir(), project.getProgrammingLanguage() + " Source Files");
 		
 		for (ProjectFile pf : srcFiles) {
 			tree.addItem(pf);

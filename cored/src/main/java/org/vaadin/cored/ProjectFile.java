@@ -8,7 +8,8 @@ public class ProjectFile implements Comparable {
 	private final String name;
 	
 	public ProjectFile(File file) {
-		this.dir = new File(file.getParent());
+		String parent = file.getParent();
+		this.dir = new File(parent);
 		this.name = file.getName();
 	}
 

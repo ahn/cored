@@ -6,12 +6,14 @@ import java.util.Map.Entry;
 
 import org.vaadin.aceeditor.collab.User;
 import org.vaadin.cored.LoginPanel.LoggedInCollaboratorListener;
+import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.facebookauth.FacebookAuth;
 
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.CheckBox;
+import com.vaadin.ui.Component;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.UriFragmentUtility;
 import com.vaadin.ui.UriFragmentUtility.FragmentChangedEvent;
@@ -35,6 +37,8 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 	private LoginPanel loginPanel;
 	
 	private CoredInfoComponent info = new CoredInfoComponent();
+
+	private final DeployType delpoyType= DeployType.war;
 
 	public CollabWindow(String facebookAppId) {
 		super();
@@ -126,41 +130,84 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 		final TextField tf = new TextField("Project name:");
 		final CheckBox skBox = new CheckBox("Create Application Skeleton");
 		skBox.setValue(true);
-		Button b = new Button("Create New Project");
+		la.addComponent(tf);
+		la.addComponent(skBox);
+		la.addComponent(createNewVaadinProjectButton(tf,skBox));
+		la.addComponent(createNewPythonProjectButton(tf,skBox));
+		la.addComponent(createNewGenericProjectButton(tf,skBox));
+		
+		mainLayout.addComponent(la);
+		mainLayout.setExpandRatio(la, 1);
+	}
+
+	private Component createNewVaadinProjectButton(final TextField tf, final CheckBox skBox) {
+		Button b = new Button("Create New Vaadin Project");
 
 		b.addListener(new ClickListener() {
 //			@Override
 			public void buttonClick(ClickEvent event) {
 				String name = ((String)tf.getValue()).toLowerCase();
 				if (isValidProjectName(name)) {
-					VaadinProject.Type skel = skBox.booleanValue() ? VaadinProject.Type.SKELETON
-							: VaadinProject.Type.EMPTY;
-					VaadinProject.createProjectIfNotExist(name, skel);
+					VaadinProject.createProjectIfNotExist(name, skBox.booleanValue());
 					urifu.setFragment(name);
 				} else {
 					getWindow().showNotification("Not a valid project name.");
 				}
 			}
 		});
-		la.addComponent(tf);
-		la.addComponent(skBox);
-		la.addComponent(b);
-		mainLayout.addComponent(la);
-		mainLayout.setExpandRatio(la, 1);
+		return b;
 	}
 
+	private Component createNewPythonProjectButton(final TextField tf, final CheckBox skBox) {
+		Button b = new Button("Create New Python Project");
+
+		b.addListener(new ClickListener() {
+//			@Override
+			public void buttonClick(ClickEvent event) {
+				String name = ((String)tf.getValue()).toLowerCase();
+				if (isValidProjectName(name)) {
+					PythonProject.createProjectIfNotExist(name, skBox.booleanValue());
+					urifu.setFragment(name);
+				} else {
+					getWindow().showNotification("Not a valid project name.");
+				}
+			}
+		});
+		return b;
+	}
+
+	private Component createNewGenericProjectButton(final TextField tf, final CheckBox skBox) {
+		Button b = new Button("Create New Generic Project");
+
+		b.addListener(new ClickListener() {
+//			@Override
+			public void buttonClick(ClickEvent event) {
+				String name = ((String)tf.getValue()).toLowerCase();
+				if (isValidProjectName(name)) {
+					GenericProject.createProjectIfNotExist(name, skBox.booleanValue());
+					urifu.setFragment(name);
+				} else {
+					getWindow().showNotification("Not a valid project name.");
+				}
+			}
+		});
+		return b;
+	}
+
+	
 	private void openProject(String projectName) {
-
-
-		VaadinProject.createProjectIfNotExist(projectName);
-		openProject(Project.getProject(projectName));
-
+		Project project= Project.getProject(projectName);
+		if (project!=null){
+			openProject(Project.getProject(projectName));
+		}else{
+			urifu.setFragment("");
+		}
 	}
 
 	private void openProject(Project project) {
 		clear();
 		
-		BuildComponent bc = project instanceof VaadinProject ? new VaadinBuildComponent((VaadinProject) project) : null;
+		BuildComponent bc = project.getBuildComponent(delpoyType);
 
 		IDE ide = new IDE(CoredApplication.getInstance().getCoredUser(),
 				project, bc);
