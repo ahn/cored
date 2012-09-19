@@ -28,6 +28,8 @@ import com.vaadin.data.Validator;
 
 public abstract class Project {
 
+	static private final String propertyFileName="project.properties";
+	
 	public enum ProjectType {
 		vaadin, python, generic;
 	}
@@ -139,7 +141,7 @@ public abstract class Project {
 	private static ProjectType getProjectType(File file) {
 		class CoredPropertiesFilter implements FilenameFilter {
 		    public boolean accept(File dir, String name) {
-		        return (name.equals("project.properties"));
+		        return (name.equals(propertyFileName));
 		    }
 		}
 		if (file.isDirectory()){
@@ -150,7 +152,8 @@ public abstract class Project {
 					FileInputStream stream = new FileInputStream(fs[0]);
 					Properties properties = new Properties();
 					properties.load(stream);
-					ProjectType projectType = (ProjectType) properties.get("PROJECT_TYPE");
+					Object type = properties.get("PROJECT_TYPE");
+					ProjectType projectType = ProjectType.valueOf(type.toString());
 					return projectType;
 				}
 			} catch (Exception e) {
@@ -163,8 +166,7 @@ public abstract class Project {
 		projectType = type;
 		Properties properties=new Properties();
 		properties.setProperty("PROJECT_TYPE", type.toString());
-		String fileName="project.properties";
-		File tagFile=new File(projectDir,fileName);
+		File tagFile=new File(projectDir,propertyFileName);
 		try {
 			if(!tagFile.exists()){
 					tagFile.createNewFile();
@@ -348,8 +350,10 @@ public abstract class Project {
 		System.out.println("readFromDisk");
 		TreeSet<File> files = getFilesIn(getProjectDir());
 		for (File f : files) {
-			System.out.println("Found "+f);
-			readFileFromDisk(f);
+			if (!f.getName().equals(propertyFileName)){
+				System.out.println("Found "+f);
+				readFileFromDisk(f);				
+			}
 		}
 	}
 	

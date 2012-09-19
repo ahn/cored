@@ -44,7 +44,7 @@ public class VaadinProject extends Project {
 	private final File srcPackageDir;
 	
 	public static Project createProjectIfNotExist(String name) {
-		return createProjectIfNotExist(name);
+		return createProjectIfNotExist(name,true);
 	}
 
 	public static VaadinProject createProjectIfNotExist(String name,
