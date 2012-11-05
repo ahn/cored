@@ -1,0 +1,21 @@
+
+
+Coredissa on joitain ajoympäristöstä riippuvia asetuksia.
+Nämä on määritelty tiedostossa cored.properties.
+Oletuksena käytetään sijainnissa config/cored.properties olevaa tiedostoa.
+
+Jos haluaa käännellä erilaisilla asetuksilla warreja, voi käyttää profiileja.
+Profiilille voi määritellä oman cored.properties-tiedoston.
+
+Maven-ajoihin voi profiilin asettaa Eclipsessä Run as -> Run configurations... -> kenttä profiles.
+
+Profiilit määritellään pom.xml:ssä
+
+    <profiles>
+        <profile>
+            <id>niemin75</id>
+            ...
+
+Esim: jos asettaa profiles-kenttään niemin75,
+niin käytetään niemin75-nimistä pom.xml-tiedostossa määriteltyä profiilia.
+Tällöin warriin paketoituu tiedosto config/niemin75/cored.properties, ei config/cored.properties.

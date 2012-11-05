@@ -1,0 +1,52 @@
+
+Eclipse käyttämään JDK:ta
+=========================
+
+Jotta Java-kääntäminen onnistuisi pitää coredia ajaa JDK:lla (ei JRE:llä).
+
+Muokkaa eclipsen hakemistossa olevaa eclipse.ini -tiedostoa:
+
+    ...
+    -vm
+    OMA_JAVA_JDK_HAKEMISTO/jdk/bin/javaw.exe
+    -vmargs
+    ...
+
+
+Lisäksi: (?)
+
+Eclipsessä Project -> Properties -> Java Build Path -> JRE System Library -> Edit
+
+Aseta käyttöön JDK
+(pitää lisätä asennettujen joukkoon jos ei jo ole: Installed JREs -> Add)
+
+
+jar paikalliseen Maven-repositoryyn
+===================================
+
+Jos haluaa käyttää jotain omaa jarria jota ei ole kunnon maven-repositorystä saatavilla,
+niin se onnistuu näin. (Ainakin facebookauth on nykyisellään tällainen jarri.)
+
+http://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html
+
+Asentaaksesi jar-tiedoston paikalliseen maven-repositoryysi, suorita seuraavanlainen maven-komento:
+
+mvn install:install-file -Dfile=<path-to-file> -DgroupId=<group-id> \
+    -DartifactId=<artifact-id> -Dversion=<version> -Dpackaging=<packaging>
+
+Eclipsessä:
+
+Run as...
+Maven Build...
+
+Goals:
+install:install-file
+
+esim:
+Parameter Name |  Value
+----------------------------
+file           |  c:/plaa/plaa/facebookauth-0.0.1.jar
+groupId        |  org.vaadin
+artifactId     |  facebookauth
+version        |  0.0.1
+packaging      |  jar

@@ -135,12 +135,12 @@
 
 
 		<resources>
-			<resource>
-				<directory>${project.basedir}/config</directory>
-				<includes>
-					<include>cored.properties</include>
-				</includes>
-			</resource>
+<!-- 			<resource> -->
+<!-- 				<directory>${project.basedir}/config</directory> -->
+<!-- 				<includes> -->
+<!-- 					<include>cored.properties</include> -->
+<!-- 				</includes> -->
+<!-- 			</resource> -->
 		</resources>
 
 	</build>
@@ -245,8 +245,8 @@
 		<groupId>org.vaadin</groupId>
 		<artifactId>facebookauth</artifactId>
 		<version>0.0.1</version>
-		<scope>system</scope>
-		<systemPath>${project.basedir}/jars/facebookauth-0.0.1.jar</systemPath>
+<!-- 		<scope>system</scope> -->
+<!-- 		<systemPath>${project.basedir}/jars/facebookauth-0.0.1.jar</systemPath> -->
 	</dependency>
 	
 	<dependency>
@@ -258,13 +258,13 @@
 	<dependency>
 	   <groupId>org.vaadin</groupId>
 	   <artifactId>chatbox</artifactId>
-	   <version>0.0.2</version>
+	   <version>0.0.4</version>
 	</dependency>
 
 	<dependency>
 		<groupId>org.vaadin</groupId>
 		<artifactId>javaaceeditor</artifactId>
-		<version>0.2.6</version>
+		<version>0.2.7</version>
 	</dependency>
 
 	
@@ -290,24 +290,64 @@
 
 	</dependencies>
 	
-	<profiles> <!-- dev -->
+	<profiles>
+<!-- 		<profile> -->
+<!-- 			<id>localuser</id> -->
+<!-- 			<activation> -->
+<!-- 				<activeByDefault></activeByDefault> -->
+<!-- 			</activation> -->
+<!-- 			<build> -->
+<!-- 				<resources> -->
+<!-- 					<resource> -->
+<!-- 						<directory>${project.basedir}/config/${user.name}</directory> -->
+<!-- 						<includes> -->
+<!-- 							<include>cored.properties</include> -->
+<!-- 						</includes> -->
+<!-- 					</resource> -->
+<!-- 				</resources> -->
+<!-- 			</build> -->
+<!-- 		</profile> -->
 		<profile>
-			<id>default-tools.jar</id>
+			<id>virtuallypreinstalled</id>
+			<build>
+				<resources>
+					<resource>
+						<directory>${project.basedir}/config/virtuallypreinstalled</directory>
+						<includes>
+							<include>cored.properties</include>
+						</includes>
+					</resource>
+				</resources>
+			</build>
+		</profile>
+		<profile>
+			<id>niemin75</id>
+			<build>
+				<resources>
+					<resource>
+						<directory>${project.basedir}/config/niemin75</directory>
+						<includes>
+							<include>cored.properties</include>
+						</includes>
+					</resource>
+				</resources>
+			</build>
+		</profile>
+		<profile>
+			<id>default</id>
 			<activation>
-				<property>
-					<name>java.vendor</name>
-					<value>Sun Microsystems Inc.</value>
-				</property>
+				<activeByDefault>true</activeByDefault>
 			</activation>
-			<dependencies>
-				<dependency>
-					<groupId>com.sun</groupId>
-					<artifactId>tools</artifactId>
-					<version>1.4.2</version>
-					<scope>system</scope>
-					<systemPath>${java.home}/../lib/tools.jar</systemPath>
-				</dependency>
-			</dependencies>
+			<build>
+				<resources>
+					<resource>
+						<directory>${project.basedir}/config/</directory>
+						<includes>
+							<include>cored.properties</include>
+						</includes>
+					</resource>
+				</resources>
+			</build>
 		</profile>
 	</profiles>
 
