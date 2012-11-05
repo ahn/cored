@@ -9,7 +9,6 @@ import org.vaadin.aceeditor.gwt.shared.LockMarkerData;
 import org.vaadin.aceeditor.gwt.shared.Marker;
 import org.vaadin.chatbox.ChatBox;
 import org.vaadin.chatbox.SharedChat;
-import org.vaadin.chatbox.gwt.shared.ChatDiff;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
 
 import com.vaadin.terminal.Resource;
@@ -24,10 +23,10 @@ import com.vaadin.ui.themes.BaseTheme;
 @SuppressWarnings("serial")
 public class MarkerTab extends VerticalLayout {
 
-	private final static ThemeResource lockIcon = new ThemeResource(
-			"img/page_lock.gif");
-	private final static ThemeResource noteIcon = new ThemeResource(
-			"img/note.gif");
+	public final static ThemeResource LOCK_ICON = new ThemeResource(
+			"icons/lock.png");
+	public final static ThemeResource NOTE_ICON = new ThemeResource(
+			"icons/light-bulb.png");
 
 	public interface MarkerTabListener {
 		void removeMarker(final String markerId);
@@ -49,40 +48,42 @@ public class MarkerTab extends VerticalLayout {
 
 	private SharedChat chat;
 
-	public MarkerTab(String markerId, Marker marker, User user, Project project) {
+	public MarkerTab(String markerId, Marker marker, User user, Project project, String content) {
 		super();
 		this.markerId = markerId;
 		this.marker = marker;
 		this.user = user;
 		this.project = project;
-		initTab();
+		initTab(content);
 	}
 
-	private void initTab() {
+	private void initTab(String content) {
 		setSizeFull();
 		addComponent(buttonLayout);
 		buttonLayout.addComponent(createScrollToButton("_ScrollTo_"));
 		if (marker.getType() == Marker.Type.LOCK) {
-			initLockTab();
+			initLockTab(content);
 		} else if (marker.getType() == Marker.Type.NOTE) {
-			initNoteTab();
+			initNoteTab(content);
 		}
 		if (chatBox != null) {
 			setChatUser(chatBox, user);
 		}
 	}
 
-	public void initLockTab() {
+	private void initLockTab(String content) {
 		buttonLayout.addComponent(createRemoveButton("_Remove_"));
 		User locker = User.getUser(((LockMarkerData) marker.getData())
 				.getLockerId());
 		removeButton.setVisible(locker == user);
-		addChatBox(null);
+		ChatLine line = new ChatLine(locker.getName() + " locked part of the file around '"+content+"'");
+		addChatBox(line);
 	}
 
-	public void initNoteTab() {
+	private void initNoteTab(String content) {
 		buttonLayout.addComponent(createRemoveButton("_Remove_"));
-		addChatBox(null);
+		ChatLine line = new ChatLine("New note around '"+content+"'");
+		addChatBox(line);
 	}
 
 	private Button createRemoveButton(String text) {
@@ -207,10 +208,10 @@ public class MarkerTab extends VerticalLayout {
 
 	private static ThemeResource iconFor(Marker m) {
 		if (m.getType() == Marker.Type.NOTE) {
-			return noteIcon;
+			return NOTE_ICON;
 		}
 		if (m.getType() == Marker.Type.LOCK) {
-			return lockIcon;
+			return LOCK_ICON;
 		}
 		return null;
 	}

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 import java.util.Scanner;
 import java.util.TreeSet;
 
@@ -28,7 +29,9 @@ import com.vaadin.data.Validator;
 
 public abstract class Project {
 
-	static private final String propertyFileName="project.properties";
+	private static final Pattern VALID_PROJECT_NAME = Pattern.compile("[a-z][a-z0-9]*");
+	
+	private static final String PROPERTY_FILE_NAME="project.properties";
 	
 	public enum ProjectType {
 		vaadin, python, generic;
@@ -87,6 +90,11 @@ public abstract class Project {
 				return false;
 			}
 			else {
+				try {
+					p.writeToDisk();
+				} catch (IOException e) {
+					System.err.println("Could not write project '"+  p.getName() + "' to disk!");
+				}
 				allProjects.put(p.getName(), p);
 				return true;
 			}
@@ -141,7 +149,7 @@ public abstract class Project {
 	private static ProjectType getProjectType(File file) {
 		class CoredPropertiesFilter implements FilenameFilter {
 		    public boolean accept(File dir, String name) {
-		        return (name.equals(propertyFileName));
+		        return (name.equals(PROPERTY_FILE_NAME));
 		    }
 		}
 		if (file.isDirectory()){
@@ -166,7 +174,7 @@ public abstract class Project {
 		projectType = type;
 		Properties properties=new Properties();
 		properties.setProperty("PROJECT_TYPE", type.toString());
-		File tagFile=new File(projectDir,propertyFileName);
+		File tagFile=new File(projectDir,PROPERTY_FILE_NAME);
 		try {
 			if(!tagFile.exists()){
 					tagFile.createNewFile();
@@ -350,7 +358,7 @@ public abstract class Project {
 		System.out.println("readFromDisk");
 		TreeSet<File> files = getFilesIn(getProjectDir());
 		for (File f : files) {
-			if (!f.getName().equals(propertyFileName)){
+			if (!f.getName().equals(PROPERTY_FILE_NAME)){
 				System.out.println("Found "+f);
 				readFileFromDisk(f);				
 			}
@@ -476,5 +484,9 @@ public abstract class Project {
 		}else{
 			return null;
 		}
+	}
+	
+	public static boolean isValidProjectName(String s) {
+		return s!=null && VALID_PROJECT_NAME.matcher(s).matches();
 	}
 }

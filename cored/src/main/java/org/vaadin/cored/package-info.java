@@ -1,5 +1,5 @@
 /**
- * Cored.
+ * CoRED.
  * 
  * An experimental collaborative IDE.
  * 

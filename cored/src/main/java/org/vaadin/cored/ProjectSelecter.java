@@ -11,13 +11,14 @@ import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Label;
+import com.vaadin.ui.Panel;
 import com.vaadin.ui.themes.BaseTheme;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.VerticalLayout;
 
 @SuppressWarnings("serial")
-public class ProjectSelecter extends VerticalLayout implements
+public class ProjectSelecter extends Panel implements
 		ItemClickListener, ClickListener {
 
 	public interface Listener {
@@ -65,22 +66,20 @@ public class ProjectSelecter extends VerticalLayout implements
 	}
 
 	public ProjectSelecter(Collection<String> projectNames) {
-		super();
-
-		setWidth("300px");
+		super("Open Project");
+		
+		VerticalLayout layout = new VerticalLayout();
 
 		for (String name : projectNames) {
 			table.addItem(new Object[] { name, "" }, name);
 		}
 		HorizontalLayout hl = new HorizontalLayout();
 		hl.setWidth("100%");
-		Label title = new Label("Projects");
-		hl.addComponent(title);
 		hl.addComponent(refreshButton);
-		hl.setExpandRatio(title, 1);
-		addComponent(hl);
-		addComponent(table);
-		addComponent(button);
+		layout.addComponent(hl);
+		layout.addComponent(table);
+		layout.addComponent(button);
+		addComponent(layout);
 	}
 
 	public void setProjectUsers(String projectName, Collection<User> users) {

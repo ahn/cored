@@ -125,38 +125,13 @@ public class ProjectPanel extends Panel implements DocListener {
 		}
 		
 		tree.addItem(NEW_FILE_ITEM_ID);
-		tree.setItemIcon(NEW_FILE_ITEM_ID, plusIcon);
+		tree.setItemIcon(NEW_FILE_ITEM_ID, PLUS_ICON);
 		tree.setParent(NEW_FILE_ITEM_ID, project.getSourceDir());
 		tree.setChildrenAllowed(NEW_FILE_ITEM_ID, false);
 		
 	}
 	
-	private void refresh2() {
-		tree.removeAllItems();
-		List<ProjectFile> files = project.getProjectFiles();
-		TreeMap<List<File>, TreeSet<String>> filesByDir = new TreeMap<List<File>, TreeSet<String>>();
-		
-		List<List<File>> heheh = new LinkedList<List<File>>();
-		
-		for (ProjectFile f : files) {
-
-			
-			File xxx = new File(f.getDir(), f.getName());
-			LinkedList<File> fs = new LinkedList<File>();
-			while (xxx != null) {
-				fs.push(xxx);
-				xxx = xxx.getParentFile();
-			}
-			
-			heheh.add(fs);
-
-		}
-		
-		addNth(heheh, 0);
-
-	}
-	
-	private ThemeResource plusIcon = new ThemeResource("icons/plus16.png");
+	private static ThemeResource PLUS_ICON = new ThemeResource("icons/plus-white.png");
 	
 	private void addNth(Collection<List<File>> dirs, int n) {
 		boolean added = false;

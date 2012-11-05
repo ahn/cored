@@ -15,6 +15,7 @@ import org.vaadin.cored.Project.DocListener;
 
 import com.vaadin.terminal.ExternalResource;
 import com.vaadin.terminal.Resource;
+import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
@@ -77,6 +78,10 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 
 	private VaadinProject project;
 	private Button buildButton = new Button("Deploy");
+	private static ThemeResource DEPLOY_ICON = new ThemeResource("icons/paper-plane.png");
+	{
+		buildButton.setIcon(DEPLOY_ICON);
+	}
 
 	private Link appLink = new Link("App Deployed! Click here to open.", null);
 	private Label appInfo = new Label("(It may take a few seconds for the app to be available.)");

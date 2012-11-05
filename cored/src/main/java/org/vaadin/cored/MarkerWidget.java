@@ -20,6 +20,7 @@ import com.vaadin.ui.Component;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Panel;
+import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.VerticalLayout;
 
 @SuppressWarnings("serial")
@@ -35,7 +36,11 @@ public class MarkerWidget extends CustomComponent implements
 
 	private final Project project;
 
-	Accordion tabs = new Accordion();
+	TabSheet tabs = new TabSheet();
+	{
+		
+		
+	}
 	private User user;
 	private MarkerTab selectedTab;
 
@@ -62,13 +67,13 @@ public class MarkerWidget extends CustomComponent implements
 
 		layout.addComponent(createNewMarkerComponent());
 
-		tabs.setCaption("Notes & Locks:");
+		//tabs.setCaption("Notes & Locks:");
 		tabs.setSizeFull();
 		layout.addComponent(tabs);
 		layout.setExpandRatio(tabs, 1);
 
-		this.setWidth("200px");
-		this.setHeight("250px");
+		this.setWidth("100%");
+		this.setHeight("320px");
 
 		super.setCompositionRoot(layout);
 	}
@@ -147,14 +152,11 @@ public class MarkerWidget extends CustomComponent implements
 	}
 
 	protected Component newTab(final String mid, Marker m) {
-		MarkerTab tab = new MarkerTab(mid, m, user, project);
+		String title = shorten(m.substringOf(editor.getShadow().getText()), 30);
+		MarkerTab tab = new MarkerTab(mid, m, user, project, title);
 		tab.addListener(this);
 		tabsByMarkerId.put(mid, tab);
-		String title = tab.getTabTitle();
-		if (title == null) {
-			title = shorten(m.substringOf(editor.getShadow().getText()), 16);
-		}
-		tabs.addTab(tab, title, tab.getTabIcon());
+		tabs.addTab(tab, null, tab.getTabIcon());
 		
 		selectedTab = tab;
 		return tab;
@@ -168,9 +170,11 @@ public class MarkerWidget extends CustomComponent implements
 	}
 
 	private Component createNewMarkerComponent() {
-		Panel panel = new Panel("Selection");
-		panel.setContent(new HorizontalLayout());
+		//Panel panel = new Panel("Selection");
+		HorizontalLayout la = new HorizontalLayout();
+		//panel.setContent(la);
 		noteButton = new Button("Add Note");
+		noteButton.setIcon(MarkerTab.NOTE_ICON);
 		noteButton.setEnabled(false);
 		noteButton.addListener(new ClickListener() {
 //			@Override
@@ -178,8 +182,9 @@ public class MarkerWidget extends CustomComponent implements
 				editor.addMarkerToSelection(Marker.newNoteMarker(0, 0));
 			}
 		});
-		panel.addComponent(noteButton);
+		la.addComponent(noteButton);
 		lockButton = new Button("Lock");
+		lockButton.setIcon(MarkerTab.LOCK_ICON);
 		lockButton.setEnabled(false);
 		lockButton.addListener(new ClickListener() {
 //			@Override
@@ -189,8 +194,8 @@ public class MarkerWidget extends CustomComponent implements
 						user.getUserId(), "Locked for " + user.getName()));
 			}
 		});
-		panel.addComponent(lockButton);
-		return panel;
+		la.addComponent(lockButton);
+		return la;
 	}
 
 //	@Override

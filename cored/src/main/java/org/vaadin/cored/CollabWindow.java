@@ -5,16 +5,16 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import org.vaadin.aceeditor.collab.User;
+import org.vaadin.cored.CreateProjectPanel.ProjectCreatedListener;
 import org.vaadin.cored.LoginPanel.LoggedInCollaboratorListener;
 import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.facebookauth.FacebookAuth;
 
+import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
-import com.vaadin.ui.CheckBox;
-import com.vaadin.ui.Component;
-import com.vaadin.ui.TextField;
+import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.UriFragmentUtility;
 import com.vaadin.ui.UriFragmentUtility.FragmentChangedEvent;
 import com.vaadin.ui.UriFragmentUtility.FragmentChangedListener;
@@ -33,12 +33,13 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 	private VerticalLayout mainLayout = new VerticalLayout();
 
 	private ProjectSelecter projectSelecter;
+	private CreateProjectPanel cpPanel;
 
 	private LoginPanel loginPanel;
 	
 	private CoredInfoComponent info = new CoredInfoComponent();
 
-	private final DeployType delpoyType= DeployType.war;
+	private final DeployType deployType= DeployType.war;
 
 	public CollabWindow(String facebookAppId) {
 		super();
@@ -51,7 +52,7 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 		else {
 			fbAuth = null;
 		}
-		loginPanel = new LoginPanel("Welcome to Cored", fbAuth);
+		loginPanel = new LoginPanel("Welcome to CoRED", fbAuth);
 		mainLayout.setSizeFull();
 		windowContent.setSizeFull();
 		
@@ -98,7 +99,8 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 		clear();
 		mainLayout.addComponent(info);
 
-		Button logout = new Button("Log Out");
+		
+		Button logout = new Button("Log Out "+CoredApplication.getInstance().getCoredUser().getName());
 		logout.setStyleName(BaseTheme.BUTTON_LINK);
 		logout.addListener(new ClickListener() {
 //			@Override
@@ -120,79 +122,33 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 			}
 		}
 		projectSelecter = new ProjectSelecter(projectNames);
+		projectSelecter.setWidth("80%");
 		projectSelecter.addListener((ProjectSelecter.Listener) this);
 		for (Entry<String, Collection<User>> e : projectColls.entrySet()) {
 			projectSelecter.setProjectUsers(e.getKey(), e.getValue());
 		}
-		mainLayout.addComponent(projectSelecter);
-
-		VerticalLayout la = new VerticalLayout();
-		final TextField tf = new TextField("Project name:");
-		final CheckBox skBox = new CheckBox("Create Application Skeleton");
-		skBox.setValue(true);
-		la.addComponent(tf);
-		la.addComponent(skBox);
-		la.addComponent(createNewVaadinProjectButton(tf,skBox));
-		la.addComponent(createNewPythonProjectButton(tf,skBox));
-		la.addComponent(createNewGenericProjectButton(tf,skBox));
 		
-		mainLayout.addComponent(la);
-		mainLayout.setExpandRatio(la, 1);
-	}
-
-	private Component createNewVaadinProjectButton(final TextField tf, final CheckBox skBox) {
-		Button b = new Button("Create New Vaadin Project");
-
-		b.addListener(new ClickListener() {
-//			@Override
-			public void buttonClick(ClickEvent event) {
-				String name = ((String)tf.getValue()).toLowerCase();
-				if (isValidProjectName(name)) {
-					VaadinProject.createProjectIfNotExist(name, skBox.booleanValue());
-					urifu.setFragment(name);
-				} else {
-					getWindow().showNotification("Not a valid project name.");
-				}
+		HorizontalLayout hl = new HorizontalLayout();
+		hl.addComponent(projectSelecter);
+		hl.setComponentAlignment(projectSelecter, Alignment.TOP_CENTER);
+		
+		cpPanel = new CreateProjectPanel();
+		cpPanel.setWidth("80%");
+		hl.addComponent(cpPanel);
+		hl.setComponentAlignment(cpPanel, Alignment.TOP_CENTER);
+		
+		cpPanel.addListener(new ProjectCreatedListener() {
+			public void projectCreated(Project p) {
+				urifu.setFragment(p.getName());
 			}
 		});
-		return b;
+		
+		hl.setWidth("100%");
+		
+		mainLayout.addComponent(hl);
+		mainLayout.setExpandRatio(hl, 1);
 	}
-
-	private Component createNewPythonProjectButton(final TextField tf, final CheckBox skBox) {
-		Button b = new Button("Create New Python Project");
-
-		b.addListener(new ClickListener() {
-//			@Override
-			public void buttonClick(ClickEvent event) {
-				String name = ((String)tf.getValue()).toLowerCase();
-				if (isValidProjectName(name)) {
-					PythonProject.createProjectIfNotExist(name, skBox.booleanValue());
-					urifu.setFragment(name);
-				} else {
-					getWindow().showNotification("Not a valid project name.");
-				}
-			}
-		});
-		return b;
-	}
-
-	private Component createNewGenericProjectButton(final TextField tf, final CheckBox skBox) {
-		Button b = new Button("Create New Generic Project");
-
-		b.addListener(new ClickListener() {
-//			@Override
-			public void buttonClick(ClickEvent event) {
-				String name = ((String)tf.getValue()).toLowerCase();
-				if (isValidProjectName(name)) {
-					GenericProject.createProjectIfNotExist(name, skBox.booleanValue());
-					urifu.setFragment(name);
-				} else {
-					getWindow().showNotification("Not a valid project name.");
-				}
-			}
-		});
-		return b;
-	}
+	
 
 	
 	private void openProject(String projectName) {
@@ -207,7 +163,7 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 	private void openProject(Project project) {
 		clear();
 		
-		BuildComponent bc = project.getBuildComponent(delpoyType);
+		BuildComponent bc = project.getBuildComponent(deployType);
 
 		IDE ide = new IDE(CoredApplication.getInstance().getCoredUser(),
 				project, bc);
@@ -243,11 +199,7 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 		if (frag == null) {
 			return null;
 		}
-		return frag.toLowerCase().replaceAll("[^a-z]", "");
-	}
-
-	private static boolean isValidProjectName(String s) {
-		return s != null && !s.isEmpty() && sanitizeFragment(s).equals(s);
+		return frag.toLowerCase().replaceAll("[^a-z0-9]", "");
 	}
 
 //	@Override

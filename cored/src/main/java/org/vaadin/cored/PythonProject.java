@@ -15,8 +15,6 @@ public class PythonProject extends Project {
 	
 	private final static File srcDir = new File("src");
 	
-	private final String packageName;
-	
 	private final File srcPackageDir;
 
 	public static class PythonUtils {
@@ -53,8 +51,7 @@ public class PythonProject extends Project {
 	
 	protected PythonProject(String name, boolean createSkeleton) {
 		super(name,ProjectType.python);
-		packageName = "fi.tut.cs.cored."+getName();
-		srcPackageDir = new File(srcDir, ProjectFile.pathFromPackage(packageName));
+		srcPackageDir = new File(srcDir, ProjectFile.pathFromPackage(getPackageName()));
 				
 		if (createSkeleton) {
 			initApp();
@@ -63,7 +60,7 @@ public class PythonProject extends Project {
 	
 	
 	public String getPackageName() {
-		return packageName;
+		return getName();
 	}
 	
 	public File getSourceDir() {

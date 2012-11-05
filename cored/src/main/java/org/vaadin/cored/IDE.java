@@ -185,20 +185,6 @@ public class IDE extends VerticalLayout implements TeamListener {
 		if (buildComponent!=null) {
 			leftBar.addComponent(buildComponent);
 		}
-		
-		Button b = new Button("Tallenna");
-		b.addListener(new ClickListener() {
-			
-			public void buttonClick(ClickEvent event) {
-				try {
-					project.writeToDisk();
-				} catch (IOException e) {
-					getWindow().showNotification("Virhe!!!");
-					e.printStackTrace();
-				}
-			}
-		});
-		leftBar.addComponent(b);
 
 		return leftBar;
 	}
