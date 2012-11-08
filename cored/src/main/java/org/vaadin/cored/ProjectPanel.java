@@ -2,7 +2,6 @@ package org.vaadin.cored;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
@@ -12,50 +11,101 @@ import org.vaadin.cored.Project.DocListener;
 import com.vaadin.data.Property;
 import com.vaadin.data.Property.ValueChangeEvent;
 import com.vaadin.event.ItemClickEvent;
-import com.vaadin.terminal.ThemeResource;
-import com.vaadin.ui.Component;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.Button.ClickEvent;
+import com.vaadin.ui.Button.ClickListener;
+import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Label;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.Tree;
 import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.Window;
 
 @SuppressWarnings("serial")
 public class ProjectPanel extends Panel implements DocListener {
-
-	private static final String NEW_FILE_ITEM_ID = "Add New...";
 	
-	private static final ThemeResource ICON = new ThemeResource("icons/folder-open-document-text.png");
-
+	
 	private final Project project;
 
 	private VerticalLayout layout = new VerticalLayout();
-
-//	private Accordion acc = new Accordion();
+	private final Button addButton = new Button("Add New");
+	private final Button deleteButton = new Button("Delete");
 	
 	private Tree tree = new Tree();
-
-	private boolean ignoreSelectedEvents;
-
-	private HashMap<String, Component> tabsByFile = new HashMap<String, Component>();
 
 	private Object selectedItemId;
 
 	public ProjectPanel(Project project) {
 		super("Files");
 		this.project = project;
-//		if (project instanceof VaadinProject) {
-//			this.project = (VaadinProject) project;
-//		}else if(project instanceof PythonProject){
-//			this.project = (PythonProject) project;
-//		}else if(project instanceof GenericProject){
-//			this.project = (GenericProject) project;
-//		}else {
-//			throw new UnsupportedOperationException("ProjectPanel only supports VaadinProjects for now.");
-//		}
 		
-		setIcon(ICON);
+		getContent().setSizeFull();
+		
+		setIcon(Icons.FOLDER_OPEN_DOCUMENT_TEXT);
 		
 		layout.addComponent(tree);
-		setContent(layout);
+		tree.setSizeFull();
+		layout.setExpandRatio(tree, 1);
+		
+		layout.setSizeFull();
+		addComponent(layout);
+		
+		HorizontalLayout hl = new HorizontalLayout();
+		
+		addButton.setIcon(Icons.DOCUMENT_PLUS);
+		addButton.addListener(new ClickListener() {
+			public void buttonClick(ClickEvent event) {
+				NewFileWindow win = new NewFileWindow(ProjectPanel.this.project);
+				win.setWidth("400px");
+				win.setHeight("300px");
+				getWindow().addWindow(win);
+			}
+		});
+		hl.addComponent(addButton);
+		
+		deleteButton.setIcon(Icons.CROSS_SCRIPT);
+		deleteButton.setEnabled(false);
+		deleteButton.addListener(new ClickListener() {
+			public void buttonClick(ClickEvent event) {
+				if (canBeDeleted(selectedItemId)) {
+					confirmDelete((ProjectFile)selectedItemId);
+				}
+			}
+		});
+		hl.addComponent(deleteButton);
+		
+		layout.addComponent(hl);
+	}
+
+	protected void confirmDelete(final ProjectFile pf) {
+		final Window w = new Window("Delete "+pf.getName()+"?");
+		final Window main = getWindow();
+		w.setIcon(Icons.CROSS_SCRIPT);
+		w.setModal(true);
+		w.setResizable(false);
+		w.addComponent(new Label("Delete "+pf.getName()+"?"));
+		Button delete = new Button("Delete");
+		delete.setIcon(Icons.CROSS_SCRIPT);
+		delete.addListener(new ClickListener() {
+			public void buttonClick(ClickEvent event) {
+				project.removeFile(pf);
+				main.removeWindow(w);
+			}
+		});
+		
+		Button cancel = new Button("Cancel");
+		cancel.addListener(new ClickListener() {
+			public void buttonClick(ClickEvent event) {
+				main.removeWindow(w);
+			}
+		});
+		
+		HorizontalLayout ho = new HorizontalLayout();
+		ho.addComponent(delete);
+		ho.addComponent(cancel);
+		w.addComponent(ho);
+		
+		main.addWindow(w);
 	}
 
 	@Override
@@ -67,6 +117,7 @@ public class ProjectPanel extends Panel implements DocListener {
 			
 			public void valueChange(ValueChangeEvent event) {
 				selectedItemId = event.getProperty().getValue();
+				deleteButton.setEnabled(canBeDeleted(selectedItemId));
 			}
 		});
 		
@@ -76,13 +127,6 @@ public class ProjectPanel extends Panel implements DocListener {
 					tree.select(selectedItemId);
 					fireFileSelected((ProjectFile) selectedItemId);
 				}
-				else if (event.isDoubleClick() && NEW_FILE_ITEM_ID.equals(selectedItemId)) {
-					NewFileWindow win = new NewFileWindow(project);
-					win.setWidth("400px");
-					win.setHeight("400px");
-					getWindow().addWindow(win);
-				}
-				
 			}
 		});
 
@@ -95,21 +139,17 @@ public class ProjectPanel extends Panel implements DocListener {
 		project.removeListener(this);
 	}
 
-//	public String getSelectedFile() {
-//		Component sel = acc.getSelectedTab();
-//		return sel == null ? null : acc.getTab(sel).getCaption();
-//	}
-//
-//	public void setSelectedFile(String name) {
-//		Component tab = tabsByFile.get(name);
-//		if (tab != null) {
-//			acc.setSelectedTab(tab);
-//		}
-//	}
-
 //	@Override
 	public void docCreated(ProjectFile file, long collaboratorId) {
 		refresh();
+	}
+	
+	private boolean canBeDeleted(Object obj) {
+		if (obj instanceof ProjectFile) {
+			ProjectFile pf = (ProjectFile)obj;
+			return project.canBeDeleted(pf);
+		}
+		return false;
 	}
 	
 	private void refresh() {
@@ -120,9 +160,7 @@ public class ProjectPanel extends Panel implements DocListener {
 		tree.addItem(project.getSourceDir());
 		tree.setItemCaption(project.getSourceDir(), project.getProgrammingLanguage() + " Source Files");
 		
-		System.out.println("Source files:");
 		for (ProjectFile pf : srcFiles) {
-			System.out.println("Source file: "+ pf.getName());
 			tree.addItem(pf);
 			tree.setItemCaption(pf, pf.getName());
 			tree.setChildrenAllowed(pf, false);
@@ -130,42 +168,14 @@ public class ProjectPanel extends Panel implements DocListener {
 			tree.setParent(pf, project.getSourceDir());
 		}
 		
-		tree.addItem(NEW_FILE_ITEM_ID);
-		tree.setItemIcon(NEW_FILE_ITEM_ID, PLUS_ICON);
-		tree.setParent(NEW_FILE_ITEM_ID, project.getSourceDir());
-		tree.setChildrenAllowed(NEW_FILE_ITEM_ID, false);
-		
 	}
 	
-	private static ThemeResource PLUS_ICON = new ThemeResource("icons/plus-white.png");
 	
-	private void addNth(Collection<List<File>> dirs, int n) {
-		boolean added = false;
-		for (List<File> dir : dirs) {
-			if (dir.size()>n) {
-				File dn = dir.get(n);
-				tree.addItem(dn);
-				tree.setItemCaption(dn, dn.getName());
-				
-				if (n > 0) {
-					tree.setParent(dn, dir.get(n-1));
-				}
-				if (n==dir.size()-1) {
-					tree.setChildrenAllowed(dn, false);
-//					tree.setItemIcon(dn, res);
-				}
-				added = true;
-			}
-		}
-		if (added) {
-			addNth(dirs, n+1);
-		}
-	}
-
+	
 
 //	@Override
 	public void docRemoved(ProjectFile file, long collaboratorId) {
-//		refresh();
+		refresh();
 	}
 
 	public interface FileSelectListener {

@@ -517,4 +517,8 @@ public abstract class Project {
 		}
 	}
 	
+	protected boolean canBeDeleted(ProjectFile file) {
+		return true;
+	}
+	
 }

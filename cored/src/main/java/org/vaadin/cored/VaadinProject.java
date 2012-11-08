@@ -190,5 +190,8 @@ public class VaadinProject extends Project {
 		}
 	}
 	
+	protected boolean canBeDeleted(ProjectFile file) {
+		return !getApplicationFile().equals(file);
+	}
 	
 }
