@@ -4,10 +4,13 @@ import java.io.File;
 import java.io.IOException;
 
 import com.vaadin.terminal.FileResource;
+import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.MenuBar;
 
 @SuppressWarnings("serial")
 public class CoredMenuBar extends MenuBar {
+	
+	public static final ThemeResource ICON = new ThemeResource("icons/box-zipper.png");
 
 	private MenuItem projectItem;
 	
@@ -28,11 +31,14 @@ public class CoredMenuBar extends MenuBar {
 		
 		if (project!=null){
 			projectItem = addItem("Project", null);
-			projectItem.addItem("Download as zip", new DownloadCommand());
-			projectItem.addItem("Close project", new CloseCommand());
+			projectItem.setIcon(Icons.BOX);
+			projectItem.addItem("Download as zip", new DownloadCommand()).setIcon(Icons.BOX_ZIPPER);
+			projectItem.addItem("Project stats", new StatsCommand()).setIcon(Icons.APPLICATION_WAVE);
+			projectItem.addItem("Leave project", new CloseCommand());
 		}
 		
 		userItem = addItem("User", null);
+		userItem.setIcon(Icons.USER_SILHOUETTE);
 		userItem.addItem("Log out", new LogoutCommand());
 		
 	}
@@ -63,6 +69,13 @@ public class CoredMenuBar extends MenuBar {
 		public void menuSelected(MenuItem selectedItem) {
 			CoredApplication.getInstance().setCoredUser(null);
 			ide.leaveIDE();
+		}
+	}
+	
+	private class StatsCommand implements Command {
+		public void menuSelected(MenuItem selectedItem) {
+			StatsWindow win = new StatsWindow();
+			getWindow().addWindow(win);
 		}
 	}
 }

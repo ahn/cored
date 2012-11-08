@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.Properties;
 
+import org.vaadin.cored.Icons;
 import org.vaadin.cored.MyFileUtils;
 import org.vaadin.cored.Project;
 import org.vaadin.cored.PropertiesUtil;
@@ -39,8 +40,6 @@ public class UploadProjectPanel extends Panel implements Upload.Receiver,
 		listeners.add(li);
 	}
 	
-	private static final ThemeResource ICON = new ThemeResource("icons/box-label.png");
-	
 	private Upload upload = new Upload("Upload project zip file", this);
 	
 	private File file;
@@ -51,7 +50,7 @@ public class UploadProjectPanel extends Panel implements Upload.Receiver,
 		upload.addListener((Upload.SucceededListener) this);
 		upload.addListener((Upload.FailedListener) this);
 		
-		setIcon(ICON);
+		setIcon(Icons.BOX_LABEL);
 		
 		addComponent(upload);
 	}

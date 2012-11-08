@@ -2,7 +2,6 @@ package org.vaadin.cored.lobby;
 
 import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.regex.Pattern;
 
 import org.vaadin.cored.GenericProject;
 import org.vaadin.cored.Project;

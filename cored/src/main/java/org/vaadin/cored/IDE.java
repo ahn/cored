@@ -15,17 +15,12 @@ import org.vaadin.diffsync.Shared;
 import com.github.wolfie.refresher.Refresher;
 import com.vaadin.terminal.ExternalResource;
 import com.vaadin.ui.Alignment;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.Button.ClickEvent;
-import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.HorizontalSplitPanel;
 import com.vaadin.ui.Label;
-import com.vaadin.ui.Panel;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
-import com.vaadin.ui.themes.BaseTheme;
 
 @SuppressWarnings("serial")
 public class IDE extends VerticalLayout implements TeamListener {
@@ -52,8 +47,6 @@ public class IDE extends VerticalLayout implements TeamListener {
 
 	private ProjectPanel projectPanel;
 
-	private AddFilePanel addFilePanel;
-
 	private TeamPanel teamPanel;
 
 	public IDE(User user, Project project, BuildComponent buildComponent) {
@@ -74,8 +67,6 @@ public class IDE extends VerticalLayout implements TeamListener {
 		
 		addComponent(menuBar);
 		
-		System.out.println("hehe aaaaaaa h1115ffo");
-		
 		addComponent(layout);
 		setExpandRatio(layout, 1);
 
@@ -86,8 +77,8 @@ public class IDE extends VerticalLayout implements TeamListener {
 		mw.setUser(user);
 		mw.setWidth("90%");
 		mw.setHeight("90%");
-
 		rightBar.addComponent(mw);
+		rightBar.setComponentAlignment(mw, Alignment.TOP_CENTER);
 
 		chat = new ChatBox(sharedChat);
 		chat.setUser(user.getUserId(), user.getName(), user.getStyle());
@@ -97,7 +88,8 @@ public class IDE extends VerticalLayout implements TeamListener {
 		chat.setWidth("90%");
 		chat.setHeight("90%");
 		rightBar.addComponent(chat);
-
+		rightBar.setComponentAlignment(chat, Alignment.TOP_CENTER);
+		
 		HorizontalSplitPanel hsp = new HorizontalSplitPanel();
 		hsp.addComponent(createLeftBar());
 		hsp.addComponent(editorLayout);
@@ -109,8 +101,6 @@ public class IDE extends VerticalLayout implements TeamListener {
 		
 		refresher.setRefreshInterval(1000);
 		addComponent(refresher);
-
-//		editFile(projectPanel.getSelectedFile());
 	}
 	
 	public Project getProject() {
@@ -173,7 +163,7 @@ public class IDE extends VerticalLayout implements TeamListener {
 		editor = EditorUtil.createEditorFor(doc, file);
 		editor.setSizeFull();
 		setEditorUser(user);
-		editor.setPollInterval(0); // XXX
+		editor.setPollInterval(0);
 		mw.listenToEditor(editor);
 		editorLayout.removeAllComponents();
 		editorLayout.addComponent(editor);
@@ -202,35 +192,6 @@ public class IDE extends VerticalLayout implements TeamListener {
 		return leftBar;
 	}
 
-	private Component createLogoutPanel() {
-		Panel p = new Panel("Logged in as " + user.getName());
-		VerticalLayout la = new VerticalLayout();
-
-		Button logout = new Button("Log Out");
-		logout.setStyleName(BaseTheme.BUTTON_LINK);
-		logout.addListener(new ClickListener() {
-//			@Override
-			public void buttonClick(ClickEvent event) {
-				CoredApplication.getInstance().setCoredUser(null);
-				leaveIDE();
-			}
-		});
-		la.addComponent(logout);
-
-		Button leave = new Button("Project Menu");
-		leave.setStyleName(BaseTheme.BUTTON_LINK);
-		leave.addListener(new ClickListener() {
-//			@Override
-			public void buttonClick(ClickEvent event) {
-				leaveIDE();
-			}
-		});
-		la.addComponent(leave);
-
-		p.setContent(la);
-		return p;
-	}
-
 	private Component createTeamPanel() {
 		teamPanel = new TeamPanel(project.getTeam());
 		teamPanel.setWidth("90%");
@@ -243,11 +204,6 @@ public class IDE extends VerticalLayout implements TeamListener {
 		projectPanel.setWidth("90%");
 		projectPanel.setHeight("90%");
 		return projectPanel;
-	}
-
-	private Component createAddFilePanel() {
-		addFilePanel = new AddFilePanel(project);
-		return addFilePanel;
 	}
 
 //	@Override

@@ -3,3 +3,17 @@
 .v-panel-caption .v-icon {
 	margin-right: 6px;
 }
+
+.v-userwidget {
+	margin: 2px;
+	border: 1px solid gray;
+}
+
+.v-userwidget .name-label {
+	font-weight: bold;
+}
+
+.v-userwidget .user-image {
+    margin: 2px;
+    border: 1px solid gray;
+}
