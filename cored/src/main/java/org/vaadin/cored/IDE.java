@@ -14,6 +14,7 @@ import org.vaadin.diffsync.Shared;
 
 import com.github.wolfie.refresher.Refresher;
 import com.vaadin.terminal.ExternalResource;
+import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
@@ -23,6 +24,7 @@ import com.vaadin.ui.HorizontalSplitPanel;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.Window;
 import com.vaadin.ui.themes.BaseTheme;
 
 @SuppressWarnings("serial")
@@ -77,10 +79,13 @@ public class IDE extends VerticalLayout implements TeamListener {
 		addComponent(layout);
 		setExpandRatio(layout, 1);
 
-		rightBar.setWidth("200px");
+		rightBar.setWidth("240px");
+		rightBar.setHeight("100%");
 
 		mw = new MarkerWidget(project);
 		mw.setUser(user);
+		mw.setWidth("90%");
+		mw.setHeight("90%");
 
 		rightBar.addComponent(mw);
 
@@ -88,7 +93,9 @@ public class IDE extends VerticalLayout implements TeamListener {
 		chat.setUser(user.getUserId(), user.getName(), user.getStyle());
 		chat.setShowMyNick(false);
 		chat.setCaption("Project-wide Chat:");
-		chat.setPollInterval(0); // XXX?
+		chat.setPollInterval(0);
+		chat.setWidth("90%");
+		chat.setHeight("90%");
 		rightBar.addComponent(chat);
 
 		HorizontalSplitPanel hsp = new HorizontalSplitPanel();
@@ -175,14 +182,21 @@ public class IDE extends VerticalLayout implements TeamListener {
 	private Component createLeftBar() {
 		VerticalLayout leftBar = new VerticalLayout();
 
-		leftBar.setWidth("100%");
+		leftBar.setSizeFull();
 
-//		leftBar.addComponent(createLogoutPanel());
-		leftBar.addComponent(createTeamPanel());
-		leftBar.addComponent(createProjectPanel());
-//		leftBar.addComponent(createAddFilePanel());
+		Component tp = createTeamPanel();
+		leftBar.addComponent(tp);
+		leftBar.setComponentAlignment(tp, Alignment.MIDDLE_CENTER);
+		
+		Component pp = createProjectPanel();
+		leftBar.addComponent(pp);
+		leftBar.setComponentAlignment(pp, Alignment.MIDDLE_CENTER);
+		
 		if (buildComponent!=null) {
+			buildComponent.setWidth("90%");
+			buildComponent.setHeight("90%");
 			leftBar.addComponent(buildComponent);
+			leftBar.setComponentAlignment(buildComponent, Alignment.MIDDLE_CENTER);
 		}
 
 		return leftBar;
@@ -219,11 +233,15 @@ public class IDE extends VerticalLayout implements TeamListener {
 
 	private Component createTeamPanel() {
 		teamPanel = new TeamPanel(project.getTeam());
+		teamPanel.setWidth("90%");
+		teamPanel.setHeight("90%");
 		return teamPanel;
 	}
 
 	private Component createProjectPanel() {
 		projectPanel = new ProjectPanel(project);
+		projectPanel.setWidth("90%");
+		projectPanel.setHeight("90%");
 		return projectPanel;
 	}
 
@@ -248,7 +266,11 @@ public class IDE extends VerticalLayout implements TeamListener {
 		if (user!=null) {
 			project.getTeam().kickUser(user);
 		}
-		getWindow().open(new ExternalResource(CoredApplication.getInstance().getURL()));
+		Window win = getWindow();
+		CoredApplication app = CoredApplication.getInstance();
+		if (win!=null && app!=null) {
+			win.open(new ExternalResource(app.getURL()));
+		}
 	}
 
 }

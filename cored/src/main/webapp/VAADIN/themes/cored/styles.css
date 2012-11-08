@@ -1,1 +1,5 @@
 @import url(../runo/styles.css);
+
+.v-panel-caption .v-icon {
+	margin-right: 6px;
+}

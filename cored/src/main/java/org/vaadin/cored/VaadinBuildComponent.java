@@ -33,6 +33,8 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 		osgi, war
 	};
 	
+	private static ThemeResource DEPLOY_ICON = new ThemeResource("icons/paper-plane.png");
+	
 	private static final Pattern rePackage = Pattern
 			.compile("package\\s+([^;]+);");
 	
@@ -78,7 +80,6 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 
 	private VaadinProject project;
 	private Button buildButton = new Button("Deploy");
-	private static ThemeResource DEPLOY_ICON = new ThemeResource("icons/paper-plane.png");
 	{
 		buildButton.setIcon(DEPLOY_ICON);
 	}
@@ -96,9 +97,10 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 
 	public VaadinBuildComponent(VaadinProject project, DeployType deployType) {
 		super("Deploy App");
+		setIcon(DEPLOY_ICON);
 		this.project = project;
 		this.deployType = deployType;
-		setContent(layout);
+		addComponent(layout);
 		draw();
 	}
 

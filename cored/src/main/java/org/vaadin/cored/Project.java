@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.vaadin.aceeditor.collab.DocDiff;
+import org.vaadin.aceeditor.collab.User;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.chatbox.gwt.shared.Chat;
@@ -506,6 +507,14 @@ public abstract class Project {
 	
 	public static boolean isValidProjectName(String s) {
 		return s!=null && VALID_PROJECT_NAME.matcher(s).matches();
+	}
+	
+	public static void kickFromAllProjects(User user) {
+		synchronized(allProjects) {
+			for (Project p : allProjects.values()) {
+				p.getTeam().kickUser(user);
+			}
+		}
 	}
 	
 }

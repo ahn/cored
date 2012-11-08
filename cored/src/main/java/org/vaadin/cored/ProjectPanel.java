@@ -22,6 +22,8 @@ import com.vaadin.ui.VerticalLayout;
 public class ProjectPanel extends Panel implements DocListener {
 
 	private static final String NEW_FILE_ITEM_ID = "Add New...";
+	
+	private static final ThemeResource ICON = new ThemeResource("icons/folder-open-document-text.png");
 
 	private final Project project;
 
@@ -38,16 +40,19 @@ public class ProjectPanel extends Panel implements DocListener {
 	private Object selectedItemId;
 
 	public ProjectPanel(Project project) {
-		super("Project "+project.getName());
-		if (project instanceof VaadinProject) {
-			this.project = (VaadinProject) project;
-		}else if(project instanceof PythonProject){
-			this.project = (PythonProject) project;
-		}else if(project instanceof GenericProject){
-			this.project = (GenericProject) project;
-		}else {
-			throw new UnsupportedOperationException("ProjectPanel only supports VaadinProjects for now.");
-		}
+		super("Files");
+		this.project = project;
+//		if (project instanceof VaadinProject) {
+//			this.project = (VaadinProject) project;
+//		}else if(project instanceof PythonProject){
+//			this.project = (PythonProject) project;
+//		}else if(project instanceof GenericProject){
+//			this.project = (GenericProject) project;
+//		}else {
+//			throw new UnsupportedOperationException("ProjectPanel only supports VaadinProjects for now.");
+//		}
+		
+		setIcon(ICON);
 		
 		layout.addComponent(tree);
 		setContent(layout);

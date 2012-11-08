@@ -5,6 +5,7 @@ import java.util.Collection;
 import org.vaadin.aceeditor.collab.User;
 import org.vaadin.cored.Team.TeamListener;
 
+import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Panel;
@@ -12,10 +13,13 @@ import com.vaadin.ui.Panel;
 @SuppressWarnings("serial")
 public class TeamPanel extends Panel implements TeamListener {
 
+	private static final ThemeResource ICON = new ThemeResource("icons/users.png");
+	
 	private final Team team;
 
 	public TeamPanel(Team team) {
 		super("Collaborators");
+		setIcon(ICON);
 		this.team = team;
 		draw();
 	}

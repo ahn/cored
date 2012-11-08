@@ -77,4 +77,13 @@ public class CoredApplication extends Application implements
 	public static void setFacebookAppId(String facebookAppId) {
 		CoredApplication.facebookAppId = facebookAppId;
 	}
+	
+	@Override
+	public void close() {
+		if (user!=null) {
+			System.err.println("Kicking "+user.getName()+" from all projects.");
+			Project.kickFromAllProjects(user);
+		}
+		super.close();
+	}
 }
