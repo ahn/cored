@@ -2,7 +2,6 @@ package org.vaadin.cored;
 
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -10,12 +9,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Map.Entry;
-import java.util.regex.Pattern;
-import java.util.Scanner;
+import java.util.Properties;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.chatbox.SharedChat;
@@ -25,6 +24,7 @@ import org.vaadin.chatbox.gwt.shared.ChatLine;
 import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.diffsync.Shared;
 
+import com.restfb.types.Application;
 import com.vaadin.data.Validator;
 
 public abstract class Project {
@@ -41,6 +41,10 @@ public abstract class Project {
 		public void docCreated(ProjectFile file, long collaboratorId);
 		public void docRemoved(ProjectFile file, long collaboratorId);
 	}
+	
+	public interface ProjectListener {
+		public void projectReset();
+	}
 
 	public abstract File getSourceDir();
 	public abstract ProjectFile getFileOfClass(String className);
@@ -52,7 +56,8 @@ public abstract class Project {
 	public abstract String[] getExtendsClasses();
 	public abstract String generateContent(String name, String base);
 	
-	private LinkedList<DocListener> listeners = new LinkedList<DocListener>();
+	private LinkedList<DocListener> docListeners = new LinkedList<DocListener>();
+	private LinkedList<ProjectListener> projectListeners = new LinkedList<ProjectListener>();
 
 	private final String projName;
 
@@ -72,15 +77,14 @@ public abstract class Project {
 	
 	private static HashMap<String, Project> allProjects = new HashMap<String, Project>();
 	
-//	private HierarchicalContainer container;
-
 	protected Project(String name,ProjectType type) {
 		name = name.toLowerCase();
 		this.projName = name;
+		this.projectType = type;
 		this.projectChat = new SharedChat();
 		getProjectDir();
 		readFromDisk();
-		setProjectProperties(type);
+		writePropertiesFile();
 	}
 	
 	protected static boolean addProjectIfNotExist(Project p) {
@@ -130,15 +134,19 @@ public abstract class Project {
 		for (File f : projectsRootDir.listFiles()) {
 			String name = f.getName();
 			ProjectType type = getProjectType(f);
-			if (ProjectType.python.equals(type)) {
-				PythonProject.createProjectIfNotExist(name);}
-			else if (ProjectType.vaadin.equals(type)){
-				VaadinProject.createProjectIfNotExist(name);
-			}else if (ProjectType.generic.equals(type)){
-				GenericProject.createProjectIfNotExist(name);
-			}
-
+			createProjectIfNotExist(name, type, false);
 		}
+	}
+	
+	public static Project createProjectIfNotExist(String name, ProjectType type, boolean createSkeleton) {
+		if (ProjectType.python.equals(type)) {
+			return PythonProject.createProjectIfNotExist(name, createSkeleton);}
+		else if (ProjectType.vaadin.equals(type)){
+			return VaadinProject.createProjectIfNotExist(name, createSkeleton);
+		}else if (ProjectType.generic.equals(type)){
+			return GenericProject.createProjectIfNotExist(name, createSkeleton);
+		}
+		return null;
 	}
 
 	
@@ -157,9 +165,7 @@ public abstract class Project {
 			File[] fs = file.listFiles(filter);
 			try {
 				if (fs.length==1){
-					FileInputStream stream = new FileInputStream(fs[0]);
-					Properties properties = new Properties();
-					properties.load(stream);
+					Properties properties = PropertiesUtil.getProperties(fs[0]);
 					Object type = properties.get("PROJECT_TYPE");
 					ProjectType projectType = ProjectType.valueOf(type.toString());
 					return projectType;
@@ -170,49 +176,45 @@ public abstract class Project {
 		return null;
 	}
 	
-	private boolean setProjectProperties(ProjectType type){		
-		projectType = type;
+	private boolean writePropertiesFile() {		
 		Properties properties=new Properties();
-		properties.setProperty("PROJECT_TYPE", type.toString());
+		properties.setProperty("PROJECT_NAME", getName());
+		properties.setProperty("PROJECT_TYPE", projectType.toString());
 		File tagFile=new File(projectDir,PROPERTY_FILE_NAME);
+		FileOutputStream fstream = null;
 		try {
 			if(!tagFile.exists()){
 					tagFile.createNewFile();
 			}
-			properties.store(new FileOutputStream(tagFile.getAbsolutePath()), null);
+			fstream = new FileOutputStream(tagFile.getAbsolutePath());
+			properties.store(fstream, null);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		finally {
+			if (fstream!=null) {
+				try {
+					fstream.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
 		return true;
 	}
 	
-//	public static Project createProjectIfNotExist(String name) {
-//		return createProjectIfNotExist(name, null);
-//	}
-//
-//	public static Project createProjectIfNotExist(String name,
-//			VaadinProject.Type type) {
-//		Project p;
-//		synchronized (allProjects) {
-//			p = allProjects.get(name);
-//			if (p == null) {
-//				p = new Project(name);
-//			}
-//			
-//		}
-//		return p;
-//	}
-
+	
 	public void addListener(DocListener li) {
-		synchronized (listeners) {
-			listeners.add(li);
+		synchronized (docListeners) {
+			docListeners.add(li);
 		}
 	}
 
 	public void removeListener(DocListener li) {
-		synchronized (listeners) {
-			listeners.remove(li);
+		synchronized (docListeners) {
+			docListeners.remove(li);
 		}
 	}
 
@@ -251,7 +253,6 @@ public abstract class Project {
 			fireDocCreated(file, collaboratorId);
 		}
 
-		decorateDoc(file, sharedDoc);
 		return sharedDoc;
 	}
 
@@ -378,27 +379,31 @@ public abstract class Project {
 		return files;
 	}
 
-	// TODO: refactor?
-	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
-
-	}
 
 	private void fireDocCreated(ProjectFile file, long collaboratorId) {
-		synchronized (listeners) {
-			for (DocListener li : listeners) {
+		synchronized (docListeners) {
+			for (DocListener li : docListeners) {
 				li.docCreated(file, collaboratorId);
 			}
 		}
 	}
 
 	private void fireDocRemoved(ProjectFile file, long collaboratorId) {
-		synchronized (listeners) {
-			for (DocListener li : listeners) {
+		synchronized (docListeners) {
+			for (DocListener li : docListeners) {
 				li.docRemoved(file, collaboratorId);
 			}
 		}
 	}
 
+	private void fireProjectReset() {
+		synchronized (projectListeners) {
+			for (ProjectListener li : projectListeners) {
+				li.projectReset();
+			}
+		}
+	}
+	
 	protected File getLocationOfFile(ProjectFile file) {
 		return new File(getProjectDir(), file.getPath());
 	}
@@ -415,7 +420,7 @@ public abstract class Project {
 	private boolean readFileFromDisk(ProjectFile file) {
 		String content;
 		try {
-			content = readFile(getLocationOfFile(file));
+			content = MyFileUtils.readFile(getLocationOfFile(file));
 		} catch (IOException e) {
 			return false;
 		}
@@ -430,7 +435,6 @@ public abstract class Project {
 			else {
 				if (EditorUtil.isEditableWithEditor(file)) {
 					Shared<Doc, DocDiff> shared = new Shared<Doc, DocDiff>(new Doc(content));
-					decorateDoc(file, shared);
 					files.put(file, shared);
 				}
 				fireDocCreated(file, Shared.NO_COLLABORATOR_ID);
@@ -455,23 +459,13 @@ public abstract class Project {
 		}
 	}
 
-	public static String readFile(File f) throws IOException {
-		StringBuilder text = new StringBuilder();
-		String NL = System.getProperty("line.separator");
-		Scanner scanner = new Scanner(new FileInputStream(f));
-		try {
-			while (scanner.hasNextLine()) {
-				text.append(scanner.nextLine()).append(NL);
-			}
-		} finally {
-			scanner.close();
-		}
-		return text.toString();
-	}
+
 
 	public void zip(File destZipFile) {
 		try {
-			MyFileUtils.zipDir(getProjectDir(), destZipFile);
+			synchronized(projectDir) {
+				MyFileUtils.zipDir(projectDir, destZipFile);
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -486,7 +480,32 @@ public abstract class Project {
 		}
 	}
 	
+
+	public void resetFromDisk(File dir) {
+		synchronized (projectDir) {
+			if (projectDir.equals(dir)) {
+				return;
+			}
+			team.kickAll("Resetting project!");
+			fireProjectReset();
+			synchronized (files) {
+				try {
+					for (File f : projectDir.listFiles()) {
+						System.err.println("file "+f);
+					}
+					FileUtils.deleteDirectory(projectDir);
+					FileUtils.copyDirectory(dir, projectDir);
+					readFromDisk();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
 	public static boolean isValidProjectName(String s) {
 		return s!=null && VALID_PROJECT_NAME.matcher(s).matches();
 	}
+	
 }

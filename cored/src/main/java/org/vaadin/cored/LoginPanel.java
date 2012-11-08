@@ -64,7 +64,6 @@ public class LoginPanel extends Panel implements LoginStatusListener {
 	private void initFBLogin() {
 		if (fbLoginStatus == LoginStatus.CONNECTED) {
 			final String fbId = fbAuth.getAuthResponse().userID;
-			
 			final String fbName = getFacebookUserName();
 			
 			loginLayout.addComponent(new Label("Use your Facebook account (" + fbName + ")"));
@@ -77,6 +76,7 @@ public class LoginPanel extends Panel implements LoginStatusListener {
 			});
 			loginLayout.addComponent(reFB);
 			initSimpleLogin("Or type a nick:");
+			
 		} else {
 			if (fbButton == null) {
 				fbButton = new FacebookLoginButton();

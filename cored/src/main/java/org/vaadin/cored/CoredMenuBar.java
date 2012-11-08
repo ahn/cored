@@ -41,7 +41,7 @@ public class CoredMenuBar extends MenuBar {
 		public void menuSelected(MenuItem selectedItem) {
 			File temp;
 			try {
-				temp = File.createTempFile(project.getName(), ".zip");
+				temp = File.createTempFile("cored-"+project.getName(), ".zip");
 				System.out.println("Zipping to "+temp);
 				project.zip(temp);
 				FileResource zip = new FileResource(temp, getApplication());

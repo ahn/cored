@@ -50,7 +50,7 @@ public class TeamPanel extends Panel implements TeamListener {
 	}
 
 //	@Override
-	public void teamChanged() {
+	public void teamChanged(String message) {
 		draw();
 		requestRepaint();
 	}

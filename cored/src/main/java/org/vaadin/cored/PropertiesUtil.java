@@ -1,5 +1,8 @@
 package org.vaadin.cored;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -50,7 +53,7 @@ public class PropertiesUtil {
 		}
 	}
 
-	public static Properties getProperties(String filename) {
+	public static Properties getPropertiesFromClasspathFile(String filename) {
 		InputStream inputStream = PropertiesUtil.class.getClassLoader()
 				.getResourceAsStream(filename);
 
@@ -69,7 +72,7 @@ public class PropertiesUtil {
 	}
 
 	public static CoredProperties getCoredProperties(String filename) {
-		Properties props = getProperties(filename);
+		Properties props = getPropertiesFromClasspathFile(filename);
 		System.out.println("props="+props);
 
 		String rootDir = (String) props.get("PROJECTS_ROOT_DIR");
@@ -86,5 +89,20 @@ public class PropertiesUtil {
 
 		return new CoredProperties(rootDir, warBuildTemplateDir, warDeployDir,
 				warDeployUrl, fbAppId);
+	}
+	
+	public static Properties getProperties(File file) throws IOException {
+		Properties props = new Properties();
+		FileInputStream fis = null;
+		try {
+			fis = new FileInputStream(file);
+			props.load(fis);
+			return props;
+		}
+		finally {
+			if (fis!=null) {
+				fis.close();
+			}
+		}
 	}
 }

@@ -5,9 +5,13 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import org.vaadin.aceeditor.collab.User;
-import org.vaadin.cored.CreateProjectPanel.ProjectCreatedListener;
 import org.vaadin.cored.LoginPanel.LoggedInCollaboratorListener;
 import org.vaadin.cored.VaadinBuildComponent.DeployType;
+import org.vaadin.cored.lobby.CoredInfoComponent;
+import org.vaadin.cored.lobby.CreateProjectPanel;
+import org.vaadin.cored.lobby.SelectProjectPanel;
+import org.vaadin.cored.lobby.UploadProjectPanel;
+import org.vaadin.cored.lobby.CreateProjectPanel.ProjectCreatedListener;
 import org.vaadin.facebookauth.FacebookAuth;
 
 import com.vaadin.ui.Alignment;
@@ -24,7 +28,7 @@ import com.vaadin.ui.themes.BaseTheme;
 
 @SuppressWarnings("serial")
 // http://dev.vaadin.com/ticket/2841
-public class CollabWindow extends Window implements ProjectSelecter.Listener,
+public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 		FragmentChangedListener, LoggedInCollaboratorListener {
 
 	private UriFragmentUtility urifu = new UriFragmentUtility();
@@ -32,8 +36,9 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 	private VerticalLayout windowContent = new VerticalLayout();
 	private VerticalLayout mainLayout = new VerticalLayout();
 
-	private ProjectSelecter projectSelecter;
+	private SelectProjectPanel projectSelecter;
 	private CreateProjectPanel cpPanel;
+	private UploadProjectPanel uploadPanel;
 
 	private LoginPanel loginPanel;
 	
@@ -97,7 +102,7 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 		Project.refreshFromDisk();
 
 		clear();
-		mainLayout.addComponent(info);
+		//mainLayout.addComponent(info);
 
 		
 		Button logout = new Button("Log Out "+CoredApplication.getInstance().getCoredUser().getName());
@@ -121,29 +126,38 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 				projectColls.put(pn, p.getTeam().getUsers());
 			}
 		}
-		projectSelecter = new ProjectSelecter(projectNames);
+		projectSelecter = new SelectProjectPanel(projectNames);
 		projectSelecter.setWidth("80%");
-		projectSelecter.addListener((ProjectSelecter.Listener) this);
+		projectSelecter.addListener((SelectProjectPanel.Listener) this);
 		for (Entry<String, Collection<User>> e : projectColls.entrySet()) {
 			projectSelecter.setProjectUsers(e.getKey(), e.getValue());
 		}
 		
 		HorizontalLayout hl = new HorizontalLayout();
+		hl.setWidth("100%");
 		hl.addComponent(projectSelecter);
 		hl.setComponentAlignment(projectSelecter, Alignment.TOP_CENTER);
 		
+		VerticalLayout ve = new VerticalLayout();
+		ve.setSizeFull();
+
+		hl.addComponent(ve);
+		
 		cpPanel = new CreateProjectPanel();
 		cpPanel.setWidth("80%");
-		hl.addComponent(cpPanel);
-		hl.setComponentAlignment(cpPanel, Alignment.TOP_CENTER);
-		
 		cpPanel.addListener(new ProjectCreatedListener() {
 			public void projectCreated(Project p) {
 				urifu.setFragment(p.getName());
 			}
 		});
 		
-		hl.setWidth("100%");
+		ve.addComponent(cpPanel);
+		
+		uploadPanel = new UploadProjectPanel();
+		uploadPanel.setWidth("80%");
+		ve.addComponent(uploadPanel);
+		
+		
 		
 		mainLayout.addComponent(hl);
 		mainLayout.setExpandRatio(hl, 1);
@@ -162,6 +176,10 @@ public class CollabWindow extends Window implements ProjectSelecter.Listener,
 
 	private void openProject(Project project) {
 		clear();
+		
+		for (ProjectFile pf : project.getProjectFiles()) {
+			System.out.println("pf "+pf.getName());
+		}
 		
 		BuildComponent bc = project.getBuildComponent(deployType);
 

@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.vaadin.cored.Project.DocListener;
@@ -116,7 +115,9 @@ public class ProjectPanel extends Panel implements DocListener {
 		tree.addItem(project.getSourceDir());
 		tree.setItemCaption(project.getSourceDir(), project.getProgrammingLanguage() + " Source Files");
 		
+		System.out.println("Source files:");
 		for (ProjectFile pf : srcFiles) {
+			System.out.println("Source file: "+ pf.getName());
 			tree.addItem(pf);
 			tree.setItemCaption(pf, pf.getName());
 			tree.setChildrenAllowed(pf, false);

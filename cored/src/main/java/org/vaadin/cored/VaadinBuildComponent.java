@@ -148,9 +148,11 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 		try {
 			build();
 			if (deployURL != null) {
-				appLink.setResource(appResource());
+				String appUrl = getAppUrl();
+				appLink.setResource(new ExternalResource(appUrl));
 				appLink.setVisible(true);
 				appInfo.setVisible(true);
+				project.log("App deployed to "+appUrl);
 			} else {
 				errorLabel.setValue("Deployed");
 				errorLabel.setVisible(true);
@@ -165,10 +167,9 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 			errorLabel.setVisible(true);
 		}
 	}
-
-	private Resource appResource() {
-		return new ExternalResource(deployURL + "/apps/" + project.getName()
-				+ "?debug&restartApplication");
+	
+	private String getAppUrl() {
+		return deployURL + "/apps/" + project.getName() + "?debug&restartApplication";
 	}
 
 	private void build() throws IOException {

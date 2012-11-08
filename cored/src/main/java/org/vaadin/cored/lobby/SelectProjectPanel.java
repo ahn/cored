@@ -1,4 +1,4 @@
-package org.vaadin.cored;
+package org.vaadin.cored.lobby;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -7,19 +7,21 @@ import org.vaadin.aceeditor.collab.User;
 
 import com.vaadin.event.ItemClickEvent;
 import com.vaadin.event.ItemClickEvent.ItemClickListener;
+import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
-import com.vaadin.ui.Label;
-import com.vaadin.ui.Panel;
-import com.vaadin.ui.themes.BaseTheme;
 import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Panel;
 import com.vaadin.ui.Table;
 import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.themes.BaseTheme;
 
 @SuppressWarnings("serial")
-public class ProjectSelecter extends Panel implements
+public class SelectProjectPanel extends Panel implements
 		ItemClickListener, ClickListener {
+	
+	private static final ThemeResource ICON = new ThemeResource("icons/box--arrow.png");
 
 	public interface Listener {
 		void projectSelected(String projectName);
@@ -50,6 +52,7 @@ public class ProjectSelecter extends Panel implements
 		button.setWidth("100%");
 		button.setEnabled(table.getValue() != null);
 		button.addListener(this);
+		setIcon(ICON);
 	}
 
 	private Button refreshButton = new Button("Refresh");
@@ -64,8 +67,8 @@ public class ProjectSelecter extends Panel implements
 			}
 		});
 	}
-
-	public ProjectSelecter(Collection<String> projectNames) {
+	
+	public SelectProjectPanel(Collection<String> projectNames) {
 		super("Open Project");
 		
 		VerticalLayout layout = new VerticalLayout();

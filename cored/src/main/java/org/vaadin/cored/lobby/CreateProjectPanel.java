@@ -1,11 +1,17 @@
-package org.vaadin.cored;
+package org.vaadin.cored.lobby;
 
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.regex.Pattern;
 
+import org.vaadin.cored.GenericProject;
+import org.vaadin.cored.Project;
+import org.vaadin.cored.PythonProject;
+import org.vaadin.cored.VaadinProject;
+
 import com.vaadin.event.FieldEvents.TextChangeEvent;
 import com.vaadin.event.FieldEvents.TextChangeListener;
+import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
@@ -21,7 +27,7 @@ public class CreateProjectPanel extends Panel {
 	private OptionGroup projectTypeGroup = new OptionGroup("Project type:",
 			Arrays.asList(new String[] {"Vaadin", "Python", "Generic"}));
 	
-	
+	private static final ThemeResource ICON = new ThemeResource("icons/box--plus.png");
 	
 	private Button cnpButton;
 	
@@ -56,6 +62,7 @@ public class CreateProjectPanel extends Panel {
 		
 		cnpButton = createNewProjectButton(tf, skBox);
 		cnpButton.setWidth("100%");
+		setIcon(ICON);
 		la.addComponent(cnpButton);
 		
 		addComponent(la);

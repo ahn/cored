@@ -1,6 +1,5 @@
 package org.vaadin.cored;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.vaadin.aceeditor.collab.DocDiff;
@@ -234,11 +233,14 @@ public class IDE extends VerticalLayout implements TeamListener {
 	}
 
 //	@Override
-	public void teamChanged() {
-		System.err.println("teamChanged");
-		// TODO
+	public void teamChanged(String message) {
+		System.err.println("teamChanged " + message);
+		
 		if (!project.getTeam().hasUser(user)) {
 			leaveIDE();
+		}
+		if (message!=null) {
+			getWindow().showNotification(message);
 		}
 	}
 

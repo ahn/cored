@@ -4,19 +4,45 @@ import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Scanner;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class MyFileUtils {
+
+	public static String readFile(File f) throws IOException {
+		StringBuilder text = new StringBuilder();
+		String NL = System.getProperty("line.separator");
+		FileInputStream fstream = null;
+		Scanner scanner = null;
+		try {
+			fstream = new FileInputStream(f);
+			scanner = new Scanner(fstream);
+			while (scanner.hasNextLine()) {
+				text.append(scanner.nextLine()).append(NL);
+			}
+		} finally {
+			if (fstream!=null) {
+				fstream.close();
+			}
+			if (scanner!=null) {
+				scanner.close();
+			}
+		}
+		return text.toString();
+	}
 
 	public static void writeFileToDisk(File f, String content)
 			throws IOException {
@@ -43,13 +69,15 @@ public class MyFileUtils {
 			throws IOException {
 		for (File file : dir.listFiles()) {
 			if (file.isDirectory()) {
-				zout.putNextEntry(new ZipEntry(MyFileUtils
-						.relativize(base, file).getPath() + File.separator));
+				zout.putNextEntry(new ZipEntry(MyFileUtils.relativize(base,
+						file).getPath()
+						+ "/"));
 				addDirToZip(base, file, zout);
 			} else {
 				byte[] buffer = new byte[1024];
 				FileInputStream fin = new FileInputStream(file);
-				zout.putNextEntry(new ZipEntry(MyFileUtils.relativize(base, file).getPath()));
+				zout.putNextEntry(new ZipEntry(MyFileUtils.relativize(base,
+						file).getPath()));
 				int length;
 				while ((length = fin.read(buffer)) > 0) {
 					zout.write(buffer, 0, length);
@@ -113,11 +141,82 @@ public class MyFileUtils {
 	}
 
 	private static void copy(InputStream in, File file) throws IOException {
+		System.out.println("Copy to " + file);
+		file.getParentFile().mkdirs();
 		OutputStream out = new FileOutputStream(file);
 		try {
 			copy(in, out);
 		} finally {
 			out.close();
+		}
+	}
+
+	// http://huljas.github.com/code/2012/03/30/little-unzip-utility.html
+	public static List<File> unzip(File zipFile, File targetDir)
+			throws IOException {
+		List<File> files = new ArrayList<File>();
+		ZipFile zip = new ZipFile(zipFile);
+		try {
+			zip = new ZipFile(zipFile);
+			for (ZipEntry entry : Collections.list(zip.entries())) {
+				System.out.println("entry " + entry.getName());
+				InputStream input = zip.getInputStream(entry);
+				try {
+					if (!targetDir.exists())
+						targetDir.mkdirs();
+					File target = new File(targetDir, entry.getName());
+					if (entry.isDirectory()) {
+						System.out.println("mkdirs " + target);
+						target.mkdirs();
+					} else {
+						copy(input, target);
+						files.add(target);
+					}
+				} finally {
+					input.close();
+				}
+			}
+			return files;
+		} finally {
+			zip.close();
+		}
+	}
+
+	// http://stackoverflow.com/questions/617414/create-a-temporary-directory-in-java
+	public static File createTempDirectory() throws IOException {
+		final File temp;
+
+		temp = File.createTempFile("temp", Long.toString(System.nanoTime()));
+
+		if (!(temp.delete())) {
+			throw new IOException("Could not delete temp file: "
+					+ temp.getAbsolutePath());
+		}
+
+		if (!(temp.mkdir())) {
+			throw new IOException("Could not create temp directory: "
+					+ temp.getAbsolutePath());
+		}
+
+		return temp;
+	}
+
+	// http://stackoverflow.com/questions/779519/delete-files-recursively-in-java
+	public static void deleteRecursively(File f) throws IOException {
+		if (f.isDirectory()) {
+			for (File c : f.listFiles()) {
+				deleteRecursively(c);
+			}
+		}
+		f.delete();
+	}
+
+	// http://stackoverflow.com/questions/779519/delete-files-recursively-in-java
+	public static void deleteContentOfDir(File f) throws IOException {
+		if (f.isDirectory()) {
+			for (File c : f.listFiles()) {
+				deleteRecursively(c);
+			}
 		}
 	}
 }

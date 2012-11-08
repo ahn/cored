@@ -91,8 +91,10 @@ public class VaadinProject extends Project {
 	}
 	
 	public TreeSet<ProjectFile> getSourceFiles() {
+		System.out.println("getSourceFiles " + srcPackageDir + " --- ");
 		TreeSet<ProjectFile> srcFiles = new TreeSet<ProjectFile>();
 		for (ProjectFile f : getProjectFiles()) {
+			System.out.println("? " + f.getDir());
 			if (f.getDir().equals(srcPackageDir)) {
 				srcFiles.add(f);
 			}

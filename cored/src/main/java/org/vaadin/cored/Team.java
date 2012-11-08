@@ -3,6 +3,7 @@ package org.vaadin.cored;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.vaadin.aceeditor.collab.User;
@@ -10,7 +11,7 @@ import org.vaadin.aceeditor.collab.User;
 public class Team {
 
 	public interface TeamListener {
-		public void teamChanged();
+		public void teamChanged(String message);
 	}
 
 	private CopyOnWriteArrayList<TeamListener> listeners = new CopyOnWriteArrayList<TeamListener>();
@@ -34,40 +35,54 @@ public class Team {
 			Integer n = users.get(user);
 			if (n == null) {
 				users.put(user, 1);
-				fireChange();
+				fireChange(null);
 			} else {
 				users.put(user, n + 1);
 			}
 		}
 	}
 
-	public synchronized void removeOneUserInstance(User user) {
+	public void removeOneUserInstance(User user) {
 		synchronized (users) {
 			Integer n = users.get(user);
 			if (n != null) {
 				if (n == 1) {
 					users.remove(user);
-					fireChange();
+					fireChange(null);
 				} else {
 					users.put(user, n - 1);
 				}
 			}
 		}
 	}
+	
+	public void kickUser(User user) {
+		kickUser(user, null);
+	}
 
-	public synchronized void kickUser(User user) {
+	public void kickUser(User user, String message) {
 		synchronized (users) {
 			Integer n = users.get(user);
 			if (n != null) {
 				users.remove(user);
-				fireChange();
+				fireChange(message);
+			}
+		}
+	}
+	
+	public void kickAll(String message) {
+		synchronized (users) {
+			for (Entry<User, Integer> e : users.entrySet()) {
+				if (e.getValue()!=null) {
+					kickUser(e.getKey(), message);
+				}
 			}
 		}
 	}
 
-	private void fireChange() {
+	private void fireChange(String message) {
 		for (TeamListener li : listeners) {
-			li.teamChanged();
+			li.teamChanged(message);
 		}
 	}
 
@@ -79,8 +94,6 @@ public class Team {
 
 	public boolean hasUser(User user) {
 		synchronized (users) {
-
-			System.err.println("hasUser " + user + " --- " + users);
 			return users.containsKey(user);
 		}
 	}
