@@ -33,4 +33,6 @@
     <inherits name="org.vaadin.facebookauth.gwt.FacebookAuthWidgetSet" />
 
     <inherits name="com.vaadin.addon.timeline.gwt.TimelineWidgetSet" />
+
+    <inherits name="com.invient.vaadin.charts.widgetset.InvientChartsWidgetset" />
 </module>

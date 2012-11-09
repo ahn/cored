@@ -1,7 +1,5 @@
 package org.vaadin.cored;
 
-import org.vaadin.aceeditor.collab.User;
-
 import com.vaadin.terminal.ExternalResource;
 import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.Alignment;

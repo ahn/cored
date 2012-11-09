@@ -4,6 +4,10 @@
 	margin-right: 6px;
 }
 
+.v-window-header .v-icon {
+    margin-right: 6px;
+}
+
 .v-userwidget {
 	margin: 2px;
 	border: 1px solid gray;

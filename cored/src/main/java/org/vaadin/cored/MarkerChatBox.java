@@ -1,6 +1,5 @@
 package org.vaadin.cored;
 
-import org.vaadin.aceeditor.collab.User;
 import org.vaadin.chatbox.ChatBox;
 import org.vaadin.chatbox.SharedChat;
 

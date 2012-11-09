@@ -268,9 +268,9 @@
 	</dependency>
 
 	<dependency>
-	   <groupId>org.vaadin</groupId>
-	   <artifactId>chatbox</artifactId>
-	   <version>0.0.4</version>
+		<groupId>org.vaadin</groupId>
+		<artifactId>chatbox</artifactId>
+		<version>0.0.4</version>
 	</dependency>
 
 	<dependency>

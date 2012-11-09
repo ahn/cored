@@ -19,6 +19,8 @@ public class NewFileWindow extends Window {
 		super("New " + project.getProgrammingLanguage() + " File");
 		this.project = project;
 		
+		setIcon(Icons.DOCUMENT_PLUS);
+		
 		final Form form = new Form();
 		form.setSizeFull();
 		

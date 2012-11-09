@@ -2,10 +2,8 @@ package org.vaadin.cored;
 
 import java.util.Collection;
 
-import org.vaadin.aceeditor.collab.User;
 import org.vaadin.cored.Team.TeamListener;
 
-import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Panel;
@@ -33,7 +31,7 @@ public class TeamPanel extends Panel implements TeamListener {
 			uw.getKickButton().addListener(new ClickListener() {
 //				@Override
 				public void buttonClick(ClickEvent event) {
-					team.kickUser(u);
+					team.kickUser(u, "kicked");
 				}
 			});
 			uw.setWidth("90%");

@@ -3,7 +3,7 @@ package org.vaadin.cored.lobby;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import org.vaadin.aceeditor.collab.User;
+import org.vaadin.cored.User;
 
 import com.vaadin.event.ItemClickEvent;
 import com.vaadin.event.ItemClickEvent.ItemClickListener;

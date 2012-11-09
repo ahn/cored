@@ -2,6 +2,7 @@ package org.vaadin.cored;
 
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -16,16 +17,15 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.vaadin.aceeditor.collab.DocDiff;
-import org.vaadin.aceeditor.collab.User;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.chatbox.gwt.shared.Chat;
 import org.vaadin.chatbox.gwt.shared.ChatDiff;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
 import org.vaadin.cored.VaadinBuildComponent.DeployType;
+import org.vaadin.diffsync.DiffCalculator;
 import org.vaadin.diffsync.Shared;
 
-import com.restfb.types.Application;
 import com.vaadin.data.Validator;
 
 public abstract class Project {
@@ -33,6 +33,9 @@ public abstract class Project {
 	private static final Pattern VALID_PROJECT_NAME = Pattern.compile("[a-z][a-z0-9]*");
 	
 	private static final String PROPERTY_FILE_NAME="project.properties";
+	
+	private boolean logging = true;
+	private ProjectLog log = new ProjectLog();
 	
 	public enum ProjectType {
 		vaadin, python, generic;
@@ -65,7 +68,7 @@ public abstract class Project {
 	private Map<ProjectFile, Shared<Doc, DocDiff>> files = new HashMap<ProjectFile, Shared<Doc, DocDiff>>();
 
 	private SharedChat projectChat;
-	private Team team = new Team();
+	private Team team;
 
 	private File projectDir;
 
@@ -80,12 +83,35 @@ public abstract class Project {
 	
 	protected Project(String name,ProjectType type) {
 		name = name.toLowerCase();
+		
 		this.projName = name;
 		this.projectType = type;
 		this.projectChat = new SharedChat();
+		this.projectChat.addTask(new DiffCalculator<Chat, ChatDiff>() {
+			public boolean needsToRunAfter(ChatDiff diff, long byCollaboratorId) {
+				for (ChatLine li : diff.getAddedFrozen()) {
+					if (li.getUserId()!=null) {
+						log.logChat(li.getUserId(), li.getText());
+					}
+				}
+				for (ChatLine li : diff.getAddedLive()) {
+					if (li.getUserId()!=null) {
+						log.logChat(li.getUserId(), li.getText());
+					}
+				}
+				return false;
+			}
+			
+			public ChatDiff calcDiff(Chat value) throws InterruptedException {
+				return null;
+			}
+		});
+		
 		getProjectDir();
 		readFromDisk();
 		writePropertiesFile();
+		
+		this.team = new Team(this);
 	}
 	
 	protected static boolean addProjectIfNotExist(Project p) {
@@ -250,6 +276,9 @@ public abstract class Project {
 			}
 			
 			sharedDoc = new Shared<Doc, DocDiff>(doc);
+			if (logging) {
+				sharedDoc.addTask(new LoggerTask(this,file));
+			}
 			files.put(file, sharedDoc);
 			fireDocCreated(file, collaboratorId);
 		}
@@ -436,6 +465,9 @@ public abstract class Project {
 			else {
 				if (EditorUtil.isEditableWithEditor(file)) {
 					Shared<Doc, DocDiff> shared = new Shared<Doc, DocDiff>(new Doc(content));
+					if (logging) {
+						shared.addTask(new LoggerTask(this,file));
+					}
 					files.put(file, shared);
 				}
 				fireDocCreated(file, Shared.NO_COLLABORATOR_ID);
@@ -509,16 +541,20 @@ public abstract class Project {
 		return s!=null && VALID_PROJECT_NAME.matcher(s).matches();
 	}
 	
-	public static void kickFromAllProjects(User user) {
+	public static void kickFromAllProjects(User user, String message) {
 		synchronized(allProjects) {
 			for (Project p : allProjects.values()) {
-				p.getTeam().kickUser(user);
+				p.getTeam().kickUser(user, message);
 			}
 		}
 	}
 	
 	protected boolean canBeDeleted(ProjectFile file) {
 		return true;
+	}
+	
+	public ProjectLog getLog() {
+		return log;
 	}
 	
 }

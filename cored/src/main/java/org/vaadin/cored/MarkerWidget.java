@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import org.vaadin.aceeditor.SelectionChangeListener;
 import org.vaadin.aceeditor.collab.CollabDocAceEditor;
 import org.vaadin.aceeditor.collab.DocDiff;
-import org.vaadin.aceeditor.collab.User;
 import org.vaadin.aceeditor.gwt.shared.Marker;
 import org.vaadin.cored.MarkerTab.MarkerTabListener;
 
@@ -129,10 +128,10 @@ public class MarkerWidget extends CustomComponent implements
 		for (String mid : removed) {
 			removeTab(mid);
 		}
-
-		boolean selected = editor.getUser() != null && start != end;
-		noteButton.setEnabled(selected && touchesNotes == 0);
-		lockButton.setEnabled(selected && touchesLocks == 0);
+		
+		boolean selected = (start != end);
+		noteButton.setEnabled(user!=null && selected && touchesNotes == 0);
+		lockButton.setEnabled(user!=null && selected && touchesLocks == 0);
 
 		if (touchingMarkers.size() > 0
 				&& !touchingMarkers.contains(selectedTab)) {
@@ -170,9 +169,7 @@ public class MarkerWidget extends CustomComponent implements
 	}
 
 	private Component createNewMarkerComponent() {
-		//Panel panel = new Panel("Selection");
 		HorizontalLayout la = new HorizontalLayout();
-		//panel.setContent(la);
 		noteButton = new Button("Add Note");
 		noteButton.setIcon(MarkerTab.NOTE_ICON);
 		noteButton.setEnabled(false);
@@ -189,7 +186,6 @@ public class MarkerWidget extends CustomComponent implements
 		lockButton.addListener(new ClickListener() {
 //			@Override
 			public void buttonClick(ClickEvent event) {
-				User user = editor.getUser();
 				editor.addMarkerToSelection(Marker.newLockMarker(0, 0,
 						user.getUserId(), "Locked for " + user.getName()));
 			}

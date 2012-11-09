@@ -10,8 +10,6 @@ import com.vaadin.ui.MenuBar;
 @SuppressWarnings("serial")
 public class CoredMenuBar extends MenuBar {
 	
-	public static final ThemeResource ICON = new ThemeResource("icons/box-zipper.png");
-
 	private MenuItem projectItem;
 	
 	private MenuItem userItem;
@@ -33,7 +31,7 @@ public class CoredMenuBar extends MenuBar {
 			projectItem = addItem("Project", null);
 			projectItem.setIcon(Icons.BOX);
 			projectItem.addItem("Download as zip", new DownloadCommand()).setIcon(Icons.BOX_ZIPPER);
-			projectItem.addItem("Project stats", new StatsCommand()).setIcon(Icons.APPLICATION_WAVE);
+			projectItem.addItem("Project timeline", new StatsCommand()).setIcon(Icons.APPLICATION_WAVE);
 			projectItem.addItem("Leave project", new CloseCommand());
 		}
 		
@@ -74,7 +72,7 @@ public class CoredMenuBar extends MenuBar {
 	
 	private class StatsCommand implements Command {
 		public void menuSelected(MenuItem selectedItem) {
-			StatsWindow win = new StatsWindow();
+			StatsWindow win = new StatsWindow(ide.getProject());
 			getWindow().addWindow(win);
 		}
 	}

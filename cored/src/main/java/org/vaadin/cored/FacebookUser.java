@@ -2,8 +2,6 @@ package org.vaadin.cored;
 
 import java.util.HashMap;
 
-import org.vaadin.aceeditor.collab.User;
-
 public class FacebookUser extends User {
 
 	// Guarded by users.

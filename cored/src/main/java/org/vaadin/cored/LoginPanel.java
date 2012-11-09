@@ -1,6 +1,5 @@
 package org.vaadin.cored;
 
-import org.vaadin.aceeditor.collab.User;
 import org.vaadin.facebookauth.FacebookAuth;
 import org.vaadin.facebookauth.FacebookAuth.LoginStatusListener;
 import org.vaadin.facebookauth.FacebookLoginButton;

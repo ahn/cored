@@ -3,7 +3,6 @@ package org.vaadin.cored;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.vaadin.aceeditor.collab.User;
 import org.vaadin.cored.PropertiesUtil.CoredProperties;
 
 import com.vaadin.Application;
@@ -82,7 +81,7 @@ public class CoredApplication extends Application implements
 	public void close() {
 		if (user!=null) {
 			System.err.println("Kicking "+user.getName()+" from all projects.");
-			Project.kickFromAllProjects(user);
+			Project.kickFromAllProjects(user, "session closed");
 		}
 		super.close();
 	}

@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.SuggestibleCollabAceEditor;
-import org.vaadin.aceeditor.collab.User;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.chatbox.ChatBox;
 import org.vaadin.chatbox.SharedChat;
@@ -138,7 +137,8 @@ public class IDE extends VerticalLayout implements TeamListener {
 		if (editor != null) {
 			editor.setEnabled(user != null);
 			editor.setReadOnly(user == null);
-			editor.setUser(user);
+			//editor.setUser(user); //TODO
+			project.getTeam().addUserCollabId(user, editor.getCollaboratorId());
 		}
 	}
 

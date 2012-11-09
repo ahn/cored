@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import org.vaadin.aceeditor.collab.User;
 import org.vaadin.cored.LoginPanel.LoggedInCollaboratorListener;
 import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.cored.lobby.CoredInfoComponent;
