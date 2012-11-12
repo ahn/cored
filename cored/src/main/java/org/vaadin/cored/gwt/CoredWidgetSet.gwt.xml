@@ -34,5 +34,5 @@
 
     <inherits name="com.vaadin.addon.timeline.gwt.TimelineWidgetSet" />
 
-    <inherits name="com.invient.vaadin.charts.widgetset.InvientChartsWidgetset" />
+    
 </module>

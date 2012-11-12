@@ -11,6 +11,7 @@ import org.vaadin.cored.lobby.CreateProjectPanel;
 import org.vaadin.cored.lobby.SelectProjectPanel;
 import org.vaadin.cored.lobby.UploadProjectPanel;
 import org.vaadin.cored.lobby.CreateProjectPanel.ProjectCreatedListener;
+import org.vaadin.cored.lobby.UploadProjectPanel.ProjectUploadListener;
 import org.vaadin.facebookauth.FacebookAuth;
 
 import com.vaadin.ui.Alignment;
@@ -154,6 +155,11 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 		
 		uploadPanel = new UploadProjectPanel();
 		uploadPanel.setWidth("80%");
+		uploadPanel.addListener(new ProjectUploadListener() {
+			public void projectUploaded(Project p) {
+				openProject(p);
+			}
+		});
 		ve.addComponent(uploadPanel);
 		
 		
