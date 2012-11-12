@@ -57,7 +57,7 @@ public class Team {
 	public void kickUser(User user, String message) {
 		synchronized (usersById) {
 			if (usersById.containsKey(user.getUserId())) {
-				usersById.remove(user);
+				usersById.remove(user.getUserId());
 				if (message!=null) {
 					project.log(user.getName() + " left ("+message+")");
 				}

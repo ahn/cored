@@ -157,7 +157,7 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 		uploadPanel.setWidth("80%");
 		uploadPanel.addListener(new ProjectUploadListener() {
 			public void projectUploaded(Project p) {
-				openProject(p);
+				urifu.setFragment(p.getName());
 			}
 		});
 		ve.addComponent(uploadPanel);

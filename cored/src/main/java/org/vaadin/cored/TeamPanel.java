@@ -23,7 +23,9 @@ public class TeamPanel extends Panel implements TeamListener {
 	}
 
 	private void draw() {
+		System.out.println("TeamPanel.draw()");
 		Collection<User> newUsers = team.getUsers();
+		System.out.println("newUsers.size() == " + newUsers.size());
 		this.removeAllComponents();
 
 		for (final User u : newUsers) {

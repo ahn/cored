@@ -497,6 +497,7 @@ public abstract class Project {
 	public void zip(File destZipFile) {
 		try {
 			synchronized(projectDir) {
+				writeToDisk();
 				MyFileUtils.zipDir(projectDir, destZipFile);
 			}
 		} catch (IOException e) {

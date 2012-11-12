@@ -219,12 +219,15 @@ public class IDE extends VerticalLayout implements TeamListener {
 	}
 
 	public void leaveIDE() {
+		System.out.println("leaveIDE");
 		if (user!=null) {
+			System.out.println("kicking user " + user.getName());
 			project.getTeam().kickUser(user);
 		}
 		Window win = getWindow();
 		CoredApplication app = CoredApplication.getInstance();
 		if (win!=null && app!=null) {
+			System.out.println("leaveIDE win.open " + app.getURL());
 			win.open(new ExternalResource(app.getURL()));
 		}
 	}
