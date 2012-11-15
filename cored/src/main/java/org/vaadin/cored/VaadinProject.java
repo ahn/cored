@@ -87,11 +87,11 @@ public class VaadinProject extends Project {
 	public void createSrcDoc(String pakkage, String name, String content) {
 		File dir = new File(srcDir, ProjectFile.dirFromPackage(pakkage).getPath());
 		ProjectFile file = new ProjectFile(new File(dir, name));
-		createDoc(file, content);
+		Shared<Doc, DocDiff> doc = createDoc(file, content);
+		decorateDoc(file, doc);
 	}
 	
 	public TreeSet<ProjectFile> getSourceFiles() {
-		System.out.println("getSourceFiles " + srcPackageDir + " --- ");
 		TreeSet<ProjectFile> srcFiles = new TreeSet<ProjectFile>();
 		for (ProjectFile f : getProjectFiles()) {
 			System.out.println("? " + f.getDir());

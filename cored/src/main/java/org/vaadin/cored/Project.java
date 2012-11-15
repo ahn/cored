@@ -60,6 +60,13 @@ public abstract class Project {
 	public abstract String[] getExtendsClasses();
 	public abstract String generateContent(String name, String base);
 	
+	/**
+	 * Adds things like error checkers and other things specific to project type to the doc.
+	 */
+	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
+		// Default implementation does nothing.
+	}
+	
 	private LinkedList<DocListener> docListeners = new LinkedList<DocListener>();
 	private LinkedList<ProjectListener> projectListeners = new LinkedList<ProjectListener>();
 
@@ -276,6 +283,7 @@ public abstract class Project {
 			}
 			
 			sharedDoc = new Shared<Doc, DocDiff>(doc);
+			decorateDoc(file, sharedDoc);
 			if (logging) {
 				sharedDoc.addTask(new LoggerTask(this,file));
 			}
@@ -458,13 +466,12 @@ public abstract class Project {
 		synchronized (files) {
 			if (files.containsKey(file)) {
 				Shared<Doc, DocDiff> shared = files.get(file);
-				if (file != null) {
-					shared.setValue(new Doc(content), Shared.NO_COLLABORATOR_ID);
-				}
+				shared.setValue(new Doc(content), Shared.NO_COLLABORATOR_ID);
 			}
 			else {
 				if (EditorUtil.isEditableWithEditor(file)) {
 					Shared<Doc, DocDiff> shared = new Shared<Doc, DocDiff>(new Doc(content));
+					decorateDoc(file, shared);
 					if (logging) {
 						shared.addTask(new LoggerTask(this,file));
 					}
