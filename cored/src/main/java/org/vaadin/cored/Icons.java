@@ -6,7 +6,7 @@ public class Icons {
 
 	public static final ThemeResource BOX = new ThemeResource("icons/box.png");
 	public static final ThemeResource BOX_PLUS = new ThemeResource("icons/box--plus.png");
-	public static final ThemeResource BOX_ARROW = new ThemeResource("icons/box--ARROW.png");
+	public static final ThemeResource BOX_ARROW = new ThemeResource("icons/box--arrow.png");
 	public static final ThemeResource BOX_ZIPPER = new ThemeResource("icons/box-zipper.png");
 	public static final ThemeResource BOX_LABEL = new ThemeResource("icons/box-label.png");
 	

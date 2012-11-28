@@ -5,12 +5,12 @@
 	<groupId>org.vaadin</groupId>
 	<artifactId>cored</artifactId>
 	<packaging>war</packaging>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.3.0-SNAPSHOT</version>
 	<name>Vaadin Web Application</name>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<vaadin.version>6.7.1</vaadin.version>
+		<vaadin.version>[6.7.0,7.0.0.alpha1)</vaadin.version>
 		<gwt.version>2.3.0</gwt.version>
 		<gwt.plugin.version>2.2.0</gwt.plugin.version>
 	</properties>
@@ -143,6 +143,60 @@
 <!-- 			</resource> -->
 		</resources>
 
+		<pluginManagement>
+			<plugins>
+				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.codehaus.mojo
+										</groupId>
+										<artifactId>
+											gwt-maven-plugin
+										</artifactId>
+										<versionRange>
+											[2.2.0,)
+										</versionRange>
+										<goals>
+											<goal>resources</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>com.vaadin</groupId>
+										<artifactId>
+											vaadin-maven-plugin
+										</artifactId>
+										<versionRange>
+											[1.0.2,)
+										</versionRange>
+										<goals>
+											<goal>
+												update-widgetset
+											</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
 
 	<repositories>
@@ -270,13 +324,16 @@
 	<dependency>
 		<groupId>org.vaadin</groupId>
 		<artifactId>chatbox</artifactId>
-		<version>0.0.4</version>
+<!-- 		<version>0.0.4</version> -->
+		
+		<version>0.3.0-SNAPSHOT</version>
 	</dependency>
 
 	<dependency>
 		<groupId>org.vaadin</groupId>
 		<artifactId>javaaceeditor</artifactId>
-		<version>0.2.7</version>
+		<version>0.3.0-SNAPSHOT</version>
+<!-- 		<version>0.2.7</version> -->
 	</dependency>
 
 	

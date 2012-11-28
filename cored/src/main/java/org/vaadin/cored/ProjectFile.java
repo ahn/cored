@@ -2,7 +2,7 @@ package org.vaadin.cored;
 
 import java.io.File;
 
-public class ProjectFile implements Comparable {
+public class ProjectFile implements Comparable<Object> {
 
 	private final File dir;
 	private final String name;
@@ -31,7 +31,7 @@ public class ProjectFile implements Comparable {
 	}
 	
 	public String getPackage() {
-		return packageFromDir(dir);
+		return packageFromDir(dir).substring(4); // XXX TEMP HACK!!!
 	}
 	
 	public static String packageFromDir(File dir) {
@@ -69,6 +69,13 @@ public class ProjectFile implements Comparable {
 		else {
 			throw new ClassCastException("Cannot compare ProjectFile with "+o);
 		}
+	}
+
+	public String getFullJavaName() {
+		if (!getName().endsWith(".java")) {
+			return null;
+		}
+		return getPackage()+"."+getName().substring(0, getName().length()-5);
 	}
 
 

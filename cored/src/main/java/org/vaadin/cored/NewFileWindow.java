@@ -13,11 +13,11 @@ import com.vaadin.ui.Window;
 @SuppressWarnings("serial")
 public class NewFileWindow extends Window {
 		
-	private final Project project;
+//	private final Project project;
 
 	public NewFileWindow(final Project project) {
 		super("New " + project.getProgrammingLanguage() + " File");
-		this.project = project;
+//		this.project = project;
 		
 		setIcon(Icons.DOCUMENT_PLUS);
 		

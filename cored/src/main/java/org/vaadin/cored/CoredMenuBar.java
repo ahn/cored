@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 
 import com.vaadin.terminal.FileResource;
-import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.MenuBar;
 
 @SuppressWarnings("serial")

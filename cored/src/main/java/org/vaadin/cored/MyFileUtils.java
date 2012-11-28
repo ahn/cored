@@ -1,11 +1,9 @@
 package org.vaadin.cored;
 
-import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,43 +13,42 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class MyFileUtils {
 
-	public static String readFile(File f) throws IOException {
-		StringBuilder text = new StringBuilder();
-		String NL = System.getProperty("line.separator");
-		FileInputStream fstream = null;
-		Scanner scanner = null;
-		try {
-			fstream = new FileInputStream(f);
-			scanner = new Scanner(fstream);
-			while (scanner.hasNextLine()) {
-				text.append(scanner.nextLine()).append(NL);
-			}
-		} finally {
-			if (fstream!=null) {
-				fstream.close();
-			}
-			if (scanner!=null) {
-				scanner.close();
-			}
-		}
-		return text.toString();
-	}
+//	public static String readFile(File f) throws IOException {
+//		StringBuilder text = new StringBuilder();
+//		String NL = System.getProperty("line.separator");
+//		FileInputStream fstream = null;
+//		Scanner scanner = null;
+//		try {
+//			fstream = new FileInputStream(f);
+//			scanner = new Scanner(fstream);
+//			while (scanner.hasNextLine()) {
+//				text.append(scanner.nextLine()).append(NL);
+//			}
+//		} finally {
+//			if (fstream!=null) {
+//				fstream.close();
+//			}
+//			if (scanner!=null) {
+//				scanner.close();
+//			}
+//		}
+//		return text.toString();
+//	}
 
-	public static void writeFileToDisk(File f, String content)
-			throws IOException {
-		f.getParentFile().mkdirs();
-		FileWriter fstream = new FileWriter(f);
-		BufferedWriter out = new BufferedWriter(fstream);
-		out.write(content);
-		out.close();
-	}
+//	public static void writeFileToDisk(File f, String content)
+//			throws IOException {
+//		f.getParentFile().mkdirs();
+//		FileWriter fstream = new FileWriter(f);
+//		BufferedWriter out = new BufferedWriter(fstream);
+//		out.write(content);
+//		out.close();
+//	}
 
 	public static File relativize(File base, File child) {
 		return new File(base.toURI().relativize(child.toURI()).getPath());
@@ -89,6 +86,7 @@ public class MyFileUtils {
 	}
 
 	// http://stackoverflow.com/questions/1399126/java-util-zip-recreating-directory-structure
+	@SuppressWarnings("resource")
 	public static void zip(File directory, File zipfile) throws IOException {
 		URI base = directory.toURI();
 		Deque<File> queue = new LinkedList<File>();
@@ -202,21 +200,21 @@ public class MyFileUtils {
 	}
 
 	// http://stackoverflow.com/questions/779519/delete-files-recursively-in-java
-	public static void deleteRecursively(File f) throws IOException {
-		if (f.isDirectory()) {
-			for (File c : f.listFiles()) {
-				deleteRecursively(c);
-			}
-		}
-		f.delete();
-	}
+//	public static void deleteRecursively(File f) throws IOException {
+//		if (f.isDirectory()) {
+//			for (File c : f.listFiles()) {
+//				deleteRecursively(c);
+//			}
+//		}
+//		f.delete();
+//	}
 
 	// http://stackoverflow.com/questions/779519/delete-files-recursively-in-java
-	public static void deleteContentOfDir(File f) throws IOException {
-		if (f.isDirectory()) {
-			for (File c : f.listFiles()) {
-				deleteRecursively(c);
-			}
-		}
-	}
+//	public static void deleteContentOfDir(File f) throws IOException {
+//		if (f.isDirectory()) {
+//			for (File c : f.listFiles()) {
+//				deleteRecursively(c);
+//			}
+//		}
+//	}
 }

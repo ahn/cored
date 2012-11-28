@@ -5,6 +5,8 @@ import java.util.List;
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.SuggestibleCollabAceEditor;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
+import org.vaadin.aceeditor.java.VaadinSuggester;
+import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.chatbox.ChatBox;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.cored.ProjectPanel.FileSelectListener;
@@ -23,7 +25,7 @@ import com.vaadin.ui.Window;
 
 @SuppressWarnings("serial")
 public class IDE extends VerticalLayout implements TeamListener {
-
+	
 	private VerticalLayout editorLayout = new VerticalLayout();
 	{
 		editorLayout.setSizeFull();
@@ -47,6 +49,8 @@ public class IDE extends VerticalLayout implements TeamListener {
 	private ProjectPanel projectPanel;
 
 	private TeamPanel teamPanel;
+	
+	private InMemoryCompiler javaCompiler;
 
 	public IDE(User user, Project project, BuildComponent buildComponent) {
 		super();
@@ -83,7 +87,6 @@ public class IDE extends VerticalLayout implements TeamListener {
 		chat.setUser(user.getUserId(), user.getName(), user.getStyle());
 		chat.setShowMyNick(false);
 		chat.setCaption("Project-wide Chat:");
-		chat.setPollInterval(0);
 		chat.setWidth("90%");
 		chat.setHeight("90%");
 		rightBar.addComponent(chat);
@@ -98,7 +101,7 @@ public class IDE extends VerticalLayout implements TeamListener {
 		layout.addComponent(rightBar);
 		layout.setExpandRatio(hsp, 1);
 		
-		refresher.setRefreshInterval(1000);
+		refresher.setRefreshInterval(400);
 		addComponent(refresher);
 	}
 	
@@ -132,12 +135,24 @@ public class IDE extends VerticalLayout implements TeamListener {
 		System.err.println(this + " detach");
 		project.getTeam().removeListener(this);
 	}
+	
+//	private InMemoryCompiler getJavaCompiler() {
+//		if (javaCompiler==null) {
+//			javaCompiler = new InMemoryCompiler();
+//			if (project instanceof VaadinProject) {
+//				javaCompiler.appendClassPath(((VaadinProject)project).getClasspathPath());
+//			}
+//		}
+//		return javaCompiler;
+//	}
 
 	private void setEditorUser(User user) {
 		if (editor != null) {
 			editor.setEnabled(user != null);
 			editor.setReadOnly(user == null);
-			//editor.setUser(user); //TODO
+			if (user!=null) {
+				editor.setUser(user.getUserId(), user.getStyle());
+			}
 			project.getTeam().addUserCollabId(user, editor.getCollaboratorId());
 		}
 	}
@@ -160,10 +175,18 @@ public class IDE extends VerticalLayout implements TeamListener {
 	}
 
 	private void editDoc(Shared<Doc, DocDiff> doc, ProjectFile file) {
+		if (editor != null) {
+			doc.removeListener(editor);
+		}
 		editor = EditorUtil.createEditorFor(doc, file);
+		if (file.getName().endsWith(".java")) {
+			InMemoryCompiler compiler = new InMemoryCompiler();//((VaadinProject)project).getCompiler();
+			editor.setSuggester(new VaadinSuggester(compiler),//, file.getFullJavaName()),
+						VaadinSuggester.DEFAULT_SHORTCUT);
+		}
+		
 		editor.setSizeFull();
 		setEditorUser(user);
-		editor.setPollInterval(0);
 		mw.listenToEditor(editor);
 		editorLayout.removeAllComponents();
 		editorLayout.addComponent(editor);

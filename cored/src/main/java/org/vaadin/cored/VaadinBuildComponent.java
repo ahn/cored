@@ -5,8 +5,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.ProjectHelper;
@@ -14,14 +12,12 @@ import org.apache.tools.ant.helper.ProjectHelper2;
 import org.vaadin.cored.Project.DocListener;
 
 import com.vaadin.terminal.ExternalResource;
-import com.vaadin.terminal.Resource;
 import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Link;
-import com.vaadin.ui.NativeSelect;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.VerticalLayout;
 
@@ -34,10 +30,6 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 	};
 	
 	private static ThemeResource DEPLOY_ICON = new ThemeResource("icons/paper-plane.png");
-	
-	private static final Pattern rePackage = Pattern
-			.compile("package\\s+([^;]+);");
-	
 	
 	private final DeployType deployType;
 	private static File buildTemplateDir;

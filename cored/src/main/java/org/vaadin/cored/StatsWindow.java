@@ -6,6 +6,10 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.vaadin.cored.ProjectLog.ChatLogItem;
+import org.vaadin.cored.ProjectLog.LogItem;
+import org.vaadin.cored.ProjectLog.UserEditLogItem;
+
 import com.vaadin.addon.timeline.Timeline;
 import com.vaadin.addon.timeline.Timeline.ChartMode;
 import com.vaadin.data.Container;
@@ -57,7 +61,7 @@ public class StatsWindow extends Window {
 		
 		for (Entry<String, Indexed> e : createContainers().entrySet()) {
 			Indexed cont = e.getValue();
-			User user = project.getTeam().getUserById(e.getKey());
+			User user = project.getTeam().getUserByIdEvenIfKicked(e.getKey());
 			System.out.println("User "+e.getKey() + " --- " + user);
 			timeline.addGraphDataSource(cont, Timeline.PropertyId.TIMESTAMP, Timeline.PropertyId.VALUE);
 			timeline.setGraphOutlineColor(cont, user.getColor());
@@ -87,22 +91,22 @@ public class StatsWindow extends Window {
 		
 		TreeSet<Date> allDates = new TreeSet<Date>();
 		
-		for (String li : log.getLines()) {
-			String[] spl = li.split(":");
-			long timestamp = Long.valueOf(spl[0]);
+		for (LogItem li : log.getLines()) {
+			Date timestamp = li.timestamp;
 			
-			ProjectLog.Type type = ProjectLog.Type.valueOf(spl[1]);
-			if (type==ProjectLog.Type.EDIT) {
-				String userId = spl[3];
+			ProjectLog.Type type = li.getType();
+			if (type==ProjectLog.Type.EDIT_BY_USER) {
+				UserEditLogItem item = (UserEditLogItem)li;
 				
-				TreeMap<Date, Integer> tm = mm.get(userId);
+				
+				TreeMap<Date, Integer> tm = mm.get(item.user.getUserId());
 				if (tm==null) {
 					tm = new TreeMap<Date, Integer>();
-					mm.put(userId, tm);
+					mm.put(item.user.getUserId(), tm);
 				}
 				
 				
-				cal.setTime(new Date(timestamp));
+				cal.setTime(timestamp);
 				//cal.add(Calendar.SECOND, -(cal.get(Calendar.SECOND) % 10));
 				cal.set(Calendar.SECOND, 30);
 				cal.set(Calendar.MILLISECOND, 0);
@@ -116,13 +120,12 @@ public class StatsWindow extends Window {
 				}
 			}
 			else if (type==ProjectLog.Type.CHAT) {
-				if (!spl[2].isEmpty()) {
-					Date d = new Date(timestamp);
-					Item item = markerCont.addItem(d);
-					User u = project.getTeam().getUserById(spl[2]);
-					item.getItemProperty(Timeline.PropertyId.TIMESTAMP).setValue(d);
-					item.getItemProperty(Timeline.PropertyId.VALUE).setValue(spl[3]);
-					item.getItemProperty(Timeline.PropertyId.CAPTION).setValue(u.getName()+ ": "+spl[3]);
+				ChatLogItem item = (ChatLogItem)li;
+				if (item.user!=null) {
+					Item i = markerCont.addItem(timestamp);
+					i.getItemProperty(Timeline.PropertyId.TIMESTAMP).setValue(timestamp);
+					i.getItemProperty(Timeline.PropertyId.VALUE).setValue(item.message);
+					i.getItemProperty(Timeline.PropertyId.CAPTION).setValue(item.user.getName()+ ": "+item.message);
 				}
 			}
 			

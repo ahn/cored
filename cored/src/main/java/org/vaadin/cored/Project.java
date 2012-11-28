@@ -2,7 +2,6 @@ package org.vaadin.cored;
 
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -18,12 +17,13 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
+import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.chatbox.gwt.shared.Chat;
 import org.vaadin.chatbox.gwt.shared.ChatDiff;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
 import org.vaadin.cored.VaadinBuildComponent.DeployType;
-import org.vaadin.diffsync.DiffCalculator;
+import org.vaadin.diffsync.DiffTask;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.data.Validator;
@@ -94,22 +94,20 @@ public abstract class Project {
 		this.projName = name;
 		this.projectType = type;
 		this.projectChat = new SharedChat();
-		this.projectChat.addTask(new DiffCalculator<Chat, ChatDiff>() {
-			public boolean needsToRunAfter(ChatDiff diff, long byCollaboratorId) {
+		this.projectChat.addTask(new DiffTask<Chat, ChatDiff>() {
+			public ChatDiff exec(Chat value, ChatDiff diff, long collaboratorId) {
 				for (ChatLine li : diff.getAddedFrozen()) {
+					User u = getTeam().getUserByIdEvenIfKicked(li.getUserId());
 					if (li.getUserId()!=null) {
-						log.logChat(li.getUserId(), li.getText());
+						log.logChat(u, li.getText());
 					}
 				}
 				for (ChatLine li : diff.getAddedLive()) {
+					User u = getTeam().getUserByIdEvenIfKicked(li.getUserId());
 					if (li.getUserId()!=null) {
-						log.logChat(li.getUserId(), li.getText());
+						log.logChat(u, li.getText());
 					}
 				}
-				return false;
-			}
-			
-			public ChatDiff calcDiff(Chat value) throws InterruptedException {
 				return null;
 			}
 		});
@@ -282,15 +280,27 @@ public abstract class Project {
 				}
 			}
 			
-			sharedDoc = new Shared<Doc, DocDiff>(doc);
-			decorateDoc(file, sharedDoc);
-			if (logging) {
-				sharedDoc.addTask(new LoggerTask(this,file));
+			sharedDoc = addNewSharedDoc(file, doc);
+			
+			try {
+				writeFileToDisk(file, doc);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			files.put(file, sharedDoc);
 			fireDocCreated(file, collaboratorId);
 		}
 
+		return sharedDoc;
+	}
+	
+	private Shared<Doc, DocDiff> addNewSharedDoc(ProjectFile file, Doc doc) {
+		Shared<Doc, DocDiff> sharedDoc = new Shared<Doc, DocDiff>(doc);
+		decorateDoc(file, sharedDoc);
+		if (logging) {
+			sharedDoc.addTask(new LoggerTask(this,file));
+		}
+		files.put(file, sharedDoc);
 		return sharedDoc;
 	}
 
@@ -365,7 +375,7 @@ public abstract class Project {
 		if (doc == null) {
 			return;
 		}
-		MyFileUtils.writeFileToDisk(dest, doc.getText());
+		FileUtils.write(dest, doc.getText());
 	}
 
 	public void addFile(ProjectFile toFile, File fromFile) {
@@ -458,7 +468,7 @@ public abstract class Project {
 	private boolean readFileFromDisk(ProjectFile file) {
 		String content;
 		try {
-			content = MyFileUtils.readFile(getLocationOfFile(file));
+			content = FileUtils.readFileToString(getLocationOfFile(file));
 		} catch (IOException e) {
 			return false;
 		}
@@ -470,12 +480,7 @@ public abstract class Project {
 			}
 			else {
 				if (EditorUtil.isEditableWithEditor(file)) {
-					Shared<Doc, DocDiff> shared = new Shared<Doc, DocDiff>(new Doc(content));
-					decorateDoc(file, shared);
-					if (logging) {
-						shared.addTask(new LoggerTask(this,file));
-					}
-					files.put(file, shared);
+					addNewSharedDoc(file, new Doc(content));
 				}
 				fireDocCreated(file, Shared.NO_COLLABORATOR_ID);
 			}
@@ -564,5 +569,6 @@ public abstract class Project {
 	public ProjectLog getLog() {
 		return log;
 	}
+	
 	
 }

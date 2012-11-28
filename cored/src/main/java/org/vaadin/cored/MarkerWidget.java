@@ -11,14 +11,12 @@ import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.gwt.shared.Marker;
 import org.vaadin.cored.MarkerTab.MarkerTabListener;
 
-import com.vaadin.ui.Accordion;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.Panel;
 import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.VerticalLayout;
 
@@ -85,6 +83,7 @@ public class MarkerWidget extends CustomComponent implements
 	}
 
 	public void listenToEditor(CollabDocAceEditor editor) {
+		System.out.println("Listening to editor " + editor);
 		if (this.editor != null) {
 			this.editor.removeListener(this);
 		}

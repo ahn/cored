@@ -14,11 +14,12 @@ public class User {
 	
 	
 	protected static HashMap<String, User> users = new HashMap<String, User>();
+	private static Integer latestUserId = 0;
 
 	private final String userId;
 	private final String name;
 
-	private static Integer latestUserId = 0;
+	
 
 	protected static String newUserId() {
 		synchronized (latestUserId) {

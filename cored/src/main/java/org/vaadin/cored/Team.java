@@ -22,10 +22,12 @@ public class Team {
 		listeners.remove(li);
 	}
 
-	//private HashMap<User, Integer> users = new HashMap<User, Integer>();
 	private HashMap<String, User> usersById = new HashMap<String, User>();
 	
-	private HashMap<Long, User> usersByCollabId = new HashMap<Long, User>();
+	private HashMap<String, User> allUsersById = new HashMap<String, User>();
+	
+	// contains all the users ever added to this team
+	private HashMap<Long, User> allUsersByCollabId = new HashMap<Long, User>();
 
 	private Project project;
 
@@ -35,8 +37,8 @@ public class Team {
 	
 	public void addUserCollabId(User user, long collabId) {
 		System.out.println("addUserCollabId("+user.getName()+", "+collabId+")");
-		synchronized (usersByCollabId) {
-			usersByCollabId.put(collabId, user);
+		synchronized (allUsersByCollabId) {
+			allUsersByCollabId.put(collabId, user);
 		}
 	}
 
@@ -44,6 +46,7 @@ public class Team {
 		synchronized (usersById) {
 			if (!usersById.containsKey(user.getUserId())) {
 				usersById.put(user.getUserId(), user);
+				allUsersById.put(user.getUserId(), user);
 				project.log(user.getName() + " joined");
 				fireChange(null);
 			}
@@ -96,13 +99,17 @@ public class Team {
 	}
 	
 	public User getUserByCollabId(long collabId) {
-		synchronized (usersByCollabId) {
-			return usersByCollabId.get(collabId);
+		synchronized (allUsersByCollabId) {
+			return allUsersByCollabId.get(collabId);
 		}
 	}
 
 	public User getUserById(String userId) {
 		return usersById.get(userId);
+	}
+
+	public User getUserByIdEvenIfKicked(String userId) {
+		return allUsersById.get(userId);
 	}
 
 }

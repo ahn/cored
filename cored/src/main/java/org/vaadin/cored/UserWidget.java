@@ -1,7 +1,6 @@
 package org.vaadin.cored;
 
 import com.vaadin.terminal.ExternalResource;
-import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Embedded;
@@ -70,6 +69,6 @@ public class UserWidget extends HorizontalLayout {
 	}
 
 	private static String fbImgURL(String fbId) {
-		return "http://graph.facebook.com/" + fbId + "/picture";
+		return "https://graph.facebook.com/" + fbId + "/picture";
 	}
 }

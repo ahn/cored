@@ -9,6 +9,7 @@ import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.ErrorCheckTask;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.aceeditor.java.util.InMemoryCompiler;
+import org.vaadin.diffsync.DiffTaskExecPolicy;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.data.Validator;
@@ -42,6 +43,8 @@ public class VaadinProject extends Project {
 	private final String packageName;
 	
 	private final File srcPackageDir;
+	
+	private InMemoryCompiler compiler;
 	
 	public static Project createProjectIfNotExist(String name) {
 		return createProjectIfNotExist(name,true);
@@ -128,14 +131,28 @@ public class VaadinProject extends Project {
 	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
 		String filename = file.getName();
 		if (filename.endsWith(".java")) {
-			InMemoryCompiler compiler = new InMemoryCompiler();
-			compiler.appendClassPath(getLocationOfFile(getSourceDir()).getAbsolutePath());
-			ErrorChecker checker = new FileSavingCompilerErrorChecker(compiler, getLocationOfFile(file));
+//			InMemoryCompiler compiler = new InMemoryCompiler();
+//			compiler.appendClassPath(getClasspathPath());
+//			String fullName = file.getPackage()+"."+file.getName();
+			System.out.println("cococococo " + getCompiler());
+			ErrorChecker checker = new FileSavingCompilerErrorChecker(getCompiler(), file.getFullJavaName(), getLocationOfFile(file));
 			ErrorCheckTask task = new ErrorCheckTask(
 					sharedDoc.newCollaboratorId(), checker);
-			sharedDoc.addAsyncTask(task, true);
+			sharedDoc.addAsyncTask(task, DiffTaskExecPolicy.LATEST_CANCEL_RUNNING);
 		}
 	}
+	
+	synchronized public InMemoryCompiler getCompiler() {
+		if (compiler == null) {
+			compiler = new InMemoryCompiler();
+		}
+		return compiler;
+	}
+	
+	public String getClasspathPath() {
+		return getLocationOfFile(getSourceDir()).getAbsolutePath();
+	}
+	
 	@Override
 	public String getProgrammingLanguage() {
 		return "Java";

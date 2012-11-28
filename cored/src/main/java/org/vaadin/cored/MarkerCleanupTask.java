@@ -9,13 +9,13 @@ import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.aceeditor.gwt.shared.LockMarkerData;
 import org.vaadin.aceeditor.gwt.shared.Marker;
-import org.vaadin.diffsync.DiffCalculator;
+import org.vaadin.diffsync.DiffTask;
 
 /**
  * Cleans up old markers.
  * 
  */
-public class MarkerCleanupTask implements DiffCalculator<Doc, DocDiff> {
+public class MarkerCleanupTask implements DiffTask<Doc, DocDiff> {
 
 	private HashMap<String, Date> markerDates = new HashMap<String, Date>();
 
@@ -26,14 +26,21 @@ public class MarkerCleanupTask implements DiffCalculator<Doc, DocDiff> {
 
 	private static final long MIN_CHECK_INTERVAL_MS = 60L * 1000L;
 
-//	@Override
-	public boolean needsToRunAfter(DocDiff diff, long byCollaboratorId) {
-		return nextCheckTime == null || nextCheckTime.before(new Date());
+
+	private static boolean isUserLock(Marker marker) {
+		if (marker.getType() != Marker.Type.LOCK) {
+			return false;
+		}
+		LockMarkerData data = (LockMarkerData) marker.getData();
+		return data != null;
 	}
 
-//	@Override
-	public DocDiff calcDiff(Doc value) throws InterruptedException {
+	public DocDiff exec(Doc value, DocDiff diff, long collaboratorId) {
 		Date now = new Date();
+		if (nextCheckTime != null && nextCheckTime.after(now)) {
+			return null;
+		}
+		
 		final Date editCutoff = new Date(now.getTime() - EDIT_LIFETIME_MS);
 		final Date lockCutoff = new Date(now.getTime() - LOCK_LIFETIME_MS);
 		Date cutoff = null;
@@ -64,14 +71,6 @@ public class MarkerCleanupTask implements DiffCalculator<Doc, DocDiff> {
 		} else {
 			return DocDiff.removeMarkers(removeMarkers);
 		}
-	}
-
-	private static boolean isUserLock(Marker marker) {
-		if (marker.getType() != Marker.Type.LOCK) {
-			return false;
-		}
-		LockMarkerData data = (LockMarkerData) marker.getData();
-		return data != null;
 	}
 
 }
