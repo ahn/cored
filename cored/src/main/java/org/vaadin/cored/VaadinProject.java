@@ -40,7 +40,7 @@ public class VaadinProject extends Project {
 
 	private final static File srcDir = new File("src");
 	
-	private final String packageName;
+	private String packageName;
 	
 	private final File srcPackageDir;
 	
@@ -57,15 +57,16 @@ public class VaadinProject extends Project {
 	}
 	
 	protected VaadinProject(String name, boolean createSkeleton) {
-		super(name,ProjectType.vaadin);
+		super(name,ProjectType.vaadin, false);
 		packageName = "fi.tut.cs.cored."+getName();
 		srcPackageDir = new File(srcDir, ProjectFile.pathFromPackage(packageName));
-				
 		if (createSkeleton) {
 			initApp();
 		}
+		else {
+			readFromDisk();
+		}
 	}
-	
 	
 	public String getPackageName() {
 		return packageName;
@@ -140,7 +141,7 @@ public class VaadinProject extends Project {
 	
 	synchronized public InMemoryCompiler getCompiler() {
 		if (compiler == null) {
-			compiler = new InMemoryCompiler();
+			compiler = new InMemoryCompiler(getPackageName());
 			compiler.appendClassPath(getClasspathPath());
 		}
 		return compiler;

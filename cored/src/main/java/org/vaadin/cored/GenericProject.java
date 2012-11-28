@@ -52,12 +52,15 @@ public class GenericProject extends Project {
 	}
 	
 	protected GenericProject(String name, boolean createSkeleton) {
-		super(name,ProjectType.generic);
+		super(name,ProjectType.generic, false);
 		packageName = "fi.tut.cs.cored."+getName();
 		srcPackageDir = new File(srcDir, ProjectFile.pathFromPackage(packageName));
 				
 		if (createSkeleton) {
 			initApp();
+		}
+		else {
+			readFromDisk();
 		}
 	}
 	

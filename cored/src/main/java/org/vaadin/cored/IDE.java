@@ -101,7 +101,7 @@ public class IDE extends VerticalLayout implements TeamListener {
 		layout.addComponent(rightBar);
 		layout.setExpandRatio(hsp, 1);
 		
-		refresher.setRefreshInterval(400);
+		refresher.setRefreshInterval(2000);
 		addComponent(refresher);
 	}
 	
@@ -180,7 +180,7 @@ public class IDE extends VerticalLayout implements TeamListener {
 		}
 		editor = EditorUtil.createEditorFor(doc, file);
 		if (file.getName().endsWith(".java")) {
-			InMemoryCompiler compiler = new InMemoryCompiler();//((VaadinProject)project).getCompiler();
+			InMemoryCompiler compiler = ((VaadinProject)project).getCompiler();
 			editor.setSuggester(new VaadinSuggester(compiler),//, file.getFullJavaName()),
 						VaadinSuggester.DEFAULT_SHORTCUT);
 		}

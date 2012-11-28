@@ -88,7 +88,7 @@ public abstract class Project {
 	
 	private static HashMap<String, Project> allProjects = new HashMap<String, Project>();
 	
-	protected Project(String name,ProjectType type) {
+	protected Project(String name,ProjectType type, boolean readFromDisk) {
 		name = name.toLowerCase();
 		
 		this.projName = name;
@@ -112,12 +112,15 @@ public abstract class Project {
 			}
 		});
 		
-		getProjectDir();
-		readFromDisk();
+		if (readFromDisk) {
+			readFromDisk();
+		}
 		writePropertiesFile();
 		
 		this.team = new Team(this);
 	}
+	
+	
 	
 	protected static boolean addProjectIfNotExist(Project p) {
 		synchronized (allProjects) {
@@ -212,7 +215,7 @@ public abstract class Project {
 		Properties properties=new Properties();
 		properties.setProperty("PROJECT_NAME", getName());
 		properties.setProperty("PROJECT_TYPE", projectType.toString());
-		File tagFile=new File(projectDir,PROPERTY_FILE_NAME);
+		File tagFile=new File(getProjectDir(),PROPERTY_FILE_NAME);
 		FileOutputStream fstream = null;
 		try {
 			if(!tagFile.exists()){
@@ -403,7 +406,7 @@ public abstract class Project {
 				Shared.NO_COLLABORATOR_ID);
 	}
 
-	private void readFromDisk() {
+	protected void readFromDisk() {
 		System.out.println("readFromDisk");
 		TreeSet<File> files = getFilesIn(getProjectDir());
 		for (File f : files) {

@@ -50,11 +50,14 @@ public class PythonProject extends Project {
 	}
 	
 	protected PythonProject(String name, boolean createSkeleton) {
-		super(name,ProjectType.python);
+		super(name,ProjectType.python, false);
 		srcPackageDir = new File(srcDir, ProjectFile.pathFromPackage(getPackageName()));
 				
 		if (createSkeleton) {
 			initApp();
+		}
+		else {
+			readFromDisk();
 		}
 	}
 	
