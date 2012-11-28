@@ -131,10 +131,6 @@ public class VaadinProject extends Project {
 	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
 		String filename = file.getName();
 		if (filename.endsWith(".java")) {
-//			InMemoryCompiler compiler = new InMemoryCompiler();
-//			compiler.appendClassPath(getClasspathPath());
-//			String fullName = file.getPackage()+"."+file.getName();
-			System.out.println("cococococo " + getCompiler());
 			ErrorChecker checker = new FileSavingCompilerErrorChecker(getCompiler(), file.getFullJavaName(), getLocationOfFile(file));
 			ErrorCheckTask task = new ErrorCheckTask(
 					sharedDoc.newCollaboratorId(), checker);
@@ -145,6 +141,7 @@ public class VaadinProject extends Project {
 	synchronized public InMemoryCompiler getCompiler() {
 		if (compiler == null) {
 			compiler = new InMemoryCompiler();
+			compiler.appendClassPath(getClasspathPath());
 		}
 		return compiler;
 	}
