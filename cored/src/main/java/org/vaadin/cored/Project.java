@@ -17,6 +17,8 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
+import org.vaadin.aceeditor.gwt.shared.LockMarkerData;
+import org.vaadin.aceeditor.gwt.shared.Marker;
 import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.chatbox.gwt.shared.Chat;
@@ -561,10 +563,26 @@ public abstract class Project {
 		synchronized(allProjects) {
 			for (Project p : allProjects.values()) {
 				p.getTeam().kickUser(user, message);
+				p.removeLocksOf(user);
 			}
 		}
 	}
 	
+	public void removeLocksOf(User user) {
+		synchronized (files) {
+			for (Shared<Doc, DocDiff> doc : files.values()) {
+				for (Entry<String, Marker> e : doc.getValue().getMarkers().entrySet()) {
+					Marker m = e.getValue();
+					if (m.getType()==Marker.Type.LOCK &&
+							user.getUserId().equals(((LockMarkerData)m.getData()).getLockerId())) {
+						doc.applyDiff(DocDiff.removeMarker(e.getKey()));
+					}
+					
+				}
+			}
+		}
+		
+	}
 	protected boolean canBeDeleted(ProjectFile file) {
 		return true;
 	}

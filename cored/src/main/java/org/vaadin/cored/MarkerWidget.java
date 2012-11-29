@@ -1,5 +1,6 @@
 package org.vaadin.cored;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -86,7 +87,13 @@ public class MarkerWidget extends CustomComponent implements
 		System.out.println("Listening to editor " + editor);
 		if (this.editor != null) {
 			this.editor.removeListener(this);
+			clear();
 		}
+//		for (Entry<String, Marker> e : initialMarkers.entrySet()) {
+//			newTab(e.getKey(), e.getValue());
+//		}
+		// TODO set initial markers
+		
 		this.editor = editor;
 		editor.addListener(this);
 	}
@@ -137,6 +144,10 @@ public class MarkerWidget extends CustomComponent implements
 			selectedTab = tabsByMarkerId.get(touchingMarkers.getFirst());
 			tabs.setSelectedTab(selectedTab);
 		}
+	}
+	
+	private void clear() {
+		tabs.removeAllComponents();
 	}
 
 	private void removeTab(String mid) {

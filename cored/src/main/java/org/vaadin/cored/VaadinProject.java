@@ -39,6 +39,8 @@ public class VaadinProject extends Project {
 	}
 
 	private final static File srcDir = new File("src");
+
+	private static String additionalClassPath;
 	
 	private String packageName;
 	
@@ -143,6 +145,11 @@ public class VaadinProject extends Project {
 		if (compiler == null) {
 			compiler = new InMemoryCompiler(getPackageName());
 			compiler.appendClassPath(getClasspathPath());
+			if (additionalClassPath!=null) {
+				for (String c : additionalClassPath.split(";")) { // XXX
+					compiler.appendClassPath(c);
+				}
+			}
 		}
 		return compiler;
 	}
@@ -207,6 +214,10 @@ public class VaadinProject extends Project {
 	
 	protected boolean canBeDeleted(ProjectFile file) {
 		return !getApplicationFile().equals(file);
+	}
+
+	public static void setAdditionalClassPath(String classPath) {
+		additionalClassPath = classPath;
 	}
 	
 }

@@ -14,15 +14,17 @@ public class PropertiesUtil {
 		public final String warDeployDir;
 		public final String warDeployUrl;
 		public final String facebookAppId;
+		public final String classPath;
 
 		private CoredProperties(String projectsRootDir,
 				String warBuildTemplateDir, String warDeployDir,
-				String warDeployUrl, String facebookAppId) {
+				String warDeployUrl, String facebookAppId, String classPath) {
 			this.projectsRootDir = projectsRootDir;
 			this.warBuildTemplateDir = warBuildTemplateDir;
 			this.warDeployDir = warDeployDir;
 			this.warDeployUrl = warDeployUrl;
 			this.facebookAppId = facebookAppId;
+			this.classPath = classPath;
 		}
 
 		/**
@@ -48,6 +50,9 @@ public class PropertiesUtil {
 
 			if (facebookAppId != null) {
 				CoredApplication.setFacebookAppId(facebookAppId);
+			}
+			if (classPath != null) {
+				VaadinProject.setAdditionalClassPath(classPath);
 			}
 		}
 	}
@@ -85,9 +90,10 @@ public class PropertiesUtil {
 		String warDeployDir = (String) props.get("WAR_DEPLOY_DIR");
 		String warDeployUrl = (String) props.get("WAR_DEPLOY_URL");
 		String fbAppId = (String) props.get("FACEBOOK_APP_ID");
+		String classPath = (String) props.get("ADDITIONAL_CLASSPATH");
 
 		return new CoredProperties(rootDir, warBuildTemplateDir, warDeployDir,
-				warDeployUrl, fbAppId);
+				warDeployUrl, fbAppId, classPath);
 	}
 	
 	public static Properties getProperties(File file) throws IOException {

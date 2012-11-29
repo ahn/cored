@@ -187,7 +187,7 @@ public class IDE extends VerticalLayout implements TeamListener {
 		
 		editor.setSizeFull();
 		setEditorUser(user);
-		mw.listenToEditor(editor);
+		mw.listenToEditor(editor);//, doc.getValue().getMarkers());
 		editorLayout.removeAllComponents();
 		editorLayout.addComponent(editor);
 	}
@@ -246,6 +246,7 @@ public class IDE extends VerticalLayout implements TeamListener {
 		if (user!=null) {
 			System.out.println("kicking user " + user.getName());
 			project.getTeam().kickUser(user);
+			project.removeLocksOf(user);
 		}
 		Window win = getWindow();
 		CoredApplication app = CoredApplication.getInstance();
