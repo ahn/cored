@@ -144,10 +144,10 @@ public class VaadinProject extends Project {
 	synchronized public InMemoryCompiler getCompiler() {
 		if (compiler == null) {
 			compiler = new InMemoryCompiler(getPackageName());
-			compiler.appendClassPath(getClasspathPath());
+			//compiler.addToClasspath(getClasspathPath());
 			if (additionalClassPath!=null) {
 				for (String c : additionalClassPath.split(";")) { // XXX
-					compiler.appendClassPath(c);
+					compiler.addToClasspath(c);
 				}
 			}
 		}

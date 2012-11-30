@@ -2,12 +2,14 @@ package org.vaadin.cored;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map.Entry;
 
 import org.vaadin.cored.LoginPanel.LoggedInCollaboratorListener;
 import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.cored.lobby.CoredInfoComponent;
 import org.vaadin.cored.lobby.CreateProjectPanel;
+import org.vaadin.cored.lobby.ProjectDescription;
 import org.vaadin.cored.lobby.SelectProjectPanel;
 import org.vaadin.cored.lobby.UploadProjectPanel;
 import org.vaadin.cored.lobby.CreateProjectPanel.ProjectCreatedListener;
@@ -99,7 +101,7 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 	}
 
 	private void showProjectSelecter() {
-		Project.refreshFromDisk();
+//		Project.refreshFromDisk();
 
 		clear();
 		//mainLayout.addComponent(info);
@@ -117,21 +119,17 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 		mainLayout.addComponent(logout);
 		
 		Collection<String> projectNames;
-		HashMap<String, Collection<User>> projectColls = new HashMap<String, Collection<User>>();
-		projectNames = Project.getProjectNames();
+		//HashMap<String, Collection<User>> projectColls = new HashMap<String, Collection<User>>();
+		
+		projectNames = Project.getProjectDirNames();
+		LinkedList<ProjectDescription> pds = new LinkedList<ProjectDescription>();
 		for (String pn : projectNames) {
-			// FIXME: sync
-			Project p = Project.getProject(pn);
-			if (p != null) {
-				projectColls.put(pn, p.getTeam().getUsers());
-			}
+			pds.add(new ProjectDescription(pn));
 		}
-		projectSelecter = new SelectProjectPanel(projectNames);
+		projectSelecter = new SelectProjectPanel(pds);
 		projectSelecter.setWidth("80%");
 		projectSelecter.addListener((SelectProjectPanel.Listener) this);
-		for (Entry<String, Collection<User>> e : projectColls.entrySet()) {
-			projectSelecter.setProjectUsers(e.getKey(), e.getValue());
-		}
+		
 		
 		HorizontalLayout hl = new HorizontalLayout();
 		hl.setWidth("100%");
@@ -171,10 +169,11 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 
 	
 	private void openProject(String projectName) {
-		Project project= Project.getProject(projectName);
+		Project project= Project.getProjectTryDisk(projectName);
 		if (project!=null){
-			openProject(Project.getProject(projectName));
+			openProject(project);
 		}else{
+			showNotification("Could not open project "+projectName+" :(");
 			urifu.setFragment("");
 		}
 	}

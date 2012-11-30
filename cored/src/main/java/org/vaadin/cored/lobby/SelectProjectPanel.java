@@ -68,13 +68,13 @@ public class SelectProjectPanel extends Panel implements
 		});
 	}
 	
-	public SelectProjectPanel(Collection<String> projectNames) {
+	public SelectProjectPanel(Collection<ProjectDescription> pds) {
 		super("Open Project");
 		
 		VerticalLayout layout = new VerticalLayout();
 
-		for (String name : projectNames) {
-			table.addItem(new Object[] { name, "" }, name);
+		for (ProjectDescription pd : pds) {
+			table.addItem(new Object[] { pd.name, pd.getCollaborators() }, pd.name);
 		}
 		HorizontalLayout hl = new HorizontalLayout();
 		hl.setWidth("100%");
@@ -85,22 +85,22 @@ public class SelectProjectPanel extends Panel implements
 		addComponent(layout);
 	}
 
-	public void setProjectUsers(String projectName, Collection<User> users) {
-		StringBuilder namesStr = new StringBuilder();
-		boolean atLeastOne = false;
-		for (User user : users) {
-			if (atLeastOne) {
-				namesStr.append(", ");
-			}
-			namesStr.append(user.getName());
-			atLeastOne = true;
-		}
-
-		table.removeItem(projectName);
-		table.addItem(
-				new Object[] { projectName,
-						(atLeastOne ? namesStr.toString() : "-") }, projectName);
-	}
+//	public void setProjectUsers(String projectName, Collection<User> users) {
+//		StringBuilder namesStr = new StringBuilder();
+//		boolean atLeastOne = false;
+//		for (User user : users) {
+//			if (atLeastOne) {
+//				namesStr.append(", ");
+//			}
+//			namesStr.append(user.getName());
+//			atLeastOne = true;
+//		}
+//
+//		table.removeItem(projectName);
+//		table.addItem(
+//				new Object[] { projectName,
+//						(atLeastOne ? namesStr.toString() : "-") }, projectName);
+//	}
 
 	/* @Override */
 	public void itemClick(ItemClickEvent event) {
