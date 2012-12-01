@@ -38,6 +38,7 @@ public class PropertiesUtil {
 
 			if (warBuildTemplateDir != null) {
 				VaadinBuildComponent.setBuildTemplateDir(warBuildTemplateDir);
+				VaadinProject.setVaadinProjectTemplateDir(new File(warBuildTemplateDir));
 			}
 
 			if (warDeployDir != null) {

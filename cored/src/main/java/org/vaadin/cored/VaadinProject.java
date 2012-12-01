@@ -1,9 +1,13 @@
 package org.vaadin.cored;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
 import org.vaadin.aceeditor.ErrorChecker;
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.ErrorCheckTask;
@@ -12,8 +16,12 @@ import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.diffsync.DiffTaskExecPolicy;
 import org.vaadin.diffsync.Shared;
 
-import com.vaadin.data.Validator;
 import com.vaadin.data.validator.AbstractValidator;
+import com.vaadin.ui.MenuBar;
+import com.vaadin.ui.MenuBar.Command;
+import com.vaadin.ui.MenuBar.MenuItem;
+import com.vaadin.ui.Tree;
+import com.vaadin.ui.Window;
 
 public class VaadinProject extends Project {	 
 	public static class JavaUtils {
@@ -39,37 +47,67 @@ public class VaadinProject extends Project {
 	}
 
 	private final static File srcDir = new File("src");
+	private final static File jarDir = new File("WebContent", new File("WEB-INF", "lib").getPath());
 
 	private static String additionalClassPath;
+
+	private static File templateDir;
 	
 	private String packageName;
+	
+	private final LinkedList<String> classpathItems = new LinkedList<String>();
 	
 	private final File srcPackageDir;
 	
 	private InMemoryCompiler compiler;
 	
-	public static Project createProjectIfNotExist(String name) {
-		return createProjectIfNotExist(name,true);
+	synchronized public static void setVaadinProjectTemplateDir(File dir) {
+		templateDir  = dir;
 	}
+	
+	synchronized private static File getVaadinProjectTemplateDir() {
+		return templateDir;
+	}
+	
+	
+	@Override
+	protected void projectDirCreated() {
+		synchronized (getVaadinProjectTemplateDir()) {
+			try {
+				FileUtils.copyDirectory(getVaadinProjectTemplateDir(), getProjectDir());
+			} catch (IOException e) {
+				System.err.println("WARNING: could not initialize dir of vaadin project "+ getName());
+			}
+			updateJarsFromDisk();
+		}
+	}
+	
+	synchronized private void updateJarsFromDisk() {
 
-	public static VaadinProject createProjectIfNotExist(String name,
-			boolean createSkeleton) {
-		VaadinProject p = new VaadinProject(name, createSkeleton);
-		return addProjectIfNotExist(p) ? p : null;
+		File location = getLocationOfFile(jarDir);
+		System.out.println("location: " + location);
+		if (!location.isDirectory()) {
+			return;
+		}
+		classpathItems.clear();
+		classpathItems.add(getClasspathPath());
+		for (File f : location.listFiles()) {
+			classpathItems.add(f.getAbsolutePath());
+		}
+		getCompiler().setClasspath(classpathItems);
+
 	}
 	
-	protected VaadinProject(String name, boolean createSkeleton) {
-		super(name,ProjectType.vaadin, false);
+	
+
+	protected VaadinProject(String name) {
+		super(name,ProjectType.vaadin);
 		packageName = "fi.tut.cs.cored."+getName();
-		srcPackageDir = new File(srcDir, ProjectFile.pathFromPackage(packageName));
-		if (createSkeleton) {
-			initApp();
-		}
-		else {
-			readFromDisk();
-		}
+		srcPackageDir = new File(srcDir, dirFromPackage(packageName).getPath());
 	}
 	
+
+
 	public String getPackageName() {
 		return packageName;
 	}
@@ -91,26 +129,33 @@ public class VaadinProject extends Project {
 	}
 	
 	public void createSrcDoc(String pakkage, String name, String content) {
-		File dir = new File(srcDir, ProjectFile.dirFromPackage(pakkage).getPath());
-		ProjectFile file = new ProjectFile(new File(dir, name));
+		File dir = new File(srcDir, dirFromPackage(pakkage).getPath());
+		ProjectFile file = new ProjectFile(dir, name);
 		Shared<Doc, DocDiff> doc = createDoc(file, content);
 		decorateDoc(file, doc);
 	}
 	
+	private static File dirFromPackage(String pakkage) {
+		return new File(pakkage.replace(".", File.separator));
+	}
+
 	public TreeSet<ProjectFile> getSourceFiles() {
 		TreeSet<ProjectFile> srcFiles = new TreeSet<ProjectFile>();
 		for (ProjectFile f : getProjectFiles()) {
-			System.out.println("? " + f.getDir());
-			if (f.getDir().equals(srcPackageDir)) {
+			if (srcPackageDir.equals(f.getParentFile())) {
 				srcFiles.add(f);
 			}
 		}
 		return srcFiles;
 	}
 	
-	private void initApp() {
-		String ske = createSkeletonCode(getPackageName(), getApplicationClassName());
-		createDoc(getApplicationFile(), ske);
+	@Override
+	protected void projectInitialized(boolean createSkeleton) {
+		if (createSkeleton) {
+			String ske = createSkeletonCode(getPackageName(), getApplicationClassName());
+			createDoc(getApplicationFile(), ske);
+		}
+		updateJarsFromDisk();
 	}
 
 	private static String appClassNameFromProjectName(String name) {
@@ -134,22 +179,29 @@ public class VaadinProject extends Project {
 	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
 		String filename = file.getName();
 		if (filename.endsWith(".java")) {
-			ErrorChecker checker = new FileSavingCompilerErrorChecker(getCompiler(), file.getFullJavaName(), getLocationOfFile(file));
+			ErrorChecker checker = new FileSavingCompilerErrorChecker(getCompiler(), fullJavaNameOf(filename), getLocationOfFile(file));
 			ErrorCheckTask task = new ErrorCheckTask(
 					sharedDoc.newCollaboratorId(), checker);
 			sharedDoc.addAsyncTask(task, DiffTaskExecPolicy.LATEST_CANCEL_RUNNING);
 		}
 	}
 	
+	private String fullJavaNameOf(String name) {
+		if (!name.endsWith(".java")) {
+			return null;
+		}
+		return getPackageName()+"."+name.substring(0, name.length()-5);
+	}
+	
 	synchronized public InMemoryCompiler getCompiler() {
 		if (compiler == null) {
 			compiler = new InMemoryCompiler(getPackageName());
-			//compiler.addToClasspath(getClasspathPath());
-			if (additionalClassPath!=null) {
-				for (String c : additionalClassPath.split(";")) { // XXX
-					compiler.addToClasspath(c);
-				}
-			}
+//			compiler.addToClasspath(getClasspathPath());
+//			if (additionalClassPath!=null) {
+//				for (String c : additionalClassPath.split(";")) { // XXX
+//					compiler.addToClasspath(c);
+//				}
+//			}
 		}
 		return compiler;
 	}
@@ -157,22 +209,8 @@ public class VaadinProject extends Project {
 	public String getClasspathPath() {
 		return getLocationOfFile(getSourceDir()).getAbsolutePath();
 	}
-	
-	@Override
-	public String getProgrammingLanguage() {
-		return "Java";
-	}
-	@Override
-	public String getFileEnding() {
-		return ".java";
-	}
 
-	@Override
-	public Validator getClassNameValidator() {
-		return new JavaUtils.JavaClassNameValidator();
-	}
 
-	@Override
 	public String[] getExtendsClasses() {
 		final String[] components = {
 			"java.lang.Object",
@@ -182,7 +220,6 @@ public class VaadinProject extends Project {
 		return components;
 	}
 
-	@Override
 	public String generateContent(String name, String base) {
 		String content = "package "+getPackageName()+";\n\n"
 				+ generateImports(base) + "\n\n"
@@ -203,11 +240,11 @@ public class VaadinProject extends Project {
 
 	private String generateClass(String name, String base) {
 		if (base.equals("java.lang.Object")) {
-			return "class "+name+" {\n"
+			return "public class "+name+" {\n"
 					+ "    \n}\n";
 		}
 		else {
-			return "class "+name+" extends "+base.substring(base.lastIndexOf(".")+1)+" {\n"
+			return "public class "+name+" extends "+base.substring(base.lastIndexOf(".")+1)+" {\n"
 					+ "    \n}\n";
 		}
 	}
@@ -219,5 +256,70 @@ public class VaadinProject extends Project {
 	public static void setAdditionalClassPath(String classPath) {
 		additionalClassPath = classPath;
 	}
+
+	@Override
+	public void fillTree(Tree tree) {
+		tree.addItem(getSourceDir());
+		tree.setItemCaption(getSourceDir(), "Java Source Files");
+		
+		for (ProjectFile pf : getSourceFiles()) {
+			tree.addItem(pf);
+			tree.setItemCaption(pf, pf.getName());
+			tree.setChildrenAllowed(pf, false);
+//			tree.setItemIcon(pf, res);
+			tree.setParent(pf, getSourceDir());
+		}
+	}
+
+	@Override
+	public Window createNewFileWindow() {
+		return new VaadinNewFileWindow(this);
+	}
 	
+	@Override
+	protected boolean isEditableFile(File f) {
+		boolean editable = f.getName().endsWith(".java");;
+		return editable;
+	}
+	
+	@SuppressWarnings("serial")
+	@Override
+	public void addMenuItem(final MenuBar menuBar) {
+		MenuItem mi = menuBar.addItem("Java", null, null);
+		mi.addItem("Jars", new Command() {
+			public void menuSelected(MenuItem selectedItem) {
+				menuBar.getWindow().addWindow(new VaadinJarWindow(VaadinProject.this));
+			}
+		});
+	}
+	
+//	@Override
+//	protected void readFromDisk() {
+//		System.out.println("readFromDisk");
+//		TreeSet<File> files = getFilesIn(getProjectDir());
+//		for (File f : files) {
+//			if (!f.getName().equals(PROPERTY_FILE_NAME) && isEditableFile(f)){
+//				System.out.println("Found "+f);
+//				System.out.println("Fofo  " + readFileFromDisk(f));				
+//			}
+//		}
+//	}
+//
+//	public List<String> getJars() {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+//	
+	public List<String> getJarNames() {
+		LinkedList<String> jarNames = new LinkedList<String>();
+		for (String j : classpathItems) {
+			jarNames.add(new File(j).getName());
+		}
+		return jarNames;
+	}
+	
+	synchronized private List<String> getClasspathItems() {
+		return classpathItems;
+	}
+
 }

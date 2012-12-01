@@ -30,6 +30,10 @@ import org.vaadin.diffsync.DiffTask;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.data.Validator;
+import com.vaadin.ui.MenuBar;
+import com.vaadin.ui.MenuBar.MenuItem;
+import com.vaadin.ui.Tree;
+import com.vaadin.ui.Window;
 
 public abstract class Project {
 
@@ -53,15 +57,8 @@ public abstract class Project {
 		public void projectReset();
 	}
 
-	public abstract File getSourceDir();
-	public abstract ProjectFile getFileOfClass(String className);
-	public abstract String getFileEnding();
-	public abstract String getPackageName();
-	public abstract String getProgrammingLanguage();
-	public abstract TreeSet<ProjectFile> getSourceFiles();
-	public abstract Validator getClassNameValidator();
-	public abstract String[] getExtendsClasses();
-	public abstract String generateContent(String name, String base);
+	abstract public void fillTree(Tree tree);	
+	abstract public Window createNewFileWindow();
 	
 	/**
 	 * Adds things like error checkers and other things specific to project type to the doc.
@@ -69,6 +66,29 @@ public abstract class Project {
 	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
 		// Default implementation does nothing.
 	}
+	
+	/**
+	 * Override in subclass if needed
+	 */
+	protected void projectInitialized(boolean createSkeleton) { }
+	
+	/**
+	 * Override in subclass if needed
+	 */
+	protected boolean isEditableFile(File f) {
+		return true;
+	}
+	
+	/**
+	 * Override in subclass if needed
+	 */
+	protected void projectDirCreated() { }
+	
+	/**
+	 * Override in subclass if needed
+	 */
+	public void addMenuItem(MenuBar menuBar) { }
+	
 	
 	private LinkedList<DocListener> docListeners = new LinkedList<DocListener>();
 	private LinkedList<ProjectListener> projectListeners = new LinkedList<ProjectListener>();
@@ -91,7 +111,7 @@ public abstract class Project {
 	
 	private static HashMap<String, Project> allProjects = new HashMap<String, Project>();
 	
-	protected Project(String name,ProjectType type, boolean readFromDisk) {
+	protected Project(String name, ProjectType type) {
 		name = name.toLowerCase();
 		
 		this.projName = name;
@@ -114,29 +134,25 @@ public abstract class Project {
 				return null;
 			}
 		});
-		
-		if (readFromDisk) {
-			readFromDisk();
-		}
-		writePropertiesFile();
+
 		
 		this.team = new Team(this);
 	}
 	
 	
 	
-	protected static boolean addProjectIfNotExist(Project p) {
+	private static boolean addProjectIfNotExist(Project p) {
 		synchronized (allProjects) {
 			Project existing = allProjects.get(p.getName());
 			if (existing != null) {
 				return false;
 			}
 			else {
-				try {
-					p.writeToDisk();
-				} catch (IOException e) {
-					System.err.println("Could not write project '"+  p.getName() + "' to disk!");
-				}
+//				try {
+//					p.writeToDisk();
+//				} catch (IOException e) {
+//					System.err.println("Could not write project '"+  p.getName() + "' to disk!");
+//				}
 				allProjects.put(p.getName(), p);
 				return true;
 			}
@@ -165,8 +181,10 @@ public abstract class Project {
 	}
 	
 	public static Project getProjectTryDisk(String pn) {
+		System.err.println("getProjectTryDisk "+pn);
 		Project p = getProject(pn);
 		if (p==null) {
+			System.err.println("getProjectTryDisk --- really");
 			p = createProjectFromDisk(pn);
 		}
 		return p;
@@ -177,7 +195,11 @@ public abstract class Project {
 			for (File f : projectsRootDir.listFiles()) {
 				if (f.isDirectory() && f.getName().equals(pn)) {
 					ProjectType type = getProjectType(f);
-					return createProjectIfNotExist(pn, type, false);
+					Project p = createProjectIfNotExist(pn, type, false);
+					if (p!=null) {
+						p.readFromDisk();
+						return p;
+					}
 				}
 			}
 		}
@@ -201,16 +223,35 @@ public abstract class Project {
 	}
 	
 	public static Project createProjectIfNotExist(String name, ProjectType type, boolean createSkeleton) {
+		Project p;
 		if (ProjectType.python.equals(type)) {
-			return PythonProject.createProjectIfNotExist(name, createSkeleton);}
+			p = new PythonProject(name);
+		}
 		else if (ProjectType.vaadin.equals(type)){
-			return VaadinProject.createProjectIfNotExist(name, createSkeleton);
-		}else if (ProjectType.generic.equals(type)){
-			return GenericProject.createProjectIfNotExist(name, createSkeleton);
+			p = new VaadinProject(name);
+		}
+		else if (ProjectType.generic.equals(type)){
+			p = new GenericProject(name);
+		}
+		else {
+			throw new IllegalStateException("???");
+		}
+		boolean addedNew = addProjectIfNotExist(p);
+		if (addedNew) {
+			p.initializeProject(createSkeleton);
+			return p;
 		}
 		return null;
 	}
 
+	
+	private void initializeProject(boolean createSkeleton) {
+		if (!readFromDisk()) {
+			writePropertiesFile();
+			projectInitialized(createSkeleton);
+		}
+		projectInitialized(false);
+	}
 	
 	private ProjectType getProjectType() {
 		return this.projectType;
@@ -433,16 +474,23 @@ public abstract class Project {
 				Shared.NO_COLLABORATOR_ID);
 	}
 
-	protected void readFromDisk() {
+	private boolean readFromDisk() {
 		System.out.println("readFromDisk");
 		TreeSet<File> files = getFilesIn(getProjectDir());
+		boolean isProjectDir = false;
 		for (File f : files) {
-			if (!f.getName().equals(PROPERTY_FILE_NAME)){
+			if (f.getName().equals(PROPERTY_FILE_NAME)) {
+				isProjectDir = true;
+			}
+			else if (isEditableFile(f)) {
 				System.out.println("Found "+f);
-				readFileFromDisk(f);				
+				System.out.println("Fofo  " + readFileFromDisk(f));				
 			}
 		}
+		return isProjectDir;
 	}
+	
+
 	
 	private TreeSet<File> getFilesIn(File dir) {
 		TreeSet<File> files = new TreeSet<File>();
@@ -491,12 +539,14 @@ public abstract class Project {
 	}
 
 	private boolean readFileFromDisk(File fileFullPath) {
-		File rel = MyFileUtils.relativize(getProjectDir(), fileFullPath);
+		String rel = MyFileUtils.relativizePath(getProjectDir(), fileFullPath);
+		System.err.println("rel " + rel);
 		return readFileFromDisk(new ProjectFile(rel));
 	}
 	
 	private boolean readFileFromDisk(ProjectFile file) {
 		String content;
+		System.err.println("loc " + getLocationOfFile(file));
 		try {
 			content = FileUtils.readFileToString(getLocationOfFile(file));
 		} catch (IOException e) {
@@ -519,14 +569,18 @@ public abstract class Project {
 		return true;
 	}
 
-	private File getProjectDir() {
+	protected File getProjectDir() {
 		synchronized (projectsRootDir) {
 			if (projectsRootDir == null) {
 				return null;
 			}
 			if (projectDir == null) {
 				File pf = new File(projectsRootDir, projName);
-				if (pf.exists() || pf.mkdir()) {
+				if (pf.exists()) {
+					projectDir = pf;
+				}
+				else if (pf.mkdir()) {
+					projectDirCreated();
 					projectDir = pf;
 				}
 			}
@@ -615,6 +669,8 @@ public abstract class Project {
 	public ProjectLog getLog() {
 		return log;
 	}
+	
+
 	
 	
 }

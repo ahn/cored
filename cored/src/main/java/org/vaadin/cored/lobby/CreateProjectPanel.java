@@ -5,6 +5,7 @@ import java.util.LinkedList;
 
 import org.vaadin.cored.GenericProject;
 import org.vaadin.cored.Project;
+import org.vaadin.cored.Project.ProjectType;
 import org.vaadin.cored.PythonProject;
 import org.vaadin.cored.VaadinProject;
 
@@ -75,17 +76,19 @@ public class CreateProjectPanel extends Panel {
 			public void buttonClick(ClickEvent event) {
 				String name = ((String)tf.getValue()).toLowerCase();
 				if (Project.isValidProjectName(name)) {
-					String type = (String)projectTypeGroup.getValue();
+					String typeStr = (String)projectTypeGroup.getValue();
 					Project p = null;
-					if (type=="Vaadin") {
-						p = VaadinProject.createProjectIfNotExist(name, skBox.booleanValue());
+					ProjectType type;
+					if ("Vaadin".equals(typeStr)) {
+						type = ProjectType.vaadin;
 					}
-					else if (type=="Python") {
-						p = PythonProject.createProjectIfNotExist(name, skBox.booleanValue());
+					else if ("Python".equals(typeStr)) {
+						type = ProjectType.python;
 					}
-					else if (type=="Generic") {
-						p = GenericProject.createProjectIfNotExist(name, skBox.booleanValue());
+					else {
+						type = ProjectType.generic;
 					}
+					p = Project.createProjectIfNotExist(name, type, skBox.booleanValue());
 					if (p!=null) {
 						fireProjectCreated(p);
 					}

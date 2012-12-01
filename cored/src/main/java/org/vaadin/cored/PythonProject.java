@@ -1,6 +1,7 @@
 package org.vaadin.cored;
 
 import java.io.File;
+import java.io.ObjectInputStream.GetField;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -10,12 +11,17 @@ import org.vaadin.diffsync.Shared;
 
 import com.vaadin.data.Validator;
 import com.vaadin.data.validator.AbstractValidator;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.Button.ClickListener;
+import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.TextField;
+import com.vaadin.ui.Tree;
+import com.vaadin.ui.Window;
+import com.vaadin.ui.Button.ClickEvent;
 
 public class PythonProject extends Project { 
 	
-	private final static File srcDir = new File("src");
-	
-	private final File srcPackageDir;
 
 	public static class PythonUtils {
 		
@@ -38,109 +44,63 @@ public class PythonProject extends Project {
 			}	
 		}
 	}
-
 	
-	public static Project createProjectIfNotExist(String name) {
-		return createProjectIfNotExist(name, true);
-	}
-
-	public static PythonProject createProjectIfNotExist(String name, boolean createSkeleton) {
-		PythonProject p = new PythonProject(name, createSkeleton);
-		return addProjectIfNotExist(p) ? p : null;
+	protected PythonProject(String name) {
+		super(name,ProjectType.python);
 	}
 	
-	protected PythonProject(String name, boolean createSkeleton) {
-		super(name,ProjectType.python, false);
-		srcPackageDir = new File(srcDir, ProjectFile.pathFromPackage(getPackageName()));
-				
+	@Override
+	protected void projectInitialized(boolean createSkeleton) {
 		if (createSkeleton) {
-			initApp();
+			String ske = createSkeletonCode();
+			createDoc(new ProjectFile("main.py"), ske);
 		}
-		else {
-			readFromDisk();
-		}
-	}
-	
-	
-	public String getPackageName() {
-		return getName();
-	}
-	
-	public File getSourceDir() {
-		return srcDir;
-	}
-	
-	public String getApplicationClassName() {
-		return appClassNameFromProjectName(getName());
-	}
-	
-	public ProjectFile getApplicationFile() {
-		return getFileOfClass(getApplicationClassName());
-	}
-	
-	public ProjectFile getFileOfClass(String className) {
-		return new ProjectFile(srcPackageDir, className+this.getFileEnding());
-	}
-	
-	public void createSrcDoc(String pakkage, String name, String content) {
-		File dir = new File(srcDir, ProjectFile.dirFromPackage(pakkage).getPath());
-		ProjectFile file = new ProjectFile(new File(dir, name));
-		createDoc(file, content);
-	}
-	
-	public TreeSet<ProjectFile> getSourceFiles() {
-		TreeSet<ProjectFile> srcFiles = new TreeSet<ProjectFile>();
-		for (ProjectFile f : getProjectFiles()) {
-			if (f.getDir().equals(srcPackageDir)) {
-				srcFiles.add(f);
-			}
-		}
-		return srcFiles;
-	}
-	
-	private void initApp() {
-		String ske = createSkeletonCode(getPackageName(), getApplicationClassName());
-		createDoc(getApplicationFile(), ske);
 	}
 
-	private static String appClassNameFromProjectName(String name) {
-		return name.substring(0, 1).toUpperCase()
-				+ name.substring(1).toLowerCase() + "Application";
-	}
 
-	private static String createSkeletonCode(String pakkage, String cls) {
+	private static String createSkeletonCode() {
 		return "print \"Hello, World!\" \n";
 
 	}
+
+	@Override
+	public void fillTree(Tree tree) {
+		for (ProjectFile pf : super.getProjectFiles()) {
+			tree.addItem(pf);
+			tree.setItemCaption(pf, pf.getName());
+			tree.setChildrenAllowed(pf, false);
+		}
+	}
 	
-	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
+	@SuppressWarnings("serial")
+	private class NewPyFileWindow extends Window {
+		TextField nameField = new TextField();
+		private NewPyFileWindow(final PythonProject p) {
+			super("New Python File");
+			HorizontalLayout h  = new HorizontalLayout();
+			h.addComponent(new Label("Python file: "));
+			h.addComponent(nameField);
+			h.addComponent(new Label(".py"));
+			Button b = new Button("Add");
+			addComponent(h);
+			addComponent(b);
+			b.addListener(new ClickListener() {
+				public void buttonClick(ClickEvent event) {
+					String n = (String)nameField.getValue();
+					if (!PythonUtils.isValidPythonClass(n)) {
+						return;
+					}
+					p.createDoc(new ProjectFile(n+".py"), "# "+n+".py\n");
+					NewPyFileWindow.this.close();
+				}
+			});
+		}
 	}
 
 	@Override
-	public String getProgrammingLanguage() {
-		return "Python";
+	public Window createNewFileWindow() {
+		return new NewPyFileWindow(this);
 	}
 	
-	@Override
-	public String getFileEnding() {
-		return ".py";
-	}
-
-	@Override
-	public Validator getClassNameValidator() {
-		return new PythonUtils.PythonClassNameValidator();
-	}
-
-	@Override
-	public String[] getExtendsClasses() {
-		final String[] components = {};
-		return components;
-	}
-
-	@Override
-	public String generateContent(String name, String base) {
-		String content = "";
-		return content;
-	}
 
 }

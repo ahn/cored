@@ -32,7 +32,12 @@ public class CoredMenuBar extends MenuBar {
 			projectItem.addItem("Download as zip", new DownloadCommand()).setIcon(Icons.BOX_ZIPPER);
 			projectItem.addItem("Project timeline", new StatsCommand()).setIcon(Icons.APPLICATION_WAVE);
 			projectItem.addItem("Leave project", new CloseCommand());
+		
+			project.addMenuItem(this);
+			
 		}
+		
+		
 		
 		userItem = addItem("User", null);
 		userItem.setIcon(Icons.USER_SILHOUETTE);

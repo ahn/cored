@@ -1,5 +1,7 @@
 package org.vaadin.cored;
 
+import org.vaadin.cored.VaadinProject.JavaUtils;
+
 import com.vaadin.terminal.UserError;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
@@ -11,13 +13,10 @@ import com.vaadin.ui.TextField;
 import com.vaadin.ui.Window;
 
 @SuppressWarnings("serial")
-public class NewFileWindow extends Window {
-		
-//	private final Project project;
+public class VaadinNewFileWindow extends Window {
 
-	public NewFileWindow(final Project project) {
-		super("New " + project.getProgrammingLanguage() + " File");
-//		this.project = project;
+	public VaadinNewFileWindow(final VaadinProject project) {
+		super("New Java Class");
 		
 		setIcon(Icons.DOCUMENT_PLUS);
 		
@@ -26,7 +25,7 @@ public class NewFileWindow extends Window {
 		
 		TextField nameField = new TextField("Name", "");
 		nameField.setRequired(true);
-		nameField.addValidator(project.getClassNameValidator());
+		nameField.addValidator(new JavaUtils.JavaClassNameValidator());
 		form.addField("name", nameField);
 		
 		String[] extendsClasses = project.getExtendsClasses();
@@ -64,7 +63,7 @@ public class NewFileWindow extends Window {
 				String content = project.generateContent(name, base);
 				project.createDoc(project.getFileOfClass(name), content);
 				
-				NewFileWindow.this.close();
+				VaadinNewFileWindow.this.close();
 			}
 		});
 		

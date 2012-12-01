@@ -51,7 +51,11 @@ public class MyFileUtils {
 //	}
 
 	public static File relativize(File base, File child) {
-		return new File(base.toURI().relativize(child.toURI()).getPath());
+		return new File(relativizePath(base, child));
+	}
+	
+	public static String relativizePath(File base, File child) {
+		return base.toURI().relativize(child.toURI()).getPath();
 	}
 
 	// http://www.java-examples.com/create-zip-file-directory-recursively-using-zipoutputstream-example

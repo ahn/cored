@@ -32,7 +32,7 @@ public class ProjectPanel extends Panel implements DocListener {
 
 	private Object selectedItemId;
 
-	public ProjectPanel(Project project) {
+	public ProjectPanel(final Project project) {
 		super("Files");
 		this.project = project;
 		
@@ -52,7 +52,7 @@ public class ProjectPanel extends Panel implements DocListener {
 		addButton.setIcon(Icons.DOCUMENT_PLUS);
 		addButton.addListener(new ClickListener() {
 			public void buttonClick(ClickEvent event) {
-				NewFileWindow win = new NewFileWindow(ProjectPanel.this.project);
+				Window win = project.createNewFileWindow();
 				win.setWidth("400px");
 				win.setHeight("300px");
 				getWindow().addWindow(win);
@@ -152,18 +152,20 @@ public class ProjectPanel extends Panel implements DocListener {
 	private void refresh() {
 		tree.removeAllItems();
 		
-		TreeSet<ProjectFile> srcFiles = project.getSourceFiles();
+		project.fillTree(tree);
 		
-		tree.addItem(project.getSourceDir());
-		tree.setItemCaption(project.getSourceDir(), project.getProgrammingLanguage() + " Source Files");
+//		TreeSet<ProjectFile> srcFiles = project.getSourceFiles();
 		
-		for (ProjectFile pf : srcFiles) {
-			tree.addItem(pf);
-			tree.setItemCaption(pf, pf.getName());
-			tree.setChildrenAllowed(pf, false);
-//			tree.setItemIcon(pf, res);
-			tree.setParent(pf, project.getSourceDir());
-		}
+//		tree.addItem(project.getSourceDir());
+//		tree.setItemCaption(project.getSourceDir(), project.getProgrammingLanguage() + " Source Files");
+//		
+//		for (ProjectFile pf : srcFiles) {
+//			tree.addItem(pf);
+//			tree.setItemCaption(pf, pf.getName());
+//			tree.setChildrenAllowed(pf, false);
+////			tree.setItemIcon(pf, res);
+//			tree.setParent(pf, project.getSourceDir());
+//		}
 		
 	}
 	
