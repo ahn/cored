@@ -20,18 +20,15 @@ import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.aceeditor.gwt.shared.LockMarkerData;
 import org.vaadin.aceeditor.gwt.shared.Marker;
-import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.chatbox.gwt.shared.Chat;
 import org.vaadin.chatbox.gwt.shared.ChatDiff;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
-import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.diffsync.DiffTask;
 import org.vaadin.diffsync.Shared;
 
-import com.vaadin.data.Validator;
+import com.vaadin.ui.Component;
 import com.vaadin.ui.MenuBar;
-import com.vaadin.ui.MenuBar.MenuItem;
 import com.vaadin.ui.Tree;
 import com.vaadin.ui.Window;
 
@@ -73,10 +70,11 @@ public abstract class Project {
 	protected void projectInitialized(boolean createSkeleton) { }
 	
 	/**
-	 * Override in subclass if needed
+	 * 
+	 * @return file is editable with editor
 	 */
 	protected boolean isEditableFile(File f) {
-		return true;
+		return true; // default implementation
 	}
 	
 	/**
@@ -88,6 +86,13 @@ public abstract class Project {
 	 * Override in subclass if needed
 	 */
 	public void addMenuItem(MenuBar menuBar) { }
+	
+	/**
+	 * Override in subclass if needed
+	 */
+	public Component createBuildComponent() {
+		return null;
+	}
 	
 	
 	private LinkedList<DocListener> docListeners = new LinkedList<DocListener>();
@@ -282,7 +287,7 @@ public abstract class Project {
 	private boolean writePropertiesFile() {		
 		Properties properties=new Properties();
 		properties.setProperty("PROJECT_NAME", getName());
-		properties.setProperty("PROJECT_TYPE", projectType.toString());
+		properties.setProperty("PROJECT_TYPE", getProjectType().toString());
 		File tagFile=new File(getProjectDir(),PROPERTY_FILE_NAME);
 		FileOutputStream fstream = null;
 		try {
@@ -597,15 +602,6 @@ public abstract class Project {
 			e.printStackTrace();
 		}
 	}
-
-	public BuildComponent getBuildComponent(DeployType deployType) {
-		if (getProjectType().equals(ProjectType.vaadin)){
-			return new VaadinBuildComponent((VaadinProject) this, deployType);	
-		}else{
-			return null;
-		}
-	}
-	
 
 	public void resetFromDisk(File dir) {
 		synchronized (projectDir) {

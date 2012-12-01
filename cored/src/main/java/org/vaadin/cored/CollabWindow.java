@@ -1,18 +1,15 @@
 package org.vaadin.cored;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map.Entry;
 
 import org.vaadin.cored.LoginPanel.LoggedInCollaboratorListener;
-import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.cored.lobby.CoredInfoComponent;
 import org.vaadin.cored.lobby.CreateProjectPanel;
+import org.vaadin.cored.lobby.CreateProjectPanel.ProjectCreatedListener;
 import org.vaadin.cored.lobby.ProjectDescription;
 import org.vaadin.cored.lobby.SelectProjectPanel;
 import org.vaadin.cored.lobby.UploadProjectPanel;
-import org.vaadin.cored.lobby.CreateProjectPanel.ProjectCreatedListener;
 import org.vaadin.cored.lobby.UploadProjectPanel.ProjectUploadListener;
 import org.vaadin.facebookauth.FacebookAuth;
 
@@ -45,8 +42,6 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 	private LoginPanel loginPanel;
 	
 	private CoredInfoComponent info = new CoredInfoComponent();
-
-	private final DeployType deployType= DeployType.war;
 
 	public CollabWindow(String facebookAppId) {
 		super();
@@ -101,10 +96,8 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 	}
 
 	private void showProjectSelecter() {
-//		Project.refreshFromDisk();
 
 		clear();
-		//mainLayout.addComponent(info);
 
 		
 		Button logout = new Button("Log Out "+CoredApplication.getInstance().getCoredUser().getName());
@@ -118,10 +111,7 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 		});
 		mainLayout.addComponent(logout);
 		
-		Collection<String> projectNames;
-		//HashMap<String, Collection<User>> projectColls = new HashMap<String, Collection<User>>();
-		
-		projectNames = Project.getProjectDirNames();
+		Collection<String> projectNames = Project.getProjectDirNames();
 		LinkedList<ProjectDescription> pds = new LinkedList<ProjectDescription>();
 		for (String pn : projectNames) {
 			pds.add(new ProjectDescription(pn));
@@ -185,10 +175,9 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 			System.out.println("pf "+pf.getName());
 		}
 		
-		BuildComponent bc = project.getBuildComponent(deployType);
 
 		IDE ide = new IDE(CoredApplication.getInstance().getCoredUser(),
-				project, bc);
+				project);
 
 		mainLayout.addComponent(ide);
 		mainLayout.setExpandRatio(ide, 10);

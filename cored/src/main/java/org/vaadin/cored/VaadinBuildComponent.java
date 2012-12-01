@@ -1,8 +1,6 @@
 package org.vaadin.cored;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 
@@ -32,25 +30,10 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 	private static ThemeResource DEPLOY_ICON = new ThemeResource("icons/paper-plane.png");
 	
 	private final DeployType deployType;
-	private static File buildTemplateDir;
 	private static File deployDir;
-	private static File webContent;
-	private static File webInf;
-	private static File webXmlFile;
-	private static File buildXml;
+	private final File buildXml;
+	
 	private static String deployURL;
-
-	public static void setBuildTemplateDir(String dir) {
-		buildTemplateDir = new File(dir);
-		if (!buildTemplateDir.isDirectory()) {
-			buildTemplateDir = null;
-			throw new RuntimeException("No such dir: " + dir);
-		}
-		webContent = new File(buildTemplateDir, "WebContent");
-		webInf = new File(webContent, "WEB-INF");
-		webXmlFile = new File(webInf, "web.xml");
-		buildXml = new File(buildTemplateDir, "build.xml");
-	}
 
 	public static void setDeployDir(String dir) {
 		deployDir = new File(dir);
@@ -63,9 +46,10 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 	public static void setDeployURL(String url) {
 		deployURL = url;
 	}
+	
 
 	private static boolean isDeployEnvSet() {
-		return buildTemplateDir != null && deployDir != null;
+		return deployDir != null;
 	}
 
 	private VerticalLayout layout = new VerticalLayout();
@@ -92,6 +76,8 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 		setIcon(DEPLOY_ICON);
 		this.project = project;
 		this.deployType = deployType;
+		File prDir = project.getProjectDir();
+		buildXml = new File(prDir, "build.xml");
 		addComponent(layout);
 		draw();
 	}
@@ -167,51 +153,20 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 	}
 
 	private void build() throws IOException {
-		synchronized (buildTemplateDir) {
 
-			project.writeToDisk();
+		project.writeToDisk();
 
-			writeSrcToDisk();
-
-			deleteDirectory(new File(new File(buildTemplateDir, "build"),
-					"classes"));
-
-			createWebXml(project.getApplicationClassName(), project.getPackageName());
-
-			if (this.deployType.equals(DeployType.war)){
-				antBuildWar();				
-			}else if (this.deployType.equals(DeployType.osgi)){
-				antBuildOsgi();				
-			}
-
+		if (this.deployType.equals(DeployType.war)){
+			antBuildWar();				
+		}else if (this.deployType.equals(DeployType.osgi)){
+			antBuildOsgi();				
 		}
-	}
-
-	private void writeSrcToDisk() throws IOException {
-		File srcDir = new File(buildTemplateDir, "src");
-		srcDir.mkdir();
-		deleteDirectory(srcDir);
-		srcDir.mkdir();
-		project.writeSourceFilesTo(srcDir);
-	}
-
-	private void createWebXml(String appClass, String pakkage) throws IOException {
-
-		String fullClass = pakkage == null ? appClass : pakkage + "." + appClass;
-		System.err.println("fullClass=" + fullClass);
-		String wx = webXml(appClass, fullClass);
-
-		webXmlFile.delete();
-
-		BufferedWriter out = new BufferedWriter(new FileWriter(webXmlFile));
-		out.write(wx);
-		out.close();
 
 	}
 
 	private void antBuildWar() {
 		org.apache.tools.ant.Project antProj = new org.apache.tools.ant.Project();
-		antProj.setBasedir(buildTemplateDir.getAbsolutePath()); // TODO: turha?
+		antProj.setBasedir(project.getProjectDir().getAbsolutePath()); // TODO: turha?
 		antProj.init();
 
 		ProjectHelper ph = new ProjectHelper2();
@@ -296,56 +251,5 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 		*/
 		
 	}
-	
-	private static boolean deleteDirectory(File path) {
-		if (path.exists()) {
-			File[] files = path.listFiles();
-			for (int i = 0; i < files.length; i++) {
-				if (files[i].isDirectory()) {
-					deleteDirectory(files[i]);
-				} else {
-					files[i].delete();
-				}
-			}
-		}
-		return (path.delete());
-	}
-
-	private static String webXml(String servletName, String appClass) {
-		return String
-				.format(WEB_XML_FORMAT, servletName, appClass, servletName);
-	}
-
-	private static final String WEB_XML_FORMAT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-			+ "<web-app id=\"WebApp_ID\" version=\"2.4\" xmlns=\"http://java.sun.com/xml/ns/j2ee\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd\">\n"
-			+ "<display-name>Delme</display-name>\n"
-			+ "<context-param>\n"
-			+ "<description>\n"
-			+ "Vaadin production mode</description>\n"
-			+ "<param-name>productionMode</param-name>\n"
-			+ "<param-value>false</param-value>\n"
-			+ "</context-param>\n"
-			+ "<servlet>\n"
-			+ "<servlet-name>%s</servlet-name>\n"
-			+ "<servlet-class>com.vaadin.terminal.gwt.server.ApplicationServlet</servlet-class>\n"
-			+ "<init-param>\n"
-			+ "<description>\n"
-			+ "Vaadin application class to start</description>\n"
-			+ "<param-name>application</param-name>\n"
-			+ "<param-value>%s</param-value>\n"
-			+ "</init-param>\n"
-			+ "</servlet>\n"
-			+ "<servlet-mapping>\n"
-			+ "<servlet-name>%s</servlet-name>\n"
-			+ "<url-pattern>/*</url-pattern>\n"
-			+ "</servlet-mapping>\n"
-			+ "<welcome-file-list>\n"
-			+ "<welcome-file>index.html</welcome-file>\n"
-			+ "<welcome-file>index.htm</welcome-file>\n"
-			+ "<welcome-file>index.jsp</welcome-file>\n"
-			+ "<welcome-file>default.html</welcome-file>\n"
-			+ "<welcome-file>default.htm</welcome-file>\n"
-			+ "<welcome-file>default.jsp</welcome-file>\n"
-			+ "</welcome-file-list>\n" + "</web-app>\n";
 
 }

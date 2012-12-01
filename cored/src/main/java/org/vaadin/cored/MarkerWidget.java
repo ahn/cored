@@ -1,6 +1,5 @@
 package org.vaadin.cored;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -35,10 +34,8 @@ public class MarkerWidget extends CustomComponent implements
 	private final Project project;
 
 	TabSheet tabs = new TabSheet();
-	{
-		
-		
-	}
+
+	
 	private User user;
 	private MarkerTab selectedTab;
 

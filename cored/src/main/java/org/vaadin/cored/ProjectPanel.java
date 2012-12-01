@@ -1,7 +1,6 @@
 package org.vaadin.cored;
 
 import java.util.LinkedList;
-import java.util.TreeSet;
 
 import org.vaadin.cored.Project.DocListener;
 

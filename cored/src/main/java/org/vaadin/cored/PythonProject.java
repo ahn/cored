@@ -1,24 +1,16 @@
 package org.vaadin.cored;
 
-import java.io.File;
-import java.io.ObjectInputStream.GetField;
-import java.util.TreeSet;
 import java.util.regex.Pattern;
 
-import org.vaadin.aceeditor.collab.DocDiff;
-import org.vaadin.aceeditor.collab.gwt.shared.Doc;
-import org.vaadin.diffsync.Shared;
-
-import com.vaadin.data.Validator;
 import com.vaadin.data.validator.AbstractValidator;
 import com.vaadin.ui.Button;
+import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.Tree;
 import com.vaadin.ui.Window;
-import com.vaadin.ui.Button.ClickEvent;
 
 public class PythonProject extends Project { 
 	

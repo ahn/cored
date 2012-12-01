@@ -37,7 +37,7 @@ public class IDE extends VerticalLayout implements TeamListener {
 	
 	private final User user;
 	private final Project project;
-	private final BuildComponent buildComponent;
+	private final Component buildComponent;
 
 	private VerticalLayout rightBar = new VerticalLayout();
 	private MarkerWidget mw;
@@ -49,16 +49,14 @@ public class IDE extends VerticalLayout implements TeamListener {
 	private ProjectPanel projectPanel;
 
 	private TeamPanel teamPanel;
-	
-	private InMemoryCompiler javaCompiler;
 
-	public IDE(User user, Project project, BuildComponent buildComponent) {
+	public IDE(User user, Project project) {
 		super();
 
 		this.user = user;
 		this.project = project;
 		project.getTeam().addUser(user);
-		this.buildComponent = buildComponent;
+		this.buildComponent = project.createBuildComponent();
 		this.sharedChat = project.getProjectChat();
 
 		setSizeFull();

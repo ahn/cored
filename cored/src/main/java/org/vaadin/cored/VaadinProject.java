@@ -1,8 +1,6 @@
 package org.vaadin.cored;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,10 +13,12 @@ import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.ErrorCheckTask;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.aceeditor.java.util.InMemoryCompiler;
+import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.diffsync.DiffTaskExecPolicy;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.data.validator.AbstractValidator;
+import com.vaadin.ui.Component;
 import com.vaadin.ui.MenuBar;
 import com.vaadin.ui.MenuBar.Command;
 import com.vaadin.ui.MenuBar.MenuItem;
@@ -94,7 +94,6 @@ public class VaadinProject extends Project {
 	synchronized void updateJarsFromDisk() {
 
 		File location = getLocationOfFile(jarDir);
-		System.out.println("location: " + location);
 		if (!location.isDirectory()) {
 			return;
 		}
@@ -205,28 +204,12 @@ public class VaadinProject extends Project {
 	synchronized public InMemoryCompiler getCompiler() {
 		if (compiler == null) {
 			compiler = new InMemoryCompiler(getPackageName());
-//			compiler.addToClasspath(getClasspathPath());
-//			if (additionalClassPath!=null) {
-//				for (String c : additionalClassPath.split(";")) { // XXX
-//					compiler.addToClasspath(c);
-//				}
-//			}
 		}
 		return compiler;
 	}
 	
 	synchronized public String getClasspathPath() {
 		return getLocationOfFile(getSourceDir()).getAbsolutePath();
-	}
-
-
-	public static String[] getExtendsClasses() {
-		final String[] components = {
-			"java.lang.Object",
-			"com.vaadin.ui.Panel",
-			"com.vaadin.ui.Window",
-			"com.vaadin.ui.CustomComponent" };
-		return components;
 	}
 
 	public static String generateContent(String packageName, String className, String base) {
@@ -297,24 +280,7 @@ public class VaadinProject extends Project {
 			}
 		});
 	}
-	
-//	@Override
-//	protected void readFromDisk() {
-//		System.out.println("readFromDisk");
-//		TreeSet<File> files = getFilesIn(getProjectDir());
-//		for (File f : files) {
-//			if (!f.getName().equals(PROPERTY_FILE_NAME) && isEditableFile(f)){
-//				System.out.println("Found "+f);
-//				System.out.println("Fofo  " + readFileFromDisk(f));				
-//			}
-//		}
-//	}
-//
-//	public List<String> getJars() {
-//		// TODO Auto-generated method stub
-//		return null;
-//	}
-//	
+
 	synchronized public List<String> getJarNames() {
 		LinkedList<String> jarNames = new LinkedList<String>();
 		for (String j : classpathItems) {
@@ -342,6 +308,11 @@ public class VaadinProject extends Project {
 			}
 		}
 		return false;
+	}
+	
+	@Override
+	public Component createBuildComponent() {
+		return new VaadinBuildComponent(this, DeployType.war);
 	}
 	
 	private void createWebXml() throws IOException {

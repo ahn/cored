@@ -28,7 +28,7 @@ public class VaadinNewFileWindow extends Window {
 		nameField.addValidator(new JavaUtils.JavaClassNameValidator());
 		form.addField("name", nameField);
 		
-		String[] extendsClasses = project.getExtendsClasses();
+		String[] extendsClasses = getExtendsClasses();
 		if (extendsClasses.length>0){
 			OptionGroup og = new OptionGroup("extends");
 			og.setNullSelectionAllowed(false);
@@ -70,5 +70,15 @@ public class VaadinNewFileWindow extends Window {
 		form.getFooter().addComponent(addButton);
 		
 		addComponent(form);
-	}	
+	}
+	
+
+	public static String[] getExtendsClasses() {
+		final String[] components = {
+			"java.lang.Object",
+			"com.vaadin.ui.Panel",
+			"com.vaadin.ui.Window",
+			"com.vaadin.ui.CustomComponent" };
+		return components;
+	}
 }
