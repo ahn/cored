@@ -1,6 +1,8 @@
 package org.vaadin.cored;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,6 +24,8 @@ import com.vaadin.ui.MenuBar.Command;
 import com.vaadin.ui.MenuBar.MenuItem;
 import com.vaadin.ui.Tree;
 import com.vaadin.ui.Window;
+
+// TODO check synchronization
 
 public class VaadinProject extends Project {	 
 	public static class JavaUtils {
@@ -46,10 +50,9 @@ public class VaadinProject extends Project {
 		}
 	}
 
-	private final static File srcDir = new File("src");
-	private final static File jarDir = new File("WebContent", new File("WEB-INF", "lib").getPath());
-
-	private static String additionalClassPath;
+	private final static ProjectFile srcDir = new ProjectFile("src");
+	private final static ProjectFile jarDir = new ProjectFile("WebContent", new File("WEB-INF", "lib").getPath());
+	private final static ProjectFile webXml = new ProjectFile("WebContent", new File("WEB-INF", "web.xml").getPath());
 
 	private static File templateDir;
 	
@@ -80,9 +83,15 @@ public class VaadinProject extends Project {
 			}
 			updateJarsFromDisk();
 		}
+		
+		try {
+			createWebXml();
+		} catch (IOException e) {
+			System.err.println("WARNING: could not create web.xml file of " +getName());
+		}
 	}
 	
-	synchronized private void updateJarsFromDisk() {
+	synchronized void updateJarsFromDisk() {
 
 		File location = getLocationOfFile(jarDir);
 		System.out.println("location: " + location);
@@ -108,27 +117,27 @@ public class VaadinProject extends Project {
 	
 
 
-	public String getPackageName() {
+	synchronized public String getPackageName() {
 		return packageName;
 	}
 	
-	public File getSourceDir() {
+	synchronized public ProjectFile getSourceDir() {
 		return srcDir;
 	}
 	
-	public String getApplicationClassName() {
+	synchronized public String getApplicationClassName() {
 		return appClassNameFromProjectName(getName());
 	}
 	
-	public ProjectFile getApplicationFile() {
+	synchronized public ProjectFile getApplicationFile() {
 		return getFileOfClass(getApplicationClassName());
 	}
 	
-	public ProjectFile getFileOfClass(String className) {
+	synchronized public ProjectFile getFileOfClass(String className) {
 		return new ProjectFile(srcPackageDir, className+".java");
 	}
 	
-	public void createSrcDoc(String pakkage, String name, String content) {
+	synchronized public void createSrcDoc(String pakkage, String name, String content) {
 		File dir = new File(srcDir, dirFromPackage(pakkage).getPath());
 		ProjectFile file = new ProjectFile(dir, name);
 		Shared<Doc, DocDiff> doc = createDoc(file, content);
@@ -139,7 +148,7 @@ public class VaadinProject extends Project {
 		return new File(pakkage.replace(".", File.separator));
 	}
 
-	public TreeSet<ProjectFile> getSourceFiles() {
+	synchronized public TreeSet<ProjectFile> getSourceFiles() {
 		TreeSet<ProjectFile> srcFiles = new TreeSet<ProjectFile>();
 		for (ProjectFile f : getProjectFiles()) {
 			if (srcPackageDir.equals(f.getParentFile())) {
@@ -206,12 +215,12 @@ public class VaadinProject extends Project {
 		return compiler;
 	}
 	
-	public String getClasspathPath() {
+	synchronized public String getClasspathPath() {
 		return getLocationOfFile(getSourceDir()).getAbsolutePath();
 	}
 
 
-	public String[] getExtendsClasses() {
+	public static String[] getExtendsClasses() {
 		final String[] components = {
 			"java.lang.Object",
 			"com.vaadin.ui.Panel",
@@ -220,15 +229,15 @@ public class VaadinProject extends Project {
 		return components;
 	}
 
-	public String generateContent(String name, String base) {
-		String content = "package "+getPackageName()+";\n\n"
+	public static String generateContent(String packageName, String className, String base) {
+		String content = "package "+packageName+";\n\n"
 				+ generateImports(base) + "\n\n"
-				+ generateClass(name, base) + "\n";
+				+ generateClass(className, base) + "\n";
 		
 		return content;
 	}
 
-	private String generateImports(String base) {
+	private static String generateImports(String base) {
 		if (base.equals("java.lang.Object")) {
 			return "";
 		}
@@ -238,7 +247,7 @@ public class VaadinProject extends Project {
 	}
 	
 
-	private String generateClass(String name, String base) {
+	private static String generateClass(String name, String base) {
 		if (base.equals("java.lang.Object")) {
 			return "public class "+name+" {\n"
 					+ "    \n}\n";
@@ -251,10 +260,6 @@ public class VaadinProject extends Project {
 	
 	protected boolean canBeDeleted(ProjectFile file) {
 		return !getApplicationFile().equals(file);
-	}
-
-	public static void setAdditionalClassPath(String classPath) {
-		additionalClassPath = classPath;
 	}
 
 	@Override
@@ -310,16 +315,83 @@ public class VaadinProject extends Project {
 //		return null;
 //	}
 //	
-	public List<String> getJarNames() {
+	synchronized public List<String> getJarNames() {
 		LinkedList<String> jarNames = new LinkedList<String>();
 		for (String j : classpathItems) {
-			jarNames.add(new File(j).getName());
+			if (j.endsWith(".jar")) {
+				jarNames.add(new File(j).getName());
+			}
 		}
 		return jarNames;
 	}
 	
-	synchronized private List<String> getClasspathItems() {
-		return classpathItems;
+
+	synchronized public String getJarDirAbsolutePath() {
+		return getLocationOfFile(jarDir).getAbsolutePath();
 	}
+
+	synchronized public boolean removeJar(String filename) {
+		for (String s : classpathItems) {
+			File jarFile = new File(s);
+			if (jarFile.getName().equals(filename)) {
+				boolean deleted = jarFile.delete();
+				if (deleted) {
+					updateJarsFromDisk();
+				}
+				return deleted;
+			}
+		}
+		return false;
+	}
+	
+	private void createWebXml() throws IOException {
+		
+		String appClass = getApplicationClassName();
+		String pakkage = getPackageName();
+
+		String fullClass = pakkage == null ? appClass : pakkage + "." + appClass;
+		System.err.println("fullClass=" + fullClass);
+		String wx = webXml(appClass, fullClass);
+		
+		File f = getLocationOfFile(webXml);
+		FileUtils.write(f, wx);
+	}
+	
+	private static String webXml(String servletName, String appClass) {
+		return String
+				.format(WEB_XML_FORMAT, servletName, appClass, servletName);
+	}
+
+	private static final String WEB_XML_FORMAT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+			+ "<web-app id=\"WebApp_ID\" version=\"2.4\" xmlns=\"http://java.sun.com/xml/ns/j2ee\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd\">\n"
+			+ "<display-name>Delme</display-name>\n"
+			+ "<context-param>\n"
+			+ "<description>\n"
+			+ "Vaadin production mode</description>\n"
+			+ "<param-name>productionMode</param-name>\n"
+			+ "<param-value>false</param-value>\n"
+			+ "</context-param>\n"
+			+ "<servlet>\n"
+			+ "<servlet-name>%s</servlet-name>\n"
+			+ "<servlet-class>com.vaadin.terminal.gwt.server.ApplicationServlet</servlet-class>\n"
+			+ "<init-param>\n"
+			+ "<description>\n"
+			+ "Vaadin application class to start</description>\n"
+			+ "<param-name>application</param-name>\n"
+			+ "<param-value>%s</param-value>\n"
+			+ "</init-param>\n"
+			+ "</servlet>\n"
+			+ "<servlet-mapping>\n"
+			+ "<servlet-name>%s</servlet-name>\n"
+			+ "<url-pattern>/*</url-pattern>\n"
+			+ "</servlet-mapping>\n"
+			+ "<welcome-file-list>\n"
+			+ "<welcome-file>index.html</welcome-file>\n"
+			+ "<welcome-file>index.htm</welcome-file>\n"
+			+ "<welcome-file>index.jsp</welcome-file>\n"
+			+ "<welcome-file>default.html</welcome-file>\n"
+			+ "<welcome-file>default.htm</welcome-file>\n"
+			+ "<welcome-file>default.jsp</welcome-file>\n"
+			+ "</welcome-file-list>\n" + "</web-app>\n";
 
 }

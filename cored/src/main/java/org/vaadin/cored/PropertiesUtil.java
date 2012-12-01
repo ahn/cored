@@ -52,9 +52,6 @@ public class PropertiesUtil {
 			if (facebookAppId != null) {
 				CoredApplication.setFacebookAppId(facebookAppId);
 			}
-			if (classPath != null) {
-				VaadinProject.setAdditionalClassPath(classPath);
-			}
 		}
 	}
 

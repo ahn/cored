@@ -60,7 +60,7 @@ public class VaadinNewFileWindow extends Window {
 					base = (String) baseGroup.getValue();
 				}
 
-				String content = project.generateContent(name, base);
+				String content = VaadinProject.generateContent(project.getPackageName(), name, base);
 				project.createDoc(project.getFileOfClass(name), content);
 				
 				VaadinNewFileWindow.this.close();

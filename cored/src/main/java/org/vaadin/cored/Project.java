@@ -534,10 +534,6 @@ public abstract class Project {
 		return new File(getProjectDir(), file.getPath());
 	}
 	
-	protected File getLocationOfFile(File file) {
-		return new File(getProjectDir(), file.getPath());
-	}
-
 	private boolean readFileFromDisk(File fileFullPath) {
 		String rel = MyFileUtils.relativizePath(getProjectDir(), fileFullPath);
 		System.err.println("rel " + rel);

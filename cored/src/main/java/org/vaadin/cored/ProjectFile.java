@@ -11,6 +11,10 @@ public class ProjectFile extends File {
 	public ProjectFile(String f) {
 		super(f);
 	}
+
+	public ProjectFile(String parent, String child) {
+		super(parent, child);
+	}
 	
 //	public ProjectFile(File f) {
 //		this(f.getAbsolutePath());
