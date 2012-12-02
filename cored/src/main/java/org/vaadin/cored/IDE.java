@@ -190,6 +190,9 @@ public class IDE extends VerticalLayout implements TeamListener {
 		editorLayout.addComponent(new Label(file.getName()));
 		editorLayout.addComponent(editor);
 		editorLayout.setExpandRatio(editor, 1);
+		if (user!=null) {
+			project.getTeam().setUserFile(user, file.getName());
+		}
 	}
 
 	private Component createLeftBar() {

@@ -29,7 +29,7 @@ public class TeamPanel extends Panel implements TeamListener {
 		this.removeAllComponents();
 
 		for (final User u : newUsers) {
-			UserWidget uw = new UserWidget(u);
+			UserWidget uw = new UserWidget(u, team.getUserFile(u));
 			uw.getKickButton().addListener(new ClickListener() {
 //				@Override
 				public void buttonClick(ClickEvent event) {

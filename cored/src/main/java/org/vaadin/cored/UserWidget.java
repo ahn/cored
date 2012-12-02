@@ -16,7 +16,7 @@ public class UserWidget extends HorizontalLayout {
 	
 	private Button kickButton = new Button("Kick");
 
-	public UserWidget(User user) {
+	public UserWidget(User user, String file) {
 		super();
 		setWidth("100%");
 		setHeight("56px");
@@ -34,6 +34,12 @@ public class UserWidget extends HorizontalLayout {
 		Label ul = new Label(user.getName());
 		ul.addStyleName("name-label");
 		vl.addComponent(ul);
+		
+		if (file!=null) {
+			Label el = new Label(file);
+			vl.addComponent(el);
+		}
+		
 		kickButton.setStyleName(BaseTheme.BUTTON_LINK);
 		vl.addComponent(kickButton);
 		addComponent(vl);

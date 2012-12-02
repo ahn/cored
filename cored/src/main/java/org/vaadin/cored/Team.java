@@ -29,6 +29,9 @@ public class Team {
 	// contains all the users ever added to this team
 	private HashMap<Long, User> allUsersByCollabId = new HashMap<Long, User>();
 
+	
+	private HashMap<String, String> filenamesByUserId = new HashMap<String, String>();
+	
 	private Project project;
 
 	public Team(Project project) {
@@ -77,6 +80,21 @@ public class Team {
 			for (Entry<String, User> e : usersById.entrySet()) {
 				kickUser(e.getValue(), message);
 			}
+		}
+	}
+	
+	public void setUserFile(User user, String filename) {
+		synchronized (usersById) {
+			String prev = filenamesByUserId.put(user.getUserId(), filename);
+			if (!filename.equals(prev)) {
+				fireChange(null);
+			}
+		}
+	}
+	
+	public String getUserFile(User user) {
+		synchronized (usersById) {
+			return filenamesByUserId.get(user.getUserId());
 		}
 	}
 
