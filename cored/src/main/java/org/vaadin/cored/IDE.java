@@ -187,7 +187,9 @@ public class IDE extends VerticalLayout implements TeamListener {
 		setEditorUser(user);
 		mw.listenToEditor(editor);//, doc.getValue().getMarkers());
 		editorLayout.removeAllComponents();
+		editorLayout.addComponent(new Label(file.getName()));
 		editorLayout.addComponent(editor);
+		editorLayout.setExpandRatio(editor, 1);
 	}
 
 	private Component createLeftBar() {
