@@ -30,7 +30,7 @@ public class CoredApplication extends Application implements
 	@Override
 	public void init() {
 		setTheme("cored");
-		mainWindow = new CollabWindow(facebookAppId);
+		mainWindow = new CoredWindow(facebookAppId);
 		setMainWindow(mainWindow);
 	}
 
@@ -38,7 +38,7 @@ public class CoredApplication extends Application implements
 	public Window getWindow(String name) {
 		Window w = super.getWindow(name);
 		if (w == null) {
-			w = new CollabWindow(facebookAppId);
+			w = new CoredWindow(facebookAppId);
 			w.setName(name);
 			addWindow(w);
 		}

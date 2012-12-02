@@ -266,8 +266,7 @@ public class VaadinProject extends Project {
 	
 	@Override
 	protected boolean isEditableFile(File f) {
-		boolean editable = f.getName().endsWith(".java");;
-		return editable;
+		return f.getName().endsWith(".java");
 	}
 	
 	@SuppressWarnings("serial")

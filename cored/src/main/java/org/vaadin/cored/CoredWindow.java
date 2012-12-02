@@ -15,6 +15,7 @@ import org.vaadin.facebookauth.FacebookAuth;
 
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
+import com.vaadin.ui.Label;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.HorizontalLayout;
@@ -27,7 +28,7 @@ import com.vaadin.ui.themes.BaseTheme;
 
 @SuppressWarnings("serial")
 // http://dev.vaadin.com/ticket/2841
-public class CollabWindow extends Window implements SelectProjectPanel.Listener,
+public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		FragmentChangedListener, LoggedInCollaboratorListener {
 
 	private UriFragmentUtility urifu = new UriFragmentUtility();
@@ -43,8 +44,8 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 	
 	private CoredInfoComponent info = new CoredInfoComponent();
 
-	public CollabWindow(String facebookAppId) {
-		super();
+	public CoredWindow(String facebookAppId) {
+		super("CoRED");
 		System.out.println("facebookAppId: "+facebookAppId);
 		FacebookAuth fbAuth;
 		if (facebookAppId != null) {
@@ -89,6 +90,8 @@ public class CollabWindow extends Window implements SelectProjectPanel.Listener,
 				.getCoredUser(), false);
 		mainLayout.addComponent(loginPanel);
 		mainLayout.setExpandRatio(loginPanel, 1);
+
+		mainLayout.addComponent(new Label("Some icons by <a href=\"http://p.yusukekamiyamane.com/\">Yusuke Kamiyamane</a>.", Label.CONTENT_XHTML));
 	}
 
 	private void clear() {

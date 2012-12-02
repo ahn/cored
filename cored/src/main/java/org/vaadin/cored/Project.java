@@ -145,7 +145,10 @@ public abstract class Project {
 	}
 	
 	
-	
+	/**
+	 * 
+	 * @return added new project
+	 */
 	private static boolean addProjectIfNotExist(Project p) {
 		synchronized (allProjects) {
 			Project existing = allProjects.get(p.getName());
@@ -153,11 +156,6 @@ public abstract class Project {
 				return false;
 			}
 			else {
-//				try {
-//					p.writeToDisk();
-//				} catch (IOException e) {
-//					System.err.println("Could not write project '"+  p.getName() + "' to disk!");
-//				}
 				allProjects.put(p.getName(), p);
 				return true;
 			}
@@ -541,13 +539,11 @@ public abstract class Project {
 	
 	private boolean readFileFromDisk(File fileFullPath) {
 		String rel = MyFileUtils.relativizePath(getProjectDir(), fileFullPath);
-		System.err.println("rel " + rel);
 		return readFileFromDisk(new ProjectFile(rel));
 	}
 	
 	private boolean readFileFromDisk(ProjectFile file) {
 		String content;
-		System.err.println("loc " + getLocationOfFile(file));
 		try {
 			content = FileUtils.readFileToString(getLocationOfFile(file));
 		} catch (IOException e) {
@@ -598,8 +594,7 @@ public abstract class Project {
 				MyFileUtils.zipDir(projectDir, destZipFile);
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println("WARNING: zipping failed " + projectDir);
 		}
 	}
 
@@ -619,8 +614,7 @@ public abstract class Project {
 					FileUtils.copyDirectory(dir, projectDir);
 					readFromDisk();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					System.err.println("WARNING: reseting project "+getName()+" failed");
 				}
 			}
 		}
