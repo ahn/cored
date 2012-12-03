@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
 
+import org.apache.tools.ant.BuildEvent;
 import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.BuildListener;
 import org.apache.tools.ant.ProjectHelper;
 import org.apache.tools.ant.helper.ProjectHelper2;
 import org.vaadin.cored.Project.DocListener;
@@ -127,15 +129,16 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 		errorLabel.setVisible(false);
 		try {
 			build();
-			if (deployURL != null) {
-				String appUrl = getAppUrl();
-				appLink.setResource(new ExternalResource(appUrl));
-				appLink.setVisible(true);
-				appInfo.setVisible(true);
+			String appUrl = getAppUrl();
+			appLink.setResource(new ExternalResource(appUrl));
+			appLink.setVisible(true);
+			appInfo.setVisible(true);
+			User u = ((CoredApplication)getApplication()).getCoredUser();
+			if (u==null) {
 				project.log("App deployed to "+appUrl);
-			} else {
-				errorLabel.setValue("Deployed");
-				errorLabel.setVisible(true);
+			}
+			else {
+				project.log(u.getName() + " deployed to " + appUrl);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -149,6 +152,9 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 	}
 	
 	private String getAppUrl() {
+		if (deployURL == null) {
+			return "/apps/" + project.getName() + "?debug&restartApplication";
+		}
 		return deployURL + "/apps/" + project.getName() + "?debug&restartApplication";
 	}
 
@@ -168,6 +174,44 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 		org.apache.tools.ant.Project antProj = new org.apache.tools.ant.Project();
 		antProj.setBasedir(project.getProjectDir().getAbsolutePath()); // TODO: turha?
 		antProj.init();
+		
+		antProj.addBuildListener(new BuildListener() {
+
+			public void buildFinished(BuildEvent arg0) {
+				System.out.println("buildFinished " +arg0.getTask()+" "+ arg0.getMessage());
+				
+			}
+
+			public void buildStarted(BuildEvent arg0) {
+				System.out.println("buildStarted " +arg0.getTask()+" "+ arg0.getMessage());
+				
+			}
+
+			public void messageLogged(BuildEvent arg0) {
+				System.out.println("messageLogged " +arg0.getTask()+" "+ arg0.getMessage());
+				
+			}
+
+			public void targetFinished(BuildEvent arg0) {
+				System.out.println("targetFinished " +arg0.getTask()+" "+ arg0.getMessage());
+				
+			}
+
+			public void targetStarted(BuildEvent arg0) {
+				System.out.println("targetStarted " +arg0.getTask()+" "+ arg0.getMessage());
+				
+			}
+
+			public void taskFinished(BuildEvent arg0) {
+				System.out.println("taskFinished " +arg0.getTask()+" "+ arg0.getMessage());
+				
+			}
+
+			public void taskStarted(BuildEvent arg0) {
+				System.out.println("taskStarted " +arg0.getTask()+" "+ arg0.getMessage());
+			}
+			
+		});
 
 		ProjectHelper ph = new ProjectHelper2();
 		ph.parse(antProj, buildXml);
@@ -176,6 +220,7 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 
 		antProj.setProperty("destfile", warFile.getAbsolutePath());
 
+		
 		antProj.executeTarget("war");
 
 	}
