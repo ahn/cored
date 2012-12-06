@@ -48,13 +48,13 @@ public class VaadinJarWindow extends Window implements
 
 		removeButton.addListener(this);
 		
-		HorizontalLayout ho = new HorizontalLayout();
-		ho.setWidth("100%");
+		//HorizontalLayout ho = new HorizontalLayout();
+		//ho.setWidth("100%");
 		removeButton.setWidth("80%");
-		ho.addComponent(removeButton);
+		ve.addComponent(removeButton);
 		jarUpload.setWidth("80%");
-		ho.addComponent(jarUpload);
-		ve.addComponent(ho);
+		ve.addComponent(jarUpload);
+		//ve.addComponent(ho);
 
 		ve.setExpandRatio(jarSelect, 1);
 
@@ -72,7 +72,6 @@ public class VaadinJarWindow extends Window implements
 	}
 
 	public OutputStream receiveUpload(String filename, String mimeType) {
-		System.err.println("receiveUpload " + filename + " --- " + mimeType);
 		uploadingJar = false;
 		if (!filename.endsWith(".jar")) {
 			getWindow().showNotification("Not a .jar file",
@@ -99,11 +98,10 @@ public class VaadinJarWindow extends Window implements
 	}
 
 	public void uploadFailed(FailedEvent event) {
-		System.err.println("uploadFailed");
+		
 	}
 
 	public void uploadSucceeded(SucceededEvent event) {
-		System.err.println("uploadSucceeded");
 		if (uploadingJar) {
 			project.updateJarsFromDisk();
 			draw();
@@ -112,6 +110,10 @@ public class VaadinJarWindow extends Window implements
 
 	public void buttonClick(ClickEvent event) {
 		String selected = (String)jarSelect.getValue();
+		if (selected==null) {
+			return;
+		}
+		
 		if (project.removeJar(selected)) {
 			draw();
 		}

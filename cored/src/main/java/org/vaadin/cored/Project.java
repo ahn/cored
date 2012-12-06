@@ -339,6 +339,17 @@ public abstract class Project {
 			return new LinkedList<ProjectFile>(files.keySet());
 		}
 	}
+	
+	public ProjectFile getProjectFile(String filename) {
+		synchronized (files) {
+			for (ProjectFile pf : files.keySet()) {
+				if (pf.getName().equals(filename)) {
+					return pf;
+				}
+			}
+		}
+		return null;
+	}
 
 	public Shared<Doc, DocDiff> createDoc(ProjectFile file, Doc doc,
 			long collaboratorId) {
@@ -655,6 +666,7 @@ public abstract class Project {
 	public ProjectLog getLog() {
 		return log;
 	}
+	
 	
 
 	

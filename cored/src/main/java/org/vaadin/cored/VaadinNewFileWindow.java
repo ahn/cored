@@ -70,6 +70,7 @@ public class VaadinNewFileWindow extends Window {
 		form.getFooter().addComponent(addButton);
 		
 		addComponent(form);
+		nameField.focus();
 	}
 	
 

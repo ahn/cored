@@ -2,6 +2,8 @@ package org.vaadin.cored;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.vaadin.cored.LoginPanel.LoggedInCollaboratorListener;
 import org.vaadin.cored.lobby.CoredInfoComponent;
@@ -13,6 +15,7 @@ import org.vaadin.cored.lobby.UploadProjectPanel;
 import org.vaadin.cored.lobby.UploadProjectPanel.ProjectUploadListener;
 import org.vaadin.facebookauth.FacebookAuth;
 
+import com.github.wolfie.refresher.Refresher;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Label;
@@ -30,6 +33,17 @@ import com.vaadin.ui.themes.BaseTheme;
 // http://dev.vaadin.com/ticket/2841
 public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		FragmentChangedListener, LoggedInCollaboratorListener {
+	
+	/**
+	 * The URI fragment determines project + file:
+	 * #proj
+	 *     -> project called proj
+	 * #proj/file.txt
+	 *     -> file.txt of project proj in standalone view
+	 * #proj/file.txt!
+	 *     -> file.txt of project proj in project view (note the !)
+	 */
+	private static final Pattern FRAGMENT = Pattern.compile("^([^/]+)(?:/([^!]*))?(!?)$");
 
 	private UriFragmentUtility urifu = new UriFragmentUtility();
 
@@ -43,10 +57,11 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	private LoginPanel loginPanel;
 	
 	private CoredInfoComponent info = new CoredInfoComponent();
+	
+	private boolean ignoreNextFragmentChange = false;
 
 	public CoredWindow(String facebookAppId) {
 		super("CoRED");
-		System.out.println("facebookAppId: "+facebookAppId);
 		FacebookAuth fbAuth;
 		if (facebookAppId != null) {
 			fbAuth = new FacebookAuth(facebookAppId);
@@ -70,16 +85,14 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		super.attach();
 		urifu.addListener(this);
 		loginPanel.setListener(this);
-		draw("");
+		drawLobby();
 	}
 
-	private void draw(String frag) {
+	private void drawLobby() {
 		if (CoredApplication.getInstance().getCoredUser() == null) {
 			showLoginPanel();
-		} else if (frag == null || frag.isEmpty()) {
-			showProjectSelecter();
 		} else {
-			openProject(frag);
+			showProjectSelecter();
 		}
 	}
 
@@ -106,9 +119,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		Button logout = new Button("Log Out "+CoredApplication.getInstance().getCoredUser().getName());
 		logout.setStyleName(BaseTheme.BUTTON_LINK);
 		logout.addListener(new ClickListener() {
-//			@Override
 			public void buttonClick(ClickEvent event) {
-				//CoredApplication.getInstance().setCoredUser(null);
 				loggedInCollaboratorChanged(null);
 			}
 		});
@@ -122,7 +133,6 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		projectSelecter = new SelectProjectPanel(pds);
 		projectSelecter.setWidth("80%");
 		projectSelecter.addListener((SelectProjectPanel.Listener) this);
-		
 		
 		HorizontalLayout hl = new HorizontalLayout();
 		hl.setWidth("100%");
@@ -153,78 +163,94 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		});
 		ve.addComponent(uploadPanel);
 		
-		
-		
 		mainLayout.addComponent(hl);
 		mainLayout.setExpandRatio(hl, 1);
 	}
-	
 
+	private void openProject(Project project, String filename) {
+		clear();
+		Refresher ref = new Refresher();
+		ref.setRefreshInterval(1000);
+		mainLayout.addComponent(ref);
+		IDE ide = new IDE(CoredApplication.getInstance().getCoredUser(), project, filename);
+		mainLayout.addComponent(ide);
+		mainLayout.setExpandRatio(ide, 10);
+		setCaption(project.getName() + " - CoRED");
+	}
+
+	public void projectSelected(String projectName) {
+		urifu.setFragment(projectName);
+	}
 	
-	private void openProject(String projectName) {
-		Project project= Project.getProjectTryDisk(projectName);
-		if (project!=null){
-			openProject(project);
-		}else{
-			showNotification("Could not open project "+projectName+" :(");
+	private void openSingleFile(Project project, String filename) {
+		clear();
+		ProjectFile file = project.getProjectFile(filename);
+		SingleFileView sfw = new SingleFileView(file, project, CoredApplication.getInstance().getCoredUser(), false);
+		mainLayout.addComponent(sfw);
+		mainLayout.setSizeFull();
+		Refresher ref = new Refresher();
+		ref.setRefreshInterval(1000);
+		mainLayout.addComponent(ref);
+		mainLayout.setExpandRatio(sfw, 10);
+		setCaption(filename + " - " + project.getName() +" - CoRED");
+	}
+
+	public void fragmentChanged(FragmentChangedEvent source) {
+		if (ignoreNextFragmentChange) {
+			ignoreNextFragmentChange = false;
+		}
+		else {
+			fragmentChanged(urifu.getFragment());
+		}
+	}
+	
+	public void fragmentChanged(String frag) {
+		if (CoredApplication.getInstance().getCoredUser() == null) {
+			showLoginPanel();
+			return;
+		}
+		if (frag==null || frag.isEmpty()) {
+			drawLobby();
+			return;
+		}
+		
+		Matcher x = FRAGMENT.matcher(urifu.getFragment());
+		if (x.matches()) {
+			Project project= Project.getProjectTryDisk(x.group(1));
+			if (project==null) {
+				showNotification("Could not open project "+x.group(1)+" :(");
+				urifu.setFragment("");
+			}
+			else {
+				String filename = x.group(2);
+				boolean insideIde = !x.group(3).isEmpty();
+				if (filename==null || filename.isEmpty()) {
+					openProject(project, null);
+				}
+				else if (insideIde) {
+					openProject(project, filename);
+				} else {
+					openSingleFile(project, filename);
+				}
+			}
+
+		} else {
 			urifu.setFragment("");
 		}
 	}
 
-	private void openProject(Project project) {
-		clear();
-		
-		for (ProjectFile pf : project.getProjectFiles()) {
-			System.out.println("pf "+pf.getName());
-		}
-		
-
-		IDE ide = new IDE(CoredApplication.getInstance().getCoredUser(),
-				project);
-
-		mainLayout.addComponent(ide);
-		mainLayout.setExpandRatio(ide, 10);
-	}
-
-	/* @Override */
-	public void projectSelected(String projectName) {
-		urifu.setFragment(projectName);
-	}
-
-//	@Override
-	public void fragmentChanged(FragmentChangedEvent source) {
-		String frag = urifu.getFragment();
-
-		String safr = sanitizeFragment(frag);
-		if (safr == null || safr.isEmpty()) {
-			draw("");
-		} else if (!safr.equals(frag)) {
-			urifu.setFragment(safr);
-		} else {
-			if (CoredApplication.getInstance().getCoredUser() != null) {
-				openProject(safr);
-			} else {
-				showLoginPanel();
-			}
-		}
-	}
-
-	private static String sanitizeFragment(String frag) {
-		if (frag == null) {
-			return null;
-		}
-		return frag.toLowerCase().replaceAll("[^a-z0-9]", "");
-	}
-
-//	@Override
 	public void refreshRequested() {
 		showProjectSelecter();
 	}
 
-//	@Override
 	public void loggedInCollaboratorChanged(User user) {
 		CoredApplication.getInstance().setCoredUser(user);
-		draw(urifu.getFragment());
+		fragmentChanged(urifu.getFragment());
+	}
+
+	public void setFragment(String frag) {
+		ignoreNextFragmentChange = true;
+		urifu.setFragment(frag);
 	}
 
 }

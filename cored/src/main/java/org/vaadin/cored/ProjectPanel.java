@@ -18,7 +18,7 @@ import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
 
 @SuppressWarnings("serial")
-public class ProjectPanel extends Panel implements DocListener {
+public class ProjectPanel extends Panel implements DocListener, Property.ValueChangeListener, ItemClickEvent.ItemClickListener {
 	
 	
 	private final Project project;
@@ -109,22 +109,8 @@ public class ProjectPanel extends Panel implements DocListener {
 		super.attach();
 		refresh();
 		
-		tree.addListener(new Property.ValueChangeListener() {
-			
-			public void valueChange(ValueChangeEvent event) {
-				selectedItemId = event.getProperty().getValue();
-				deleteButton.setEnabled(canBeDeleted(selectedItemId));
-			}
-		});
-		
-		tree.addListener(new ItemClickEvent.ItemClickListener() {
-			public void itemClick(ItemClickEvent event) {
-				if (event.isDoubleClick() && selectedItemId instanceof ProjectFile) {
-					tree.select(selectedItemId);
-					fireFileSelected((ProjectFile) selectedItemId);
-				}
-			}
-		});
+		tree.addListener((Property.ValueChangeListener)this);
+		tree.addListener((ItemClickEvent.ItemClickListener)this);
 
 		project.addListener(this);
 	}
@@ -133,9 +119,10 @@ public class ProjectPanel extends Panel implements DocListener {
 	public void detach() {
 		super.detach();
 		project.removeListener(this);
+		tree.removeListener((Property.ValueChangeListener)this);
+		tree.removeListener((ItemClickEvent.ItemClickListener)this);
 	}
 
-//	@Override
 	public void docCreated(ProjectFile file, long collaboratorId) {
 		refresh();
 	}
@@ -151,21 +138,11 @@ public class ProjectPanel extends Panel implements DocListener {
 	private void refresh() {
 		tree.removeAllItems();
 		
-		project.fillTree(tree);
-		
-//		TreeSet<ProjectFile> srcFiles = project.getSourceFiles();
-		
-//		tree.addItem(project.getSourceDir());
-//		tree.setItemCaption(project.getSourceDir(), project.getProgrammingLanguage() + " Source Files");
-//		
-//		for (ProjectFile pf : srcFiles) {
+//		for (ProjectFile pf : project.getProjectFiles()) {
 //			tree.addItem(pf);
 //			tree.setItemCaption(pf, pf.getName());
-//			tree.setChildrenAllowed(pf, false);
-////			tree.setItemIcon(pf, res);
-//			tree.setParent(pf, project.getSourceDir());
 //		}
-		
+		project.fillTree(tree);
 	}
 	
 	
@@ -185,11 +162,27 @@ public class ProjectPanel extends Panel implements DocListener {
 	public void addListener(FileSelectListener li) {
 		listeners.add(li);
 	}
+	
+	public void removeListener(FileSelectListener li) {
+		listeners.remove(li);
+	}
 
 	private void fireFileSelected(ProjectFile file) {
 		for (FileSelectListener li : listeners) {
 			li.fileSelected(file);
 		}
+	}
+
+	public void itemClick(ItemClickEvent event) {
+		if (event.isDoubleClick() && selectedItemId instanceof ProjectFile) {
+			fireFileSelected((ProjectFile) selectedItemId);
+		}
+		tree.select(null);
+	}
+
+	public void valueChange(ValueChangeEvent event) {
+		selectedItemId = event.getProperty().getValue();
+		deleteButton.setEnabled(canBeDeleted(selectedItemId));
 	}
 
 }

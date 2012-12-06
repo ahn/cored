@@ -1,19 +1,13 @@
 package org.vaadin.cored;
 
-import java.util.List;
-
 import org.vaadin.aceeditor.collab.DocDiff;
-import org.vaadin.aceeditor.collab.SuggestibleCollabAceEditor;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
-import org.vaadin.aceeditor.java.VaadinSuggester;
-import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.chatbox.ChatBox;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.cored.ProjectPanel.FileSelectListener;
 import org.vaadin.cored.Team.TeamListener;
 import org.vaadin.diffsync.Shared;
 
-import com.github.wolfie.refresher.Refresher;
 import com.vaadin.terminal.ExternalResource;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Component;
@@ -24,14 +18,10 @@ import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
 
 @SuppressWarnings("serial")
-public class IDE extends VerticalLayout implements TeamListener {
+public class IDE extends VerticalLayout implements TeamListener, FileSelectListener {
 	
+	private SingleFileView editorView;
 	private VerticalLayout editorLayout = new VerticalLayout();
-	{
-		editorLayout.setSizeFull();
-	}
-	
-	private Refresher refresher = new Refresher();
 
 	private CoredMenuBar menuBar;
 	
@@ -44,13 +34,11 @@ public class IDE extends VerticalLayout implements TeamListener {
 	private ChatBox chat;
 	private SharedChat sharedChat;
 
-	private SuggestibleCollabAceEditor editor;
-
 	private ProjectPanel projectPanel;
 
 	private TeamPanel teamPanel;
 
-	public IDE(User user, Project project) {
+	public IDE(User user, Project project, String initialFilename) {
 		super();
 
 		this.user = user;
@@ -93,14 +81,15 @@ public class IDE extends VerticalLayout implements TeamListener {
 		HorizontalSplitPanel hsp = new HorizontalSplitPanel();
 		hsp.addComponent(createLeftBar());
 		hsp.addComponent(editorLayout);
+		editorLayout.setSizeFull();
 		hsp.setSplitPosition(260, UNITS_PIXELS);
 
 		layout.addComponent(hsp);
 		layout.addComponent(rightBar);
 		layout.setExpandRatio(hsp, 1);
 		
-		refresher.setRefreshInterval(2000);
-		addComponent(refresher);
+		
+		editFile(initialFilename);
 	}
 	
 	public Project getProject() {
@@ -112,18 +101,8 @@ public class IDE extends VerticalLayout implements TeamListener {
 		super.attach();
 
 		project.getTeam().addListener(this);
+		projectPanel.addListener(this);
 
-		projectPanel.addListener(new FileSelectListener() {
-//			@Override
-			public void fileSelected(ProjectFile file) {
-				editFile(file);
-			}
-		});
-
-		List<ProjectFile> files = project.getProjectFiles();
-		if (!files.isEmpty()) {
-			editFile(files.get(0));
-		}
 
 	}
 
@@ -132,27 +111,11 @@ public class IDE extends VerticalLayout implements TeamListener {
 		super.detach();
 		System.err.println(this + " detach");
 		project.getTeam().removeListener(this);
+		projectPanel.removeListener(this);
 	}
 	
-//	private InMemoryCompiler getJavaCompiler() {
-//		if (javaCompiler==null) {
-//			javaCompiler = new InMemoryCompiler();
-//			if (project instanceof VaadinProject) {
-//				javaCompiler.appendClassPath(((VaadinProject)project).getClasspathPath());
-//			}
-//		}
-//		return javaCompiler;
-//	}
-
-	private void setEditorUser(User user) {
-		if (editor != null) {
-			editor.setEnabled(user != null);
-			editor.setReadOnly(user == null);
-			if (user!=null) {
-				editor.setUser(user.getUserId(), user.getStyle());
-			}
-			project.getTeam().addUserCollabId(user, editor.getCollaboratorId());
-		}
+	private void editFile(String filename) {
+		editFile(project.getProjectFile(filename));
 	}
 
 	private void editFile(ProjectFile file) {
@@ -173,23 +136,14 @@ public class IDE extends VerticalLayout implements TeamListener {
 	}
 
 	private void editDoc(Shared<Doc, DocDiff> doc, ProjectFile file) {
-		if (editor != null) {
-			doc.removeListener(editor);
-		}
-		editor = EditorUtil.createEditorFor(doc, file);
-		if (file.getName().endsWith(".java")) {
-			InMemoryCompiler compiler = ((VaadinProject)project).getCompiler();
-			editor.setSuggester(new VaadinSuggester(compiler),//, file.getFullJavaName()),
-						VaadinSuggester.DEFAULT_SHORTCUT);
-		}
+		editorView = new SingleFileView(file, project, user, true);
+		editorView.setSizeFull();
 		
-		editor.setSizeFull();
-		setEditorUser(user);
-		mw.listenToEditor(editor);//, doc.getValue().getMarkers());
+		mw.listenToEditor(editorView.getEditor());
+		
 		editorLayout.removeAllComponents();
-		editorLayout.addComponent(new Label(file.getName()));
-		editorLayout.addComponent(editor);
-		editorLayout.setExpandRatio(editor, 1);
+		editorLayout.addComponent(editorView);
+		editorLayout.setExpandRatio(editorView, 1);
 		if (user!=null) {
 			project.getTeam().setUserFile(user, file.getName());
 		}
@@ -257,6 +211,11 @@ public class IDE extends VerticalLayout implements TeamListener {
 			System.out.println("leaveIDE win.open " + app.getURL());
 			win.open(new ExternalResource(app.getURL()));
 		}
+	}
+
+	public void fileSelected(ProjectFile file) {
+		((CoredWindow)getWindow()).setFragment(project.getName()+"/"+file.getName()+"!");
+		editFile(file);
 	}
 
 }
