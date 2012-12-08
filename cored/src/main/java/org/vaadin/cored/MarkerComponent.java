@@ -35,11 +35,11 @@ public class MarkerComponent extends VerticalLayout {
 		this.marker = marker;
 		this.user = user;
 		this.chat = chat;
-		initTab();
+		initThis();
 		setSizeFull();
 	}
 	
-	private void initTab() {
+	private void initThis() {
 		if (marker.getType() == Marker.Type.LOCK) {
 			initLockTab();
 		} else if (marker.getType() == Marker.Type.NOTE) {
@@ -51,7 +51,7 @@ public class MarkerComponent extends VerticalLayout {
 	}
 
 	private void initLockTab() {
-		Button rb = createRemoveButton("Remove");
+		Button rb = createRemoveButton("Unlock");
 		addComponent(rb);
 		setComponentAlignment(rb, Alignment.TOP_RIGHT);
 		User locker = User.getUser(((LockMarkerData) marker.getData())
@@ -61,7 +61,9 @@ public class MarkerComponent extends VerticalLayout {
 	}
 
 	private void initNoteTab() {
-		addComponent(createRemoveButton("Remove"));
+		Button rb = createRemoveButton("Remove note");
+		addComponent(rb);
+		setComponentAlignment(rb, Alignment.TOP_RIGHT);
 		addChatBox();
 	}
 

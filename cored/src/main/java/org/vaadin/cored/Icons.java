@@ -1,5 +1,6 @@
 package org.vaadin.cored;
 
+import com.vaadin.terminal.Resource;
 import com.vaadin.terminal.ThemeResource;
 
 public class Icons {
@@ -28,4 +29,10 @@ public class Icons {
 	
 	public static final ThemeResource BALLOON = new ThemeResource("icons/balloon.png");
 	public static final ThemeResource BALLOON_32 = new ThemeResource("icons/balloon32.png");
+	
+	public static final ThemeResource PAPER_PLANE = new ThemeResource("icons/paper-plane.png");
+	
+	public static final Resource TICK_CIRCLE = new ThemeResource("icons/tick-circle.png");
+	
+	public static final Resource CROSS_CIRCLE = new ThemeResource("icons/cross-circle.png");
 }

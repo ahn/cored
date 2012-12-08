@@ -50,7 +50,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	private int selMin;
 	private int selMax;
 	
-	private Map<String, Marker> latestMarkers = Collections.emptyMap();
+	private Map<String, Marker> latestMarkers = new TreeMap<String, Marker>();
 	private String activeMarker;
 	
 	public EditorView(ProjectFile file, Project project, User user, boolean inIde) {
@@ -107,6 +107,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	@Override
 	public void attach() {
 		super.attach();
+		System.out.println("EV attach");
 		editor.addListener(this);
 		project.getTeam().setUserFileOpen(file, user, editor.getCollaboratorId());
 		getWindow().addListener(this);
@@ -120,6 +121,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	@Override
 	public void detach() {
 		super.detach();
+		System.out.println("EV detach");
 		editor.removeListener(this);
 		project.getTeam().setUserFileClosed(file, user, editor.getCollaboratorId());
 		getWindow().removeWindow(popup);
@@ -232,6 +234,10 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		MarkerComponent mc = new MarkerComponent(m, user, chat);
 		mc.addListener(new MarkerComponentListener() {
 			public void removeMarker() {
+				popup.setVisible(false);
+				activeMarker = null;
+				latestMarkers.remove(markerId);
+				updateMarkers(latestMarkers);
 				removeMarkerById(markerId);
 			}
 		});
@@ -244,7 +250,8 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	
 	private void showAddMarkerPopup(boolean notingEnabled, boolean lockingEnabled) {
 		AddMarkerComponent am = new AddMarkerComponent(this, notingEnabled, lockingEnabled);
-		showPopup("", am);
+		String title = editor.getShadow().getText().substring(selMin, selMax);
+		showPopup(title, am);
 	}
 
 	private void updateMarkers(Map<String, Marker> markers) {
@@ -290,9 +297,13 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		String markerId = editor.newItemId();
 		DocDiff d = DocDiff.addMarker(markerId, m, editor.getShadow().getText());
 		editor.getShared().applyDiff(d);
-		List<ChatLine> lines = Collections.singletonList(new ChatLine("hehhe"));
+		List<ChatLine> lines = Collections.singletonList(new ChatLine(user.getName() + " locked this part."));
 		project.getMarkerChatCreateIfNotExist(file, markerId, lines);
-		editor.scrollToMarkerId(markerId);
+
+		latestMarkers.put(markerId, m);
+		activeMarker = markerId;
+		updateMarkers(latestMarkers);
+		showMarkerPopup();
 	}
 	
 	public void addNote(String note) {
@@ -303,7 +314,11 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		ChatLine line = new ChatLine(note, user.getUserId(), user.getName(), user.getStyle());
 		List<ChatLine> lines = Collections.singletonList(line);
 		project.getMarkerChatCreateIfNotExist(file, markerId, lines);
-		editor.scrollToMarkerId(markerId);
+		
+		latestMarkers.put(markerId, m);
+		activeMarker = markerId;
+		updateMarkers(latestMarkers);
+		showMarkerPopup();
 	}
 	
 }
