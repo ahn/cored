@@ -22,4 +22,10 @@ public class Icons {
 	public static final ThemeResource DOCUMENT_PLUS = new ThemeResource("icons/document--plus.png");
 
 	public static final ThemeResource CROSS_SCRIPT = new ThemeResource("icons/cross-script.png");
+	
+	public static final ThemeResource LOCK = new ThemeResource("icons/lock.png");
+	public static final ThemeResource LOCK_32 = new ThemeResource("icons/lock32.png");
+	
+	public static final ThemeResource BALLOON = new ThemeResource("icons/balloon.png");
+	public static final ThemeResource BALLOON_32 = new ThemeResource("icons/balloon32.png");
 }

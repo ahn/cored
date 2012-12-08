@@ -257,6 +257,7 @@ public class VaadinProject extends Project {
 //			tree.setItemIcon(pf, res);
 			tree.setParent(pf, getSourceDir());
 		}
+		tree.expandItem(getSourceDir());
 	}
 
 	@Override

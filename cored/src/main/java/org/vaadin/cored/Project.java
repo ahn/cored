@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -109,7 +111,9 @@ public abstract class Project {
 
 	private static File projectsRootDir;
 
-	private HashMap<String, SharedChat> chatsByMarkerId = new HashMap<String, SharedChat>();
+	//private HashMap<String, SharedChat> chatsByMarkerId = new HashMap<String, SharedChat>();
+	private HashMap<ProjectFile, HashMap<String,SharedChat>> fileMarkerChats =
+			new HashMap<ProjectFile, HashMap<String,SharedChat>>();
 
 	private ProjectType projectType;
 
@@ -142,6 +146,13 @@ public abstract class Project {
 
 		
 		this.team = new Team(this);
+		team.addListener(new Team.UserFileListener() {
+
+			public void userFilesChanged(Set<User> users, Set<ProjectFile> files) {
+				System.out.println("userFilesChanged " + users+", " + files);
+			}
+			
+		});
 	}
 	
 	
@@ -417,22 +428,39 @@ public abstract class Project {
 		return projectChat;
 	}
 
-	public SharedChat getMarkerChat(String markerId,
-			boolean createIfNotExist, List<ChatLine> lines) {
-		synchronized (chatsByMarkerId) {
-			SharedChat chat = chatsByMarkerId.get(markerId);
-			if (chat == null && createIfNotExist) {
-				Chat ch = (lines == null ? Chat.EMPTY_CHAT : new Chat(lines));
-				chat = new SharedChat(ch);
-				chatsByMarkerId.put(markerId, chat);
+	public SharedChat getMarkerChat(ProjectFile file, String markerId) {
+		synchronized (fileMarkerChats) {
+			if (fileMarkerChats.containsKey(file)) {
+				return fileMarkerChats.get(file).get(markerId);
+			}
+			return null;
+		}
+	}
+	
+	public SharedChat getMarkerChatCreateIfNotExist(ProjectFile file, String markerId, List<ChatLine> initial) {
+		synchronized (fileMarkerChats) {
+			HashMap<String, SharedChat> markerChats = fileMarkerChats.get(file);
+			if (markerChats == null) {
+				markerChats = new HashMap<String, SharedChat>();
+				fileMarkerChats.put(file, markerChats);
+			}
+			SharedChat chat = markerChats.get(markerId);
+			if (chat==null) {
+				chat = new SharedChat(new Chat(initial));
+				fileMarkerChats.get(file).put(markerId, chat);
 			}
 			return chat;
 		}
 	}
 
-	public Shared<Chat, ChatDiff> removeMarkerChat(String markerId) {
-		synchronized (chatsByMarkerId) {
-			return chatsByMarkerId.remove(markerId);
+	public Shared<Chat, ChatDiff> removeMarkerChat(ProjectFile file, String markerId) {
+		synchronized (fileMarkerChats) {
+			synchronized (fileMarkerChats) {
+				if (fileMarkerChats.containsKey(file)) {
+					return fileMarkerChats.get(file).remove(markerId);
+				}
+				return null;
+			}
 		}
 	}
 
@@ -640,10 +668,19 @@ public abstract class Project {
 			for (Project p : allProjects.values()) {
 				p.getTeam().kickUser(user, message);
 				p.removeLocksOf(user);
+				p.removeCursorMarkersOf(user);
 			}
 		}
 	}
 	
+	public void removeCursorMarkersOf(User user) {
+		synchronized (files) {
+			DocDiff diff = DocDiff.removeMarkers(Arrays.asList(new String[]{user.getCursorMarkerId(), user.getSelectionMarkerId()}));
+			for (Shared<Doc, DocDiff> doc : files.values()) {
+				doc.applyDiff(diff);
+			}
+		}
+	}
 	public void removeLocksOf(User user) {
 		synchronized (files) {
 			for (Shared<Doc, DocDiff> doc : files.values()) {

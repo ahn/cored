@@ -17,8 +17,8 @@ public class LoggerTask implements DiffTask<Doc, DocDiff> {
 	}
 
 	public DocDiff exec(Doc value, DocDiff diff, long collaboratorId) {
-		User u = project.getTeam().getUserByCollabId(collaboratorId);
-		log.logEdit(u, diff, collaboratorId);
+//		User u = project.getTeam().getUserByCollabId(collaboratorId);
+//		log.logEdit(u, diff, collaboratorId);
 		return null;
 	}
 

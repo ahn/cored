@@ -5,10 +5,11 @@ import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.vaadin.cored.LoginPanel.LoggedInCollaboratorListener;
 import org.vaadin.cored.lobby.CoredInfoComponent;
 import org.vaadin.cored.lobby.CreateProjectPanel;
 import org.vaadin.cored.lobby.CreateProjectPanel.ProjectCreatedListener;
+import org.vaadin.cored.lobby.LoginPanel;
+import org.vaadin.cored.lobby.LoginPanel.LoggedInCollaboratorListener;
 import org.vaadin.cored.lobby.ProjectDescription;
 import org.vaadin.cored.lobby.SelectProjectPanel;
 import org.vaadin.cored.lobby.UploadProjectPanel;
@@ -18,10 +19,10 @@ import org.vaadin.facebookauth.FacebookAuth;
 import com.github.wolfie.refresher.Refresher;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
-import com.vaadin.ui.Label;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Label;
 import com.vaadin.ui.UriFragmentUtility;
 import com.vaadin.ui.UriFragmentUtility.FragmentChangedEvent;
 import com.vaadin.ui.UriFragmentUtility.FragmentChangedListener;
@@ -185,7 +186,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	private void openSingleFile(Project project, String filename) {
 		clear();
 		ProjectFile file = project.getProjectFile(filename);
-		SingleFileView sfw = new SingleFileView(file, project, CoredApplication.getInstance().getCoredUser(), false);
+		EditorView sfw = new EditorView(file, project, CoredApplication.getInstance().getCoredUser(), false);
 		mainLayout.addComponent(sfw);
 		mainLayout.setSizeFull();
 		Refresher ref = new Refresher();
@@ -251,6 +252,11 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	public void setFragment(String frag) {
 		ignoreNextFragmentChange = true;
 		urifu.setFragment(frag);
+	}
+	
+	public void close() {
+		System.out.println("CoredWindow.close()");
+		super.close();
 	}
 
 }

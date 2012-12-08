@@ -15,6 +15,7 @@
 
 .v-userwidget .name-label {
 	font-weight: bold;
+	left: 50px;
 }
 
 .v-userwidget .user-image {

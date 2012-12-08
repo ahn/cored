@@ -1,5 +1,7 @@
-package org.vaadin.cored;
+package org.vaadin.cored.lobby;
 
+import org.vaadin.cored.FacebookUser;
+import org.vaadin.cored.User;
 import org.vaadin.facebookauth.FacebookAuth;
 import org.vaadin.facebookauth.FacebookAuth.LoginStatusListener;
 import org.vaadin.facebookauth.FacebookLoginButton;
@@ -23,6 +25,7 @@ public class LoginPanel extends Panel implements LoginStatusListener {
 
 	private VerticalLayout loginLayout = new VerticalLayout();
 	private TextField simpleLoginField;
+	private TextField emailField;
 	private FacebookAuth fbAuth;
 	private User user;
 	private FacebookUser fbUser;
@@ -92,13 +95,16 @@ public class LoginPanel extends Panel implements LoginStatusListener {
 		simpleLoginButton.addListener(new ClickListener() {
 			public void buttonClick(ClickEvent event) {
 				String nick = (String) simpleLoginField.getValue();
+				String email = (String) emailField.getValue();
 				if (!nick.isEmpty()) {
-					setLoggedInUser(User.newUser(nick), true);
+					setLoggedInUser(User.newUser(nick,email.isEmpty()?null:email), true);
 				}
 			}
 		});
 		simpleLoginField = new TextField(nickText);
 		loginLayout.addComponent(simpleLoginField);
+		emailField = new TextField("Email (optional)");
+		loginLayout.addComponent(emailField);
 		loginLayout.addComponent(simpleLoginButton);
 	}
 
@@ -113,7 +119,7 @@ public class LoginPanel extends Panel implements LoginStatusListener {
 		setLoggedInUser(fbUser, true);
 	}
 
-	interface LoggedInCollaboratorListener {
+	public interface LoggedInCollaboratorListener {
 		void loggedInCollaboratorChanged(User user);
 	}
 

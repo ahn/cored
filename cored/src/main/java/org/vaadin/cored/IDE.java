@@ -20,7 +20,7 @@ import com.vaadin.ui.Window;
 @SuppressWarnings("serial")
 public class IDE extends VerticalLayout implements TeamListener, FileSelectListener {
 	
-	private SingleFileView editorView;
+	private EditorView editorView;
 	private VerticalLayout editorLayout = new VerticalLayout();
 
 	private CoredMenuBar menuBar;
@@ -29,8 +29,8 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 	private final Project project;
 	private final Component buildComponent;
 
-	private VerticalLayout rightBar = new VerticalLayout();
-	private MarkerWidget mw;
+//	private VerticalLayout rightBar = new VerticalLayout();
+//	private MarkerWidget mw;
 	private ChatBox chat;
 	private SharedChat sharedChat;
 
@@ -58,25 +58,18 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 		
 		addComponent(layout);
 		setExpandRatio(layout, 1);
+//
+//		rightBar.setWidth("240px");
+//		rightBar.setHeight("100%");
+//
+//		mw = new MarkerWidget(project);
+//		mw.setUser(user);
+//		mw.setWidth("90%");
+//		mw.setHeight("90%");
+//		rightBar.addComponent(mw);
+//		rightBar.setComponentAlignment(mw, Alignment.TOP_CENTER);
 
-		rightBar.setWidth("240px");
-		rightBar.setHeight("100%");
 
-		mw = new MarkerWidget(project);
-		mw.setUser(user);
-		mw.setWidth("90%");
-		mw.setHeight("90%");
-		rightBar.addComponent(mw);
-		rightBar.setComponentAlignment(mw, Alignment.TOP_CENTER);
-
-		chat = new ChatBox(sharedChat);
-		chat.setUser(user.getUserId(), user.getName(), user.getStyle());
-		chat.setShowMyNick(false);
-		chat.setCaption("Project-wide Chat:");
-		chat.setWidth("90%");
-		chat.setHeight("90%");
-		rightBar.addComponent(chat);
-		rightBar.setComponentAlignment(chat, Alignment.TOP_CENTER);
 		
 		HorizontalSplitPanel hsp = new HorizontalSplitPanel();
 		hsp.addComponent(createLeftBar());
@@ -85,7 +78,7 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 		hsp.setSplitPosition(260, UNITS_PIXELS);
 
 		layout.addComponent(hsp);
-		layout.addComponent(rightBar);
+//		layout.addComponent(rightBar);
 		layout.setExpandRatio(hsp, 1);
 		
 		
@@ -136,17 +129,14 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 	}
 
 	private void editDoc(Shared<Doc, DocDiff> doc, ProjectFile file) {
-		editorView = new SingleFileView(file, project, user, true);
+		editorView = new EditorView(file, project, user, true);
 		editorView.setSizeFull();
 		
-		mw.listenToEditor(editorView.getEditor());
+//		mw.listenToEditor(editorView.getEditor());
 		
 		editorLayout.removeAllComponents();
 		editorLayout.addComponent(editorView);
 		editorLayout.setExpandRatio(editorView, 1);
-		if (user!=null) {
-			project.getTeam().setUserFile(user, file.getName());
-		}
 	}
 
 	private Component createLeftBar() {
@@ -154,20 +144,37 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 
 		leftBar.setSizeFull();
 
-		Component tp = createTeamPanel();
-		leftBar.addComponent(tp);
-		leftBar.setComponentAlignment(tp, Alignment.MIDDLE_CENTER);
+//		Component tp = createTeamPanel();
+//		leftBar.addComponent(tp);
+//		leftBar.setComponentAlignment(tp, Alignment.MIDDLE_CENTER);
 		
+
 		Component pp = createProjectPanel();
 		leftBar.addComponent(pp);
 		leftBar.setComponentAlignment(pp, Alignment.MIDDLE_CENTER);
+		leftBar.setExpandRatio(pp, 2);
 		
 		if (buildComponent!=null) {
 			buildComponent.setWidth("90%");
 			buildComponent.setHeight("90%");
 			leftBar.addComponent(buildComponent);
 			leftBar.setComponentAlignment(buildComponent, Alignment.MIDDLE_CENTER);
+			leftBar.setExpandRatio(buildComponent, 1);
 		}
+		
+		chat = new ChatBox(sharedChat);
+		chat.setUser(user.getUserId(), user.getName(), user.getStyle());
+		chat.setShowMyNick(false);
+		chat.setCaption("Project-wide Chat:");
+		chat.setWidth("90%");
+		chat.setHeight("90%");
+		leftBar.addComponent(chat);
+		leftBar.setComponentAlignment(chat, Alignment.TOP_CENTER);
+		leftBar.setExpandRatio(chat, 2);
+		
+
+		
+
 
 		return leftBar;
 	}

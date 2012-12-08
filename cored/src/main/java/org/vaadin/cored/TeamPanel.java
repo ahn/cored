@@ -29,13 +29,14 @@ public class TeamPanel extends Panel implements TeamListener {
 		this.removeAllComponents();
 
 		for (final User u : newUsers) {
-			UserWidget uw = new UserWidget(u, team.getUserFile(u));
-			uw.getKickButton().addListener(new ClickListener() {
-//				@Override
-				public void buttonClick(ClickEvent event) {
-					team.kickUser(u, "kicked");
-				}
-			});
+			//ProjectFile file = team.getUserFile(u);
+			UserWidget uw = new UserWidget(u);
+//			uw.getKickButton().addListener(new ClickListener() {
+////				@Override
+//				public void buttonClick(ClickEvent event) {
+//					team.kickUser(u, "kicked");
+//				}
+//			});
 			uw.setWidth("90%");
 			addComponent(uw);
 		}

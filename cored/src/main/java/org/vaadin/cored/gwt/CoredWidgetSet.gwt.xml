@@ -35,4 +35,6 @@
     <inherits name="com.vaadin.addon.timeline.gwt.TimelineWidgetSet" />
 
     
+
+    
 </module>

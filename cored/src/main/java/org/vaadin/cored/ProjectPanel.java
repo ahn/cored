@@ -7,6 +7,7 @@ import org.vaadin.cored.Project.DocListener;
 import com.vaadin.data.Property;
 import com.vaadin.data.Property.ValueChangeEvent;
 import com.vaadin.event.ItemClickEvent;
+import com.vaadin.terminal.ExternalResource;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
@@ -137,12 +138,8 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 	
 	private void refresh() {
 		tree.removeAllItems();
-		
-//		for (ProjectFile pf : project.getProjectFiles()) {
-//			tree.addItem(pf);
-//			tree.setItemCaption(pf, pf.getName());
-//		}
 		project.fillTree(tree);
+		
 	}
 	
 	
@@ -174,10 +171,17 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 	}
 
 	public void itemClick(ItemClickEvent event) {
-		if (event.isDoubleClick() && selectedItemId instanceof ProjectFile) {
-			fireFileSelected((ProjectFile) selectedItemId);
+		if (!(event.getItemId() instanceof ProjectFile)) {
+			return;
 		}
-		tree.select(null);
+		ProjectFile file = (ProjectFile) event.getItemId();
+		if (event.getButton()==ItemClickEvent.BUTTON_MIDDLE) {
+			String url = "#"+project.getName()+"/"+file.getName();
+			getWindow().open(new ExternalResource(url), "_blank");
+		}
+		else if (event.isDoubleClick()) {
+			fireFileSelected(file);
+		}
 	}
 
 	public void valueChange(ValueChangeEvent event) {

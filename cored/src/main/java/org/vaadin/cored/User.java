@@ -3,7 +3,10 @@ package org.vaadin.cored;
 import java.awt.Color;
 import java.util.HashMap;
 
-public class User {
+import org.vaadin.aceeditor.collab.DocDiff;
+import org.vaadin.aceeditor.gwt.shared.Marker;
+
+public class User implements Comparable<User> {
 
 	private static final Color LIGHTGREEN = new Color(144,238,144);
 	private static final Color LIGHTSALMON = new Color(255,160,122);
@@ -18,7 +21,7 @@ public class User {
 
 	private final String userId;
 	private final String name;
-
+	private final String email;
 	
 
 	protected static String newUserId() {
@@ -33,8 +36,8 @@ public class User {
 		}
 	}
 
-	public static User newUser(String name) {
-		User user = new User(newUserId(), name);
+	public static User newUser(String name, String email) {
+		User user = new User(newUserId(), name, email);
 		synchronized (users) {
 			users.put(user.getUserId(), user);
 		}
@@ -42,8 +45,13 @@ public class User {
 	}
 
 	protected User(String userId, String name) {
+		this(userId, name, null);
+	}
+	
+	protected User(String userId, String name, String email) {
 		this.userId = userId;
 		this.name = name;
+		this.email = email;
 	}
 
 	public String getUserId() {
@@ -52,6 +60,10 @@ public class User {
 
 	public String getName() {
 		return name;
+	}
+	
+	public String getEmail() {
+		return email;
 	}
 
 	public String getStyle() {
@@ -74,13 +86,6 @@ public class User {
 		return COLORS[getStyleNumber(userId)];
 	}
 
-	// private static Pattern nonWordchar = Pattern.compile("[^\\w]");
-	// private static boolean isValidUserId(String userId) {
-	// return !nonWordchar.matcher(userId).find();
-	// }
-
-	
-
 	@Override
 	public boolean equals(Object other) {
 		if (other instanceof User) {
@@ -93,6 +98,35 @@ public class User {
 	public int hashCode() {
 		return userId.hashCode();
 	}
+	
+	public String getCursorMarkerId() {
+		return getUserId()+"-cursor";
+	}
+	
+	public String getSelectionMarkerId() {
+		return getUserId()+"-selection";
+	}
+	
+	public DocDiff cursorDiff(int start, int end, String text) {
+		if (start==end) {
+			end++;
+			Marker m = Marker.newCollaboratorAceMarker(start, end, "acemarker-1 "+getStyle()+" cursor", "text", false, getUserId());
+			return DocDiff.replaceMarker(getSelectionMarkerId(), getCursorMarkerId(), m, text);
+		}
+		else {
+			Marker m = Marker.newCollaboratorAceMarker(start, end, "acemarker-1 "+getStyle(), "line", false, getUserId());
+			return DocDiff.replaceMarker(getCursorMarkerId(), getSelectionMarkerId(), m, text);
+		}
+		
+	}
 
+	public int compareTo(User o) {
+		return name.compareTo(o.name);
+	}
+	
+	@Override
+	public String toString() {
+		return "["+userId+"] "+name;
+	}
 
 }

@@ -21,7 +21,6 @@ public class MarkerCleanupTask implements DiffTask<Doc, DocDiff> {
 
 	private Date nextCheckTime;
 
-	private static final long EDIT_LIFETIME_MS = 60L * 1000L;
 	private static final long LOCK_LIFETIME_MS = 5L * 60L * 1000L;
 
 	private static final long MIN_CHECK_INTERVAL_MS = 60L * 1000L;
@@ -41,15 +40,12 @@ public class MarkerCleanupTask implements DiffTask<Doc, DocDiff> {
 			return null;
 		}
 		
-		final Date editCutoff = new Date(now.getTime() - EDIT_LIFETIME_MS);
 		final Date lockCutoff = new Date(now.getTime() - LOCK_LIFETIME_MS);
 		Date cutoff = null;
 		HashSet<String> removeMarkers = new HashSet<String>();
 		for (Entry<String, Marker> e : value.getMarkers().entrySet()) {
 			Marker m = e.getValue();
-			if (m.getType() == Marker.Type.EDIT) {
-				cutoff = editCutoff;
-			} else if (isUserLock(m)) {
+			if (isUserLock(m)) {
 				cutoff = lockCutoff;
 			} else {
 				continue;
