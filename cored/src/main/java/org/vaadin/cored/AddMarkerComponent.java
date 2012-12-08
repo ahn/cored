@@ -21,6 +21,8 @@ public class AddMarkerComponent extends VerticalLayout {
 		lockButton.setIcon(Icons.LOCK);
 		noteButton.setIcon(Icons.BALLOON);
 		
+		lockButton.setWidth("100%");
+		noteButton.setWidth("100%");
 		noteField.setWidth("100%");
 		
 		addComponent(noteField);

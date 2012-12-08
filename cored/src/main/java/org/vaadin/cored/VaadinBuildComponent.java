@@ -16,13 +16,14 @@ import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
+import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Link;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.VerticalLayout;
 
 @SuppressWarnings("serial")
-public class VaadinBuildComponent extends Panel implements BuildComponent,
+public class VaadinBuildComponent extends CustomComponent implements BuildComponent,
 		ClickListener, DocListener {
 
 	public enum DeployType {
@@ -74,14 +75,13 @@ public class VaadinBuildComponent extends Panel implements BuildComponent,
 	}
 
 	public VaadinBuildComponent(VaadinProject project, DeployType deployType) {
-		super("Deploy App");
-		setIcon(DEPLOY_ICON);
 		this.project = project;
 		this.deployType = deployType;
 		File prDir = project.getProjectDir();
 		buildXml = new File(prDir, "build.xml");
-		addComponent(layout);
+		
 		draw();
+		setCompositionRoot(layout);
 	}
 
 	private void draw() {

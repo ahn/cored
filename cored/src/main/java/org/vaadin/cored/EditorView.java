@@ -215,6 +215,8 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		int[] coords = editor.getCursorCoords();
 		popup.setPositionX(coords[0]+200);
 		popup.setPositionY(coords[1]);
+		popup.setWidth("250px");
+		popup.setHeight("250px");
 		popup.setVisible(true);
 		popup.setCaption(title);
 		popup.removeAllComponents();

@@ -149,29 +149,40 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 //		leftBar.setComponentAlignment(tp, Alignment.MIDDLE_CENTER);
 		
 
+		
+
 		Component pp = createProjectPanel();
 		leftBar.addComponent(pp);
 		leftBar.setComponentAlignment(pp, Alignment.MIDDLE_CENTER);
 		leftBar.setExpandRatio(pp, 2);
 		
+
 		if (buildComponent!=null) {
 			buildComponent.setWidth("90%");
-			buildComponent.setHeight("90%");
+//			buildComponent.setHeight("100px");
 			leftBar.addComponent(buildComponent);
 			leftBar.setComponentAlignment(buildComponent, Alignment.MIDDLE_CENTER);
-			leftBar.setExpandRatio(buildComponent, 1);
+//			leftBar.setExpandRatio(buildComponent, 1);
 		}
+		
+		AllUsersWidget auw = new AllUsersWidget(project.getTeam());
+		auw.setWidth("90%");
+//		auw.setHeight("100px");
+		leftBar.addComponent(auw);
+		leftBar.setComponentAlignment(auw, Alignment.MIDDLE_CENTER);
+//		leftBar.setExpandRatio(auw, 1);
 		
 		chat = new ChatBox(sharedChat);
 		chat.setUser(user.getUserId(), user.getName(), user.getStyle());
-		chat.setShowMyNick(false);
-		chat.setCaption("Project-wide Chat:");
+		chat.setShowMyNick(true);
+//		chat.setCaption("Project-wide Chat:");
 		chat.setWidth("90%");
-		chat.setHeight("90%");
+		chat.setHeight("100%");
 		leftBar.addComponent(chat);
 		leftBar.setComponentAlignment(chat, Alignment.TOP_CENTER);
 		leftBar.setExpandRatio(chat, 2);
 		
+
 
 		
 
