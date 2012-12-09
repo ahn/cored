@@ -149,6 +149,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	}
 
 	public void selectionChanged(int start, int end) {
+		System.out.println("selectionChanged. " + start + " ," + end);
 		// "always synchronize on the application instance when accessing
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
@@ -159,6 +160,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	}
 	
 	private void selectionChangedAfterSync(int start, int end) {
+		System.out.println("selectionChanged! " + start + " ," + end);
 		selMin = Math.min(start, end);
 		selMax = Math.max(start, end);
 		DocDiff diff = user.cursorDiff(selMin, selMax, editor.getShadow().getText());
@@ -303,29 +305,43 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 
 	synchronized public void addLock() {
 		Marker m = Marker.newLockMarker(selMin, selMax, user.getUserId(), "Locked for " + user.getName());
-		String markerId = editor.newItemId();
-		DocDiff d = DocDiff.addMarker(markerId, m, editor.getShadow().getText());
-		editor.getShared().applyDiff(d);
-		List<ChatLine> lines = Collections.singletonList(new ChatLine(user.getName() + " locked this part."));
-		project.getMarkerChatCreateIfNotExist(file, markerId, lines);
-
-		latestMarkers.put(markerId, m);
-		activeMarker = markerId;
-		updateMarkers(latestMarkers);
-		showMarkerPopup();
+		ChatLine line = new ChatLine(user.getName() + " locked this part.");
+		addMarker(m, line);
 	}
 	
 	synchronized public void addNote(String note) {
-		Marker m = Marker.newNoteMarker(selMin, selMax);
-		String markerId = editor.newItemId();
-		DocDiff d = DocDiff.addMarker(markerId, m, editor.getShadow().getText());
-		editor.getShared().applyDiff(d);
 		ChatLine line = new ChatLine(note, user.getUserId(), user.getName(), user.getStyle());
-		List<ChatLine> lines = Collections.singletonList(line);
-		project.getMarkerChatCreateIfNotExist(file, markerId, lines);
+		Marker m = Marker.newNoteMarker(0, 0);
+		addMarker(m, line);
+	}
+	
+	private void addMarker(Marker m, ChatLine chatLine) {
+		String markerId = editor.newItemId();
+		Doc v = doc.getValue();
+		// Adding the marker to the selection marker position, a bit of a hack.
+		Marker sema = v.getMarkers().get(user.getSelectionMarkerId());
+		System.out.println("markers: " + v.getMarkers().keySet());
+		if (sema==null) {
+			getWindow().showNotification("Something went wrong marker-wise :( Please try again.");
+			return;
+		}
+		String text = v.getText();
+		int start = sema.getStart();
+		int end = sema.getEnd();
+		m = m.withNewPos(start, end);
+		System.out.println("note: >>>" +text.substring(start, end)+"<<<");
+		
+		DocDiff d = DocDiff.addMarker(markerId, m, text);
+		doc.applyDiff(d);
+		
+		if (chatLine!=null) {
+			List<ChatLine> lines = Collections.singletonList(chatLine);
+			project.getMarkerChatCreateIfNotExist(file, markerId, lines);
+		}
 		
 		latestMarkers.put(markerId, m);
 		activeMarker = markerId;
+		
 		updateMarkers(latestMarkers);
 		showMarkerPopup();
 	}
