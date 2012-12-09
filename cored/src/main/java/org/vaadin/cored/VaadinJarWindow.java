@@ -8,7 +8,6 @@ import java.io.OutputStream;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
-import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.ListSelect;
 import com.vaadin.ui.Upload;
 import com.vaadin.ui.Upload.FailedEvent;
@@ -48,13 +47,10 @@ public class VaadinJarWindow extends Window implements
 
 		removeButton.addListener(this);
 		
-		//HorizontalLayout ho = new HorizontalLayout();
-		//ho.setWidth("100%");
 		removeButton.setWidth("80%");
 		ve.addComponent(removeButton);
 		jarUpload.setWidth("80%");
 		ve.addComponent(jarUpload);
-		//ve.addComponent(ho);
 
 		ve.setExpandRatio(jarSelect, 1);
 

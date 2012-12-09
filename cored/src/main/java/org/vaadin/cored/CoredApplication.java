@@ -81,7 +81,7 @@ public class CoredApplication extends Application implements
 	public void close() {
 		if (user!=null) {
 			System.err.println("Kicking "+user.getName()+" from all projects.");
-			Project.kickFromAllProjects(user, "session closed");
+			Project.kickFromAllProjects(user);
 		}
 		super.close();
 	}

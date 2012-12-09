@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -642,7 +641,7 @@ public abstract class Project {
 			if (projectDir.equals(dir)) {
 				return;
 			}
-			team.kickAll("Resetting project!");
+			team.removeAllUsers();
 			fireProjectReset();
 			synchronized (files) {
 				try {
@@ -663,24 +662,32 @@ public abstract class Project {
 		return s!=null && VALID_PROJECT_NAME.matcher(s).matches();
 	}
 	
-	public static void kickFromAllProjects(User user, String message) {
+	public static void kickFromAllProjects(User user) {
 		synchronized(allProjects) {
 			for (Project p : allProjects.values()) {
-				p.getTeam().kickUser(user, message);
+				p.getTeam().removeUser(user);
 				p.removeLocksOf(user);
-				p.removeCursorMarkersOf(user);
 			}
 		}
 	}
 	
+	synchronized public void removeCursorMarkersOf(User user, ProjectFile file) {
+		Shared<Doc, DocDiff> doc;
+		synchronized (files) {
+			doc = files.get(file);
+		}
+		doc.applyDiff(user.getRemoveMarkersDiff());
+	}
+	
 	public void removeCursorMarkersOf(User user) {
 		synchronized (files) {
-			DocDiff diff = DocDiff.removeMarkers(Arrays.asList(new String[]{user.getCursorMarkerId(), user.getSelectionMarkerId()}));
+			DocDiff diff = user.getRemoveMarkersDiff();
 			for (Shared<Doc, DocDiff> doc : files.values()) {
 				doc.applyDiff(diff);
 			}
 		}
 	}
+	
 	public void removeLocksOf(User user) {
 		synchronized (files) {
 			for (Shared<Doc, DocDiff> doc : files.values()) {
@@ -694,7 +701,6 @@ public abstract class Project {
 				}
 			}
 		}
-		
 	}
 	protected boolean canBeDeleted(ProjectFile file) {
 		return true;

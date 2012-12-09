@@ -119,19 +119,19 @@ public class LoginPanel extends Panel implements LoginStatusListener {
 		setLoggedInUser(fbUser, true);
 	}
 
-	public interface LoggedInCollaboratorListener {
-		void loggedInCollaboratorChanged(User user);
+	public interface LoggedInUserListener {
+		void loggedInUserChanged(User user);
 	}
 
-	private LoggedInCollaboratorListener listener;
+	private LoggedInUserListener listener;
 
-	public void setListener(LoggedInCollaboratorListener listener) {
+	public void setListener(LoggedInUserListener listener) {
 		this.listener = listener;
 	}
 
 	private void fireLoggedInCollaboratorChanged(User user) {
 		if (listener != null) {
-			listener.loggedInCollaboratorChanged(user);
+			listener.loggedInUserChanged(user);
 		}
 	}
 

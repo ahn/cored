@@ -13,16 +13,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Team {
 
 	public interface TeamListener {
-		public void teamChanged(String message);
+		public void teamChanged();
 	}
 
 	private HashSet<TeamListener> listeners = new HashSet<TeamListener>();
 
-	public void addListener(TeamListener li) {
+	synchronized public void addListener(TeamListener li) {
 		listeners.add(li);
 	}
 
-	public void removeListener(TeamListener li) {
+	synchronized public void removeListener(TeamListener li) {
 		listeners.remove(li);
 	}
 	
@@ -32,7 +32,7 @@ public class Team {
 
 	private HashSet<UserFileListener> ufListeners = new HashSet<UserFileListener>();
 
-	public void addListener(UserFileListener li) {
+	synchronized public void addListener(UserFileListener li) {
 		ufListeners.add(li);
 	}
 
@@ -40,15 +40,19 @@ public class Team {
 		ufListeners.remove(li);
 	}
 
-	private HashMap<String, User> usersById = new HashMap<String, User>();
+//	private HashMap<String, User> usersById = new HashMap<String, User>();
+	
+	private HashSet<User> users = new HashSet<User>();
 
 	// contains all the users ever added to this team
 	private HashMap<String, User> allUsersById = new HashMap<String, User>();
+	
+	private TreeMap<User, TreeSet<ProjectFile>> userFiles = new TreeMap<User, TreeSet<ProjectFile>>();
 
 	// contains all the users ever added to this team
-	private HashMap<Long, User> allUsersByCollabId = new HashMap<Long, User>();
+//	private HashMap<Long, User> allUsersByCollabId = new HashMap<Long, User>();
 
-	private HashMap<String, TreeSet<ProjectFile>> filesByUserId = new HashMap<String, TreeSet<ProjectFile>>();
+//	private HashMap<String, TreeSet<ProjectFile>> filesByUserId = new HashMap<String, TreeSet<ProjectFile>>();
 	
 	private HashMap<ProjectFile, TreeMap<User,TreeSet<Long>>> usersByFile
 			= new HashMap<ProjectFile, TreeMap<User,TreeSet<Long>>>();
@@ -60,33 +64,42 @@ public class Team {
 	}
 
 	synchronized public void addUser(User user) {
-		if (!usersById.containsKey(user.getUserId())) {
-			usersById.put(user.getUserId(), user);
+		if (!users.contains(user)) {
+			users.add(user);
 			allUsersById.put(user.getUserId(), user);
 			project.log(user.getName() + " joined");
-			fireChange(null);
+			fireTeamChanged();
 		}
 	}
 
-	public void kickUser(User user) {
-		kickUser(user, null);
-	}
 
-	synchronized public void kickUser(User user, String message) {
-		if (usersById.containsKey(user.getUserId())) {
-			usersById.remove(user.getUserId());
-			if (message != null) {
-				project.log(user.getName() + " left (" + message + ")");
-			} else {
-				project.log(user.getName() + " left");
+	synchronized public void removeUser(User user) {
+		
+		boolean removed = users.remove(user);
+		if (!removed) {
+			return;
+		}
+		
+		HashSet<ProjectFile> files = new HashSet<ProjectFile>();
+		for (Entry<ProjectFile, TreeMap<User, TreeSet<Long>>> e : usersByFile.entrySet()) {
+			TreeSet<Long> collabIds = e.getValue().remove(user);
+			if (collabIds!=null) {
+				files.add(e.getKey());
 			}
-			fireChange(message);
 		}
+		if (!files.isEmpty()) {
+			project.removeCursorMarkersOf(user);
+			fireUserFileChange(Collections.singleton(user), files);
+		}
+		
+		fireTeamChanged();
+		
+		project.log(user.getName() + " left");
 	}
 
-	synchronized public void kickAll(String message) {
-		for (Entry<String, User> e : usersById.entrySet()) {
-			kickUser(e.getValue(), message);
+	synchronized public void removeAllUsers() {
+		for (User u : users) {
+			removeUser(u);
 		}
 	}
 	
@@ -95,19 +108,15 @@ public class Team {
 		if (users==null) {
 			return Collections.emptySet();
 		}
-		return Collections.unmodifiableCollection(users.keySet());
+		return new TreeSet<User>(users.keySet());
 	}
 
 	synchronized public void setUserFileOpen(ProjectFile file, User user, long collabId) {
 		System.out.println("OPEN " + file + " --- " + user);
-		boolean added = addFileUser(file, user, collabId);
-		
-		if (added) {
-			fireUserFileChange(Collections.singleton(user), Collections.singleton(file));
-		}
+		addFileUser(file, user, collabId);
 	}
 	
-	private boolean addFileUser(ProjectFile file, User user, long collabId) {
+	private void addFileUser(ProjectFile file, User user, long collabId) {
 		boolean addedFileUser = false;
 		TreeMap<User, TreeSet<Long>> users = usersByFile.get(file);
 		if (users==null) {
@@ -120,70 +129,66 @@ public class Team {
 			collabIds = new TreeSet<Long>();
 			users.put(user, collabIds);
 			addedFileUser = true;
+			
+			TreeSet<ProjectFile> ufs = userFiles.get(user);
+			if (ufs==null) {
+				ufs = new TreeSet<ProjectFile>();
+				userFiles.put(user, ufs);
+			}
+			ufs.add(file);
 		}
 		
 		collabIds.add(collabId);
-		
-		return addedFileUser;
+
+		if (addedFileUser) {
+			fireUserFileChange(Collections.singleton(user), Collections.singleton(file));
+		}
 	}
 
 	synchronized public void setUserFileClosed(ProjectFile file, User user, long collabId) {
 		System.out.println("CLOSE " + file + " --- " + user);
-		boolean removed = removeFileUser(file, user, collabId);
-		
-		if (removed) {
-			fireUserFileChange(Collections.singleton(user), Collections.singleton(file));
-		}
+		removeFileUser(file, user, collabId);
+		System.out.println("CLOSE end");
 	}
 	
-	private boolean removeFileUser(ProjectFile file, User user, long collabId) {
-		boolean removed = false;
+	private void removeFileUser(ProjectFile file, User user, long collabId) {
+		boolean removedFileUser = false;
 		TreeMap<User, TreeSet<Long>> users = usersByFile.get(file);
 		if (users!=null) {
 			TreeSet<Long> collabIds = users.get(user);
 			if (collabIds!=null) {
+				System.out.println("users " + user);
 				collabIds.remove(collabId);
 				if (collabIds.isEmpty()) {
 					users.remove(user);
-					removed = true;
+					removedFileUser = true;
 				}
 			}
 			if (users.isEmpty()) {
 				usersByFile.remove(file);
 			}
 		}
-		return removed;
+		
+		if (removedFileUser) {
+			TreeSet<ProjectFile> ufs = userFiles.get(user);
+			ufs.remove(file);
+			if (ufs.isEmpty()) {
+				userFiles.remove(user);
+			}
+		}
+		
+		if (removedFileUser) {
+			fireUserFileChange(Collections.singleton(user), Collections.singleton(file));
+		}
 	}
 	
-	private boolean removeUserFile(User user, ProjectFile file) {
-		TreeSet<ProjectFile> files = filesByUserId.get(user.getUserId());
-		if (files!=null) {
-			return files.remove(file);
-		}
-		return false;
-	}
+	
 
-//	synchronized public void setUserFileClosedAll(User user) {
-//		TreeSet<ProjectFile> removed = filesByUserId.remove(user.getUserId());
-//		for (TreeSet<User> users : usersByFile.values()) {
-//			users.remove(user);
-//		}
-//		if (removed!=null) {
-//			fireUserFileChange(Collections.singleton(user), removed);
-//		}
-//	}
 
-	// synchronized Collection<ProjectFile> getFilesOpenBy(User user) {
-	// return filesByUserId.get(user.getUserId());
-	// }
-
-	// synchronized public Collection<User> getUsersOfFile(ProjectFile file) {
-	// return filesByUserId.get(user.getUserId());
-	// }
-
-	private void fireChange(String message) {
+	private void fireTeamChanged() {
+		System.out.println("fireTeamChanged " + users);
 		for (TeamListener li : listeners) {
-			li.teamChanged(message);
+			li.teamChanged();
 		}
 	}
 	
@@ -194,15 +199,11 @@ public class Team {
 	}
 
 	synchronized public Collection<User> getUsers() {
-		return new HashSet<User>(usersById.values());
+		return new TreeSet<User>(users);
 	}
 
 	synchronized public boolean hasUser(User user) {
-		return usersById.containsKey(user.getUserId());
-	}
-
-	synchronized public User getUserById(String userId) {
-		return usersById.get(userId);
+		return users.contains(user);
 	}
 
 	synchronized public User getUserByIdEvenIfKicked(String userId) {

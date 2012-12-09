@@ -28,7 +28,6 @@ public class FileSavingCompilerErrorChecker extends CompilerErrorChecker {
 			try {
 				System.err.println("writing! " + location);
 				FileUtils.write(location, source);
-//				MyFileUtils.writeFileToDisk(location, source);
 			} catch (IOException e) {
 				System.err.println("saving failed!");
 				e.printStackTrace();

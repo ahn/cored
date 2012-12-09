@@ -63,14 +63,13 @@ public class CoredMenuBar extends MenuBar {
 	
 	private class CloseCommand implements Command {
 		public void menuSelected(MenuItem selectedItem) {
-			ide.leaveIDE();
+			ide.leaveProject();
 		}
 	}
 	
 	private class LogoutCommand implements Command {
 		public void menuSelected(MenuItem selectedItem) {
-			CoredApplication.getInstance().setCoredUser(null);
-			ide.leaveIDE();
+			ide.logout();
 		}
 	}
 	

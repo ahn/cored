@@ -116,13 +116,12 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		getWindow().addWindow(popup);
 	}
 	
-	
-
 	@Override
 	public void detach() {
 		super.detach();
 		System.out.println("EV detach");
 		editor.removeListener(this);
+		project.getTeam().removeListener(this);
 		project.getTeam().setUserFileClosed(file, user, editor.getCollaboratorId());
 		getWindow().removeWindow(popup);
 	}
@@ -150,6 +149,16 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	}
 
 	public void selectionChanged(int start, int end) {
+		// "always synchronize on the application instance when accessing
+		// Vaadin UI components or related data from another thread."
+		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
+		// Is this enough of synchronization?
+		synchronized (getApplication()) {
+			selectionChangedAfterSync(start, end);
+		}
+	}
+	
+	private void selectionChangedAfterSync(int start, int end) {
 		selMin = Math.min(start, end);
 		selMax = Math.max(start, end);
 		DocDiff diff = user.cursorDiff(selMin, selMax, editor.getShadow().getText());
@@ -282,7 +291,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 				|| (m.getType() == Marker.Type.LOCK && (m.getData() != null));
 	}
 
-	public void windowClose(CloseEvent e) {
+	synchronized public void windowClose(CloseEvent e) {
 		project.getTeam().setUserFileClosed(file, user, editor.getCollaboratorId());
 	}
 
@@ -292,7 +301,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		}
 	}
 
-	public void addLock() {
+	synchronized public void addLock() {
 		Marker m = Marker.newLockMarker(selMin, selMax, user.getUserId(), "Locked for " + user.getName());
 		String markerId = editor.newItemId();
 		DocDiff d = DocDiff.addMarker(markerId, m, editor.getShadow().getText());
@@ -306,7 +315,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		showMarkerPopup();
 	}
 	
-	public void addNote(String note) {
+	synchronized public void addNote(String note) {
 		Marker m = Marker.newNoteMarker(selMin, selMax);
 		String markerId = editor.newItemId();
 		DocDiff d = DocDiff.addMarker(markerId, m, editor.getShadow().getText());

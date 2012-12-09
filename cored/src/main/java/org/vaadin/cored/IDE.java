@@ -29,21 +29,16 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 	private final Project project;
 	private final Component buildComponent;
 
-//	private VerticalLayout rightBar = new VerticalLayout();
-//	private MarkerWidget mw;
 	private ChatBox chat;
 	private SharedChat sharedChat;
 
 	private ProjectPanel projectPanel;
-
-	private TeamPanel teamPanel;
 
 	public IDE(User user, Project project, String initialFilename) {
 		super();
 
 		this.user = user;
 		this.project = project;
-		project.getTeam().addUser(user);
 		this.buildComponent = project.createBuildComponent();
 		this.sharedChat = project.getProjectChat();
 
@@ -58,19 +53,7 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 		
 		addComponent(layout);
 		setExpandRatio(layout, 1);
-//
-//		rightBar.setWidth("240px");
-//		rightBar.setHeight("100%");
-//
-//		mw = new MarkerWidget(project);
-//		mw.setUser(user);
-//		mw.setWidth("90%");
-//		mw.setHeight("90%");
-//		rightBar.addComponent(mw);
-//		rightBar.setComponentAlignment(mw, Alignment.TOP_CENTER);
 
-
-		
 		HorizontalSplitPanel hsp = new HorizontalSplitPanel();
 		hsp.addComponent(createLeftBar());
 		hsp.addComponent(editorLayout);
@@ -78,7 +61,6 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 		hsp.setSplitPosition(260, UNITS_PIXELS);
 
 		layout.addComponent(hsp);
-//		layout.addComponent(rightBar);
 		layout.setExpandRatio(hsp, 1);
 		
 		
@@ -92,7 +74,7 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 	@Override
 	public void attach() {
 		super.attach();
-
+		
 		project.getTeam().addListener(this);
 		projectPanel.addListener(this);
 
@@ -132,8 +114,6 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 		editorView = new EditorView(file, project, user, true);
 		editorView.setSizeFull();
 		
-//		mw.listenToEditor(editorView.getEditor());
-		
 		editorLayout.removeAllComponents();
 		editorLayout.addComponent(editorView);
 		editorLayout.setExpandRatio(editorView, 1);
@@ -144,12 +124,6 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 
 		leftBar.setSizeFull();
 
-//		Component tp = createTeamPanel();
-//		leftBar.addComponent(tp);
-//		leftBar.setComponentAlignment(tp, Alignment.MIDDLE_CENTER);
-		
-
-		
 
 		Component pp = createProjectPanel();
 		leftBar.addComponent(pp);
@@ -162,39 +136,23 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 			buildComponent.setHeight("50px");
 			leftBar.addComponent(buildComponent);
 			leftBar.setComponentAlignment(buildComponent, Alignment.MIDDLE_CENTER);
-//			leftBar.setExpandRatio(buildComponent, 1);
 		}
 		
 		AllUsersWidget auw = new AllUsersWidget(project.getTeam());
 		auw.setWidth("90%");
-//		auw.setHeight("100px");
 		leftBar.addComponent(auw);
 		leftBar.setComponentAlignment(auw, Alignment.MIDDLE_CENTER);
-//		leftBar.setExpandRatio(auw, 1);
 		
 		chat = new ChatBox(sharedChat);
 		chat.setUser(user.getUserId(), user.getName(), user.getStyle());
 		chat.setShowMyNick(true);
-//		chat.setCaption("Project-wide Chat:");
 		chat.setWidth("90%");
 		chat.setHeight("100%");
 		leftBar.addComponent(chat);
 		leftBar.setComponentAlignment(chat, Alignment.TOP_CENTER);
 		leftBar.setExpandRatio(chat, 2);
-		
-
-
-		
-
 
 		return leftBar;
-	}
-
-	private Component createTeamPanel() {
-		teamPanel = new TeamPanel(project.getTeam());
-		teamPanel.setWidth("90%");
-		teamPanel.setHeight("90%");
-		return teamPanel;
 	}
 
 	private Component createProjectPanel() {
@@ -204,25 +162,25 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 		return projectPanel;
 	}
 
-//	@Override
-	public void teamChanged(String message) {
-		System.err.println("teamChanged " + message);
-		
-		if (!project.getTeam().hasUser(user)) {
-			leaveIDE();
-		}
-		if (message!=null) {
-			getWindow().showNotification(message);
+	public void teamChanged() {
+		System.out.println("teamChanged");
+		// "always synchronize on the application instance when accessing
+		// Vaadin UI components or related data from another thread."
+		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
+		// Is this enough of synchronization?
+		synchronized (getApplication()) {
+			if (!project.getTeam().hasUser(user)) {
+				leaveIDE();
+			}
 		}
 	}
+	
+	public void leaveProject() {
+		project.getTeam().removeUser(user);
+	}
 
-	public void leaveIDE() {
+	private void leaveIDE() {
 		System.out.println("leaveIDE");
-		if (user!=null) {
-			System.out.println("kicking user " + user.getName());
-			project.getTeam().kickUser(user);
-			project.removeLocksOf(user);
-		}
 		Window win = getWindow();
 		CoredApplication app = CoredApplication.getInstance();
 		if (win!=null && app!=null) {
@@ -234,6 +192,12 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 	public void fileSelected(ProjectFile file) {
 		((CoredWindow)getWindow()).setFragment(project.getName()+"/"+file.getName()+"!");
 		editFile(file);
+	}
+
+	public void logout() {
+		Project.kickFromAllProjects(user);
+		CoredApplication.getInstance().setCoredUser(null);
+		leaveIDE();
 	}
 
 }

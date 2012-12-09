@@ -9,7 +9,7 @@ import org.vaadin.cored.lobby.CoredInfoComponent;
 import org.vaadin.cored.lobby.CreateProjectPanel;
 import org.vaadin.cored.lobby.CreateProjectPanel.ProjectCreatedListener;
 import org.vaadin.cored.lobby.LoginPanel;
-import org.vaadin.cored.lobby.LoginPanel.LoggedInCollaboratorListener;
+import org.vaadin.cored.lobby.LoginPanel.LoggedInUserListener;
 import org.vaadin.cored.lobby.ProjectDescription;
 import org.vaadin.cored.lobby.SelectProjectPanel;
 import org.vaadin.cored.lobby.UploadProjectPanel;
@@ -33,7 +33,7 @@ import com.vaadin.ui.themes.BaseTheme;
 @SuppressWarnings("serial")
 // http://dev.vaadin.com/ticket/2841
 public class CoredWindow extends Window implements SelectProjectPanel.Listener,
-		FragmentChangedListener, LoggedInCollaboratorListener {
+		FragmentChangedListener, LoggedInUserListener {
 	
 	/**
 	 * The URI fragment determines project + file:
@@ -121,7 +121,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		logout.setStyleName(BaseTheme.BUTTON_LINK);
 		logout.addListener(new ClickListener() {
 			public void buttonClick(ClickEvent event) {
-				loggedInCollaboratorChanged(null);
+				loggedInUserChanged(null);
 			}
 		});
 		mainLayout.addComponent(logout);
@@ -170,10 +170,12 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 
 	private void openProject(Project project, String filename) {
 		clear();
+		User user = CoredApplication.getInstance().getCoredUser();
+		project.getTeam().addUser(user);
 		Refresher ref = new Refresher();
 		ref.setRefreshInterval(1000);
 		mainLayout.addComponent(ref);
-		IDE ide = new IDE(CoredApplication.getInstance().getCoredUser(), project, filename);
+		IDE ide = new IDE(user, project, filename);
 		mainLayout.addComponent(ide);
 		mainLayout.setExpandRatio(ide, 10);
 		setCaption(project.getName() + " - CoRED");
@@ -185,8 +187,10 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	
 	private void openSingleFile(Project project, String filename) {
 		clear();
+		User user = CoredApplication.getInstance().getCoredUser();
+		project.getTeam().addUser(user);
 		ProjectFile file = project.getProjectFile(filename);
-		EditorView sfw = new EditorView(file, project, CoredApplication.getInstance().getCoredUser(), false);
+		EditorView sfw = new EditorView(file, project, user, false);
 		mainLayout.addComponent(sfw);
 		mainLayout.setSizeFull();
 		Refresher ref = new Refresher();
@@ -244,7 +248,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		showProjectSelecter();
 	}
 
-	public void loggedInCollaboratorChanged(User user) {
+	public void loggedInUserChanged(User user) {
 		CoredApplication.getInstance().setCoredUser(user);
 		fragmentChanged(urifu.getFragment());
 	}

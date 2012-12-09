@@ -1,6 +1,7 @@
 package org.vaadin.cored;
 
 import java.awt.Color;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import org.vaadin.aceeditor.collab.DocDiff;
@@ -127,6 +128,11 @@ public class User implements Comparable<User> {
 	@Override
 	public String toString() {
 		return "["+userId+"] "+name;
+	}
+
+	public DocDiff getRemoveMarkersDiff() {
+		return DocDiff.removeMarkers(Arrays.asList(new String[]{getCursorMarkerId(), getSelectionMarkerId()}));
+		
 	}
 
 }

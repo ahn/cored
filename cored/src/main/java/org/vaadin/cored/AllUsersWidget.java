@@ -22,11 +22,17 @@ public class AllUsersWidget extends CustomComponent implements TeamListener {
 	}
 	
 	@Override
-	public void attach() {
+	synchronized public void attach() {
 		super.attach();
 		
 		drawUsers();
 		team.addListener(this);
+	}
+	
+	@Override
+	synchronized public void detach() {
+		super.detach();
+		team.removeListener(this);
 	}
 
 	private void drawUsers() {
@@ -39,8 +45,14 @@ public class AllUsersWidget extends CustomComponent implements TeamListener {
 		}
 	}
 
-	public void teamChanged(String message) {
-		drawUsers();
+	public void teamChanged() {
+		// "always synchronize on the application instance when accessing
+		// Vaadin UI components or related data from another thread."
+		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
+		// Is this enough of synchronization?
+		synchronized(getApplication()) {
+			drawUsers();
+		}
 	}
 
 }

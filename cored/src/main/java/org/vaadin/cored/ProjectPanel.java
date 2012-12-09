@@ -125,7 +125,23 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 	}
 
 	public void docCreated(ProjectFile file, long collaboratorId) {
-		refresh();
+		// "always synchronize on the application instance when accessing
+		// Vaadin UI components or related data from another thread."
+		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
+		// Is this enough of synchronization?
+		synchronized (getApplication()) {
+			refresh();
+		}
+	}
+	
+	public void docRemoved(ProjectFile file, long collaboratorId) {
+		// "always synchronize on the application instance when accessing
+		// Vaadin UI components or related data from another thread."
+		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
+		// Is this enough of synchronization?
+		synchronized (getApplication()) {
+			refresh();
+		}
 	}
 	
 	private boolean canBeDeleted(Object obj) {
@@ -141,14 +157,7 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 		project.fillTree(tree);
 		
 	}
-	
-	
-	
 
-//	@Override
-	public void docRemoved(ProjectFile file, long collaboratorId) {
-		refresh();
-	}
 
 	public interface FileSelectListener {
 		public void fileSelected(ProjectFile file);

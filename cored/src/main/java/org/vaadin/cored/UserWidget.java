@@ -3,25 +3,17 @@ package org.vaadin.cored;
 import com.vaadin.terminal.ExternalResource;
 import com.vaadin.ui.AbstractComponent;
 import com.vaadin.ui.Alignment;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.Component;
 import com.vaadin.ui.Embedded;
-import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.VerticalLayout;
-import com.vaadin.ui.themes.BaseTheme;
 
 @SuppressWarnings("serial")
 public class UserWidget extends VerticalLayout {
 
 	
-	
-//	private Button kickButton = new Button("Kick");
-
 	public UserWidget(User user) {
 		super();
 		setWidth("56px");
-//		setHeight("56px");
 		
 		setStyleName("v-userwidget " + user.getStyle());
 		
@@ -32,33 +24,15 @@ public class UserWidget extends VerticalLayout {
 		AbstractComponent img;
 		if (user instanceof FacebookUser) {
 			FacebookUser fbUser = (FacebookUser) user;
-			img = addFbImg(fbUser);
+			img = createFbImg(fbUser);
 		} else {
 			img = createGravatarImg(user);
 		}
 		addComponent(img);
 		img.setDescription(user.getName());
-		
-
-//		VerticalLayout vl = new VerticalLayout();
-		//vl.setHeight("50px");
-//		Label ul = new Label(user.getName());
-//		ul.addStyleName("name-label");
-//		vl.addComponent(ul);
-		
-//		kickButton.setStyleName(BaseTheme.BUTTON_LINK);
-//		vl.addComponent(kickButton);
-//		addComponent(vl);
-		//setComponentAlignment(vl, Alignment.MIDDLE_CENTER);
-
-//		setExpandRatio(vl, 1);
 	}
-
-//	public Button getKickButton() {
-//		return kickButton;
-//	}
 	
-	private AbstractComponent addGenericImg() {
+	private AbstractComponent createGenericImg() {
 		VerticalLayout ve = new VerticalLayout();
 		ve.setWidth("50px");
 		ve.setHeight("50px");
@@ -79,7 +53,7 @@ public class UserWidget extends VerticalLayout {
 		return emb;
 	}
 
-	private AbstractComponent addFbImg(FacebookUser fbUser) {
+	private AbstractComponent createFbImg(FacebookUser fbUser) {
 		ExternalResource ex = new ExternalResource(
 				fbImgURL(fbUser.getFacebookId()));
 		Embedded emb = new Embedded(null, ex);
