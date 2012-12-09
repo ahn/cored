@@ -58,15 +58,14 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 		super.attach();
 		buildButton.addListener(this);
 	}
-
-	public void buttonClick(ClickEvent event) {
+	
+	public void build() {
 		VaadinBuildResultWindow resultWindow;
 		try {
-			build();
+			doTheBuild();
 			String appUrl = getAppUrl();
 			resultWindow = VaadinBuildResultWindow.success(appUrl);
-			User user = ((CoredApplication)getApplication()).getCoredUser();
-			project.log(user.getName() + " deployed to " + appUrl);
+			project.log("App deployed to " + appUrl);
 		}
 		catch (IOException e) {
 			e.printStackTrace();
@@ -79,6 +78,10 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 		resultWindow.center();
 		getWindow().addWindow(resultWindow);
 	}
+
+	public void buttonClick(ClickEvent event) {
+		build();
+	}
 	
 	private String getAppUrl() {
 		if (deployURL == null) {
@@ -87,7 +90,7 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 		return deployURL + "/apps/" + project.getName() + "?debug&restartApplication";
 	}
 
-	private void build() throws IOException {
+	private void doTheBuild() throws IOException {
 
 		project.writeToDisk();
 

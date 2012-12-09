@@ -9,12 +9,19 @@ import org.vaadin.aceeditor.gwt.shared.Marker;
 
 public class User implements Comparable<User> {
 
-	private static final Color LIGHTGREEN = new Color(144,238,144);
-	private static final Color LIGHTSALMON = new Color(255,160,122);
-	private static final Color LIGHTBLUE = new Color(173,216,230);	
-	private static final Color LIGHTPINK = new Color(255,182,193);
+	private static final Color LightGreen = new Color(144,238,144);
+	private static final Color LightSalmon = new Color(255,160,122);
+	private static final Color LightBlue = new Color(173,216,230);
+	private static final Color MediumOrchid = new Color(186,85,211);
+	private static final Color LightCoral = new Color(240,128,128);
+	private static final Color LightSeaGreen = new Color(32,178,170);
+	private static final Color LightPink = new Color(255,182,193);
+	private static final Color LightSkyBlue = new Color(135,206,250);
 	
-	private static final Color[] COLORS = {LIGHTGREEN, LIGHTSALMON, LIGHTBLUE, LIGHTPINK};
+	
+	private static final Color[] COLORS = {
+		LightGreen, LightSalmon, LightBlue, MediumOrchid,
+		LightCoral, LightSeaGreen, LightPink, LightSkyBlue};
 	
 	
 	protected static HashMap<String, User> users = new HashMap<String, User>();
@@ -76,7 +83,7 @@ public class User implements Comparable<User> {
 	}
 
 	private static int getStyleNumber(String userId) {
-		return userId.hashCode() % 4;
+		return userId.hashCode() % COLORS.length;
 	}
 	
 	public Color getColor() {
@@ -122,7 +129,11 @@ public class User implements Comparable<User> {
 	}
 
 	public int compareTo(User o) {
-		return name.compareTo(o.name);
+		int cmp = name.compareTo(o.name);
+		if (cmp==0) {
+			cmp = userId.compareTo(o.userId);
+		}
+		return cmp;
 	}
 	
 	@Override

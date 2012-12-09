@@ -1,5 +1,8 @@
 package org.vaadin.cored;
 
+import java.io.IOException;
+import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -22,9 +25,27 @@ public class CoredApplication extends Application implements
 	private User user;
 
 	static {
-		CoredProperties props = PropertiesUtil
-				.getCoredProperties("cored.properties");
-		props.apply();
+		CoredProperties props;
+		Map<String, String> env = System.getenv();
+		try {
+			if (env.containsKey("CORED_CONFIG_FILE")) {
+				String filename = env.get("CORED_CONFIG_FILE");
+				System.err.println("Reading CoRED properties from file: "
+						+ filename);
+				props = PropertiesUtil.getPropertiesFromFile(filename);
+			} else {
+				String cbFile = "cored.properties";
+				System.err.println("Reading CoRED properties from classpath: "
+						+ cbFile);
+				props = PropertiesUtil.getPropertiesFromClasspathFile(cbFile);
+			}
+			props.apply();
+		} catch (IOException e) {
+			System.err.println("ERROR: Failed to read properties file!");
+			System.exit(1);
+		}
+
+		
 	}
 
 	@Override
@@ -49,13 +70,11 @@ public class CoredApplication extends Application implements
 		currentApplication.set(application);
 	}
 
-//	@Override
 	public void onRequestStart(HttpServletRequest request,
 			HttpServletResponse response) {
 		CoredApplication.setInstance(this);
 	}
 
-//	@Override
 	public void onRequestEnd(HttpServletRequest request,
 			HttpServletResponse response) {
 		currentApplication.remove();
@@ -63,14 +82,6 @@ public class CoredApplication extends Application implements
 
 	public static CoredApplication getInstance() {
 		return currentApplication.get();
-	}
-
-	public void setCoredUser(User user) {
-		this.user = user;
-	}
-
-	public User getCoredUser() {
-		return user;
 	}
 
 	public static void setFacebookAppId(String facebookAppId) {

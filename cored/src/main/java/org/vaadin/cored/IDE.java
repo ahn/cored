@@ -27,7 +27,7 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 	
 	private final User user;
 	private final Project project;
-	private final Component buildComponent;
+	private final BuildComponent buildComponent;
 
 	private ChatBox chat;
 	private SharedChat sharedChat;
@@ -196,8 +196,11 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 
 	public void logout() {
 		Project.kickFromAllProjects(user);
-		CoredApplication.getInstance().setCoredUser(null);
-		leaveIDE();
+		((CoredWindow)getWindow()).logoutUser();
+	}
+
+	public BuildComponent getBuildComponent() {
+		return buildComponent;
 	}
 
 }

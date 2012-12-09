@@ -91,7 +91,7 @@ public abstract class Project {
 	/**
 	 * Override in subclass if needed
 	 */
-	public Component createBuildComponent() {
+	public BuildComponent createBuildComponent() {
 		return null;
 	}
 	

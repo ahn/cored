@@ -311,7 +311,7 @@ public class VaadinProject extends Project {
 	}
 	
 	@Override
-	public Component createBuildComponent() {
+	public BuildComponent createBuildComponent() {
 		return new VaadinBuildComponent(this, DeployType.war);
 	}
 	

@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import org.vaadin.cored.PropertiesUtil.CoredProperties;
+
 public class PropertiesUtil {
 
 	public static class CoredProperties {
@@ -54,36 +56,28 @@ public class PropertiesUtil {
 		}
 	}
 
-	public static Properties getPropertiesFromClasspathFile(String filename) {
+	public static CoredProperties getPropertiesFromClasspathFile(String filename) throws IOException {
 		InputStream inputStream = PropertiesUtil.class.getClassLoader()
 				.getResourceAsStream(filename);
 
 		if (inputStream == null) {
-			return null;
+			throw new IOException("Could not get InputStream of resource " + filename);
 		}
 		Properties properties = new Properties();
-		try {
-			properties.load(inputStream);
-		} catch (IOException e) {
-			throw new RuntimeException("File '" + filename
-					+ "' could not be found in classpath!");
-
-		}
-		return properties;
+		properties.load(inputStream);
+		return readProperties(properties);
 	}
 
-	public static CoredProperties getCoredProperties(String filename) {
-		Properties props = getPropertiesFromClasspathFile(filename);
+	private static CoredProperties readProperties(Properties props) {
+		
 		System.out.println("props="+props);
 
 		String rootDir = (String) props.get("PROJECTS_ROOT_DIR");
 		if (rootDir == null) {
-			throw new RuntimeException("PROJECTS_ROOT_DIR not defined in '"
-					+ filename + "'!");
+			throw new RuntimeException("PROJECTS_ROOT_DIR not defined!");
 		}
 
-		String warBuildTemplateDir = (String) props
-				.get("WAR_BUILD_TEMPLATE_DIR");
+		String warBuildTemplateDir = (String) props.get("WAR_BUILD_TEMPLATE_DIR");
 		String warDeployDir = (String) props.get("WAR_DEPLOY_DIR");
 		String warDeployUrl = (String) props.get("WAR_DEPLOY_URL");
 		String fbAppId = (String) props.get("FACEBOOK_APP_ID");
@@ -106,5 +100,9 @@ public class PropertiesUtil {
 				fis.close();
 			}
 		}
+	}
+
+	public static CoredProperties getPropertiesFromFile(String filename) throws IOException {
+		return readProperties(getProperties(new File(filename)));
 	}
 }

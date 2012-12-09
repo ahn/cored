@@ -174,6 +174,7 @@ public class Team {
 			ufs.remove(file);
 			if (ufs.isEmpty()) {
 				userFiles.remove(user);
+				project.removeCursorMarkersOf(user);
 			}
 		}
 		

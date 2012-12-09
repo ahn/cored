@@ -61,6 +61,8 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	
 	private boolean ignoreNextFragmentChange = false;
 
+	private User user;
+
 	public CoredWindow(String facebookAppId) {
 		super("CoRED");
 		FacebookAuth fbAuth;
@@ -90,7 +92,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	}
 
 	private void drawLobby() {
-		if (CoredApplication.getInstance().getCoredUser() == null) {
+		if (user == null) {
 			showLoginPanel();
 		} else {
 			showProjectSelecter();
@@ -100,8 +102,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	private void showLoginPanel() {
 		clear();
 		mainLayout.addComponent(info);
-		loginPanel.setLoggedInUser(CoredApplication.getInstance()
-				.getCoredUser(), false);
+		loginPanel.setLoggedInUser(user, false);
 		mainLayout.addComponent(loginPanel);
 		mainLayout.setExpandRatio(loginPanel, 1);
 
@@ -116,8 +117,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 
 		clear();
 
-		
-		Button logout = new Button("Log Out "+CoredApplication.getInstance().getCoredUser().getName());
+		Button logout = new Button("Log Out "+user.getName());
 		logout.setStyleName(BaseTheme.BUTTON_LINK);
 		logout.addListener(new ClickListener() {
 			public void buttonClick(ClickEvent event) {
@@ -170,7 +170,6 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 
 	private void openProject(Project project, String filename) {
 		clear();
-		User user = CoredApplication.getInstance().getCoredUser();
 		project.getTeam().addUser(user);
 		Refresher ref = new Refresher();
 		ref.setRefreshInterval(1000);
@@ -187,7 +186,6 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	
 	private void openSingleFile(Project project, String filename) {
 		clear();
-		User user = CoredApplication.getInstance().getCoredUser();
 		project.getTeam().addUser(user);
 		ProjectFile file = project.getProjectFile(filename);
 		EditorView sfw = new EditorView(file, project, user, false);
@@ -210,7 +208,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	}
 	
 	public void fragmentChanged(String frag) {
-		if (CoredApplication.getInstance().getCoredUser() == null) {
+		if (user == null) {
 			showLoginPanel();
 			return;
 		}
@@ -249,7 +247,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	}
 
 	public void loggedInUserChanged(User user) {
-		CoredApplication.getInstance().setCoredUser(user);
+		this.user = user;
 		fragmentChanged(urifu.getFragment());
 	}
 
@@ -261,6 +259,11 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	public void close() {
 		System.out.println("CoredWindow.close()");
 		super.close();
+	}
+	
+	public void logoutUser() {
+		user = null;
+		fragmentChanged(urifu.getFragment());
 	}
 
 }

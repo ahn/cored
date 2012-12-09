@@ -4,6 +4,7 @@ import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.SuggestibleCollabAceEditor;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.aceeditor.gwt.ace.AceMode;
+import org.vaadin.aceeditor.gwt.ace.AceTheme;
 import org.vaadin.diffsync.Shared;
 
 public class EditorUtil {
@@ -29,8 +30,8 @@ public class EditorUtil {
 		if (mode != null) {
 			editor.setMode(mode);
 		}
-
 		
+		editor.setTheme(AceTheme.xcode);
 
 		return editor;
 	}
