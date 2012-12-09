@@ -86,6 +86,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	@Override
 	public void attach() {
 		super.attach();
+		user = (User)getApplication().getUser();
 		urifu.addListener(this);
 		loginPanel.setListener(this);
 		drawLobby();
@@ -247,7 +248,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	}
 
 	public void loggedInUserChanged(User user) {
-		this.user = user;
+		setUser(user);
 		fragmentChanged(urifu.getFragment());
 	}
 
@@ -257,12 +258,18 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	}
 	
 	public void close() {
-		System.out.println("CoredWindow.close()");
+		System.err.println("CoredWindow.close()");
 		super.close();
+	}
+	
+	private void setUser(User user) {
+		this.user = user;
+		getApplication().setUser(user);
 	}
 	
 	public void logoutUser() {
 		user = null;
+		getApplication().setUser(null);
 		fragmentChanged(urifu.getFragment());
 	}
 

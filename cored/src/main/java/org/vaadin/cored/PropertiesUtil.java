@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import org.vaadin.cored.PropertiesUtil.CoredProperties;
-
 public class PropertiesUtil {
 
 	public static class CoredProperties {

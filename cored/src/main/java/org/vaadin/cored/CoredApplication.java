@@ -25,6 +25,12 @@ public class CoredApplication extends Application implements
 	private User user;
 
 	static {
+
+
+		
+	}
+	
+	private static void readProps() {
 		CoredProperties props;
 		Map<String, String> env = System.getenv();
 		try {
@@ -44,12 +50,12 @@ public class CoredApplication extends Application implements
 			System.err.println("ERROR: Failed to read properties file!");
 			System.exit(1);
 		}
-
-		
 	}
+	
 
 	@Override
 	public void init() {
+		readProps();
 		setTheme("cored");
 		mainWindow = new CoredWindow(facebookAppId);
 		setMainWindow(mainWindow);
