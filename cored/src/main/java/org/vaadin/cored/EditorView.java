@@ -20,6 +20,11 @@ import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
 import org.vaadin.cored.MarkerComponent.MarkerComponentListener;
+import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.ProjectFile;
+import org.vaadin.cored.model.Team;
+import org.vaadin.cored.model.User;
+import org.vaadin.cored.model.VaadinProject;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.terminal.ExternalResource;
@@ -34,7 +39,7 @@ import com.vaadin.ui.Window.CloseEvent;
 import com.vaadin.ui.Window.CloseListener;
 
 @SuppressWarnings("serial")
-public class EditorView extends CustomComponent implements SelectionChangeListener, CloseListener, Team.UserFileListener {
+public class EditorView extends CustomComponent implements SelectionChangeListener, CloseListener, Team.UserFileListener, Project.DocListener {
 
 	private final VerticalLayout layout = new VerticalLayout();
 	private final SuggestibleCollabAceEditor editor;
@@ -112,6 +117,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		project.getTeam().setUserFileOpen(file, user, editor.getCollaboratorId());
 		getWindow().addListener(this);
 		showUsers();
+		project.addListener(this);
 		project.getTeam().addListener(this);
 		getWindow().addWindow(popup);
 	}
@@ -121,6 +127,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		super.detach();
 		System.out.println("EV detach");
 		editor.removeListener(this);
+		project.removeListener(this);
 		project.getTeam().removeListener(this);
 		project.getTeam().setUserFileClosed(file, user, editor.getCollaboratorId());
 		getWindow().removeWindow(popup);
@@ -140,10 +147,10 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	
 	private SuggestibleCollabAceEditor createEditor(ProjectFile file, Project project) {
 		SuggestibleCollabAceEditor ed = EditorUtil.createEditorFor(doc, file);
-		if (file.getName().endsWith(".java")) {
+		if (file.getName().endsWith(".java") && project instanceof VaadinProject) {
 			InMemoryCompiler compiler = ((VaadinProject)project).getCompiler();
-			ed.setSuggester(new VaadinSuggester(compiler),
-						VaadinSuggester.DEFAULT_SHORTCUT);
+			String className = ((VaadinProject)project).getPackageName()+"."+file.getName().substring(0, file.getName().length()-5);
+			ed.setSuggester(new VaadinSuggester(compiler, className), VaadinSuggester.DEFAULT_SHORTCUT);
 		}
 		return ed;
 	}
@@ -158,7 +165,26 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 			selectionChangedAfterSync(start, end);
 		}
 	}
-	
+
+	public void docCreated(ProjectFile file) {
+		// nothing
+	}
+
+	public void docRemoved(ProjectFile file) {
+		System.out.println("docRemoved " + file);
+		// "always synchronize on the application instance when accessing
+		// Vaadin UI components or related data from another thread."
+		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
+		// Is this enough of synchronization?
+		synchronized (getApplication()) {
+			if (this.file.equals(file)) {
+				layout.removeAllComponents();
+				getWindow().showNotification("File "+file.getName()+" was deleted");
+			}
+		}
+
+	}
+
 	private void selectionChangedAfterSync(int start, int end) {
 		System.out.println("selectionChanged! " + start + " ," + end);
 		selMin = Math.min(start, end);
@@ -345,5 +371,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		updateMarkers(latestMarkers);
 		showMarkerPopup();
 	}
+
+
 	
 }

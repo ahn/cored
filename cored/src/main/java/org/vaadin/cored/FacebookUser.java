@@ -2,6 +2,8 @@ package org.vaadin.cored;
 
 import java.util.HashMap;
 
+import org.vaadin.cored.model.User;
+
 public class FacebookUser extends User {
 
 	// Guarded by users.

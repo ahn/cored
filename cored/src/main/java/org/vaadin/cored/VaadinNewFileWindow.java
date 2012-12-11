@@ -1,6 +1,7 @@
 package org.vaadin.cored;
 
-import org.vaadin.cored.VaadinProject.JavaUtils;
+import org.vaadin.cored.model.VaadinProject;
+import org.vaadin.cored.model.VaadinProject.JavaUtils;
 
 import com.vaadin.terminal.UserError;
 import com.vaadin.ui.Button;

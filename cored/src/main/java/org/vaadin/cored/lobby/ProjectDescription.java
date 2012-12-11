@@ -2,8 +2,8 @@ package org.vaadin.cored.lobby;
 
 import java.util.Collection;
 
-import org.vaadin.cored.Project;
-import org.vaadin.cored.User;
+import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.User;
 
 public class ProjectDescription {
 

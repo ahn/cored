@@ -1,6 +1,7 @@
-package org.vaadin.cored;
+package org.vaadin.cored.model;
 
 import java.util.regex.Pattern;
+
 
 import com.vaadin.data.validator.AbstractValidator;
 import com.vaadin.ui.Button;

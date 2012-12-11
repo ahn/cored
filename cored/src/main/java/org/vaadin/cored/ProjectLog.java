@@ -8,6 +8,7 @@ import java.util.Date;
 import org.apache.commons.io.FileUtils;
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
+import org.vaadin.cored.model.User;
 
 public class ProjectLog {
 	

@@ -1,7 +1,7 @@
 package org.vaadin.cored.lobby;
 
 import org.vaadin.cored.FacebookUser;
-import org.vaadin.cored.User;
+import org.vaadin.cored.model.User;
 import org.vaadin.facebookauth.FacebookAuth;
 import org.vaadin.facebookauth.FacebookAuth.LoginStatusListener;
 import org.vaadin.facebookauth.FacebookLoginButton;

@@ -3,11 +3,11 @@ package org.vaadin.cored.lobby;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-import org.vaadin.cored.GenericProject;
-import org.vaadin.cored.Project;
-import org.vaadin.cored.Project.ProjectType;
-import org.vaadin.cored.PythonProject;
-import org.vaadin.cored.VaadinProject;
+import org.vaadin.cored.model.GenericProject;
+import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.PythonProject;
+import org.vaadin.cored.model.VaadinProject;
+import org.vaadin.cored.model.Project.ProjectType;
 
 import com.vaadin.event.FieldEvents.TextChangeEvent;
 import com.vaadin.event.FieldEvents.TextChangeListener;

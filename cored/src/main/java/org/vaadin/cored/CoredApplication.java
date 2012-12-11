@@ -7,6 +7,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.vaadin.cored.PropertiesUtil.CoredProperties;
+import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.User;
 
 import com.vaadin.Application;
 import com.vaadin.terminal.gwt.server.HttpServletRequestListener;
@@ -21,21 +23,13 @@ public class CoredApplication extends Application implements
 	private static String facebookAppId;
 
 	private Window mainWindow;
-
-	private User user;
-
-	static {
-
-
-		
-	}
 	
 	private static void readProps() {
 		CoredProperties props;
 		Map<String, String> env = System.getenv();
 		try {
-			if (env.containsKey("CORED_CONFIG_FILE")) {
-				String filename = env.get("CORED_CONFIG_FILE");
+			if (env.containsKey("CORED_PROPERTIES_FILE")) {
+				String filename = env.get("CORED_PROPERTIES_FILE");
 				System.err.println("Reading CoRED properties from file: "
 						+ filename);
 				props = PropertiesUtil.getPropertiesFromFile(filename);
@@ -55,6 +49,7 @@ public class CoredApplication extends Application implements
 
 	@Override
 	public void init() {
+		System.err.println("moi");
 		readProps();
 		setTheme("cored");
 		mainWindow = new CoredWindow(facebookAppId);
@@ -96,9 +91,10 @@ public class CoredApplication extends Application implements
 	
 	@Override
 	public void close() {
-		if (user!=null) {
-			System.err.println("Kicking "+user.getName()+" from all projects.");
-			Project.kickFromAllProjects(user);
+		User u = (User)getUser();
+		if (u!=null) {
+			System.err.println("Kicking "+u.getName()+" from all projects.");
+			Project.kickFromAllProjects(u);
 		}
 		super.close();
 	}

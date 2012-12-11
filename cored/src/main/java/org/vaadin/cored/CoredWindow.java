@@ -14,6 +14,9 @@ import org.vaadin.cored.lobby.ProjectDescription;
 import org.vaadin.cored.lobby.SelectProjectPanel;
 import org.vaadin.cored.lobby.UploadProjectPanel;
 import org.vaadin.cored.lobby.UploadProjectPanel.ProjectUploadListener;
+import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.ProjectFile;
+import org.vaadin.cored.model.User;
 import org.vaadin.facebookauth.FacebookAuth;
 
 import com.github.wolfie.refresher.Refresher;
@@ -249,7 +252,6 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 
 	public void loggedInUserChanged(User user) {
 		setUser(user);
-		fragmentChanged(urifu.getFragment());
 	}
 
 	public void setFragment(String frag) {
@@ -265,6 +267,7 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	private void setUser(User user) {
 		this.user = user;
 		getApplication().setUser(user);
+		fragmentChanged(urifu.getFragment());
 	}
 	
 	public void logoutUser() {

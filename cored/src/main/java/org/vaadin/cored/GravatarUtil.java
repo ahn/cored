@@ -4,6 +4,8 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.vaadin.cored.model.User;
+
 public class GravatarUtil {
 
 	public static String gravatarUrlFor(User user, int size) {

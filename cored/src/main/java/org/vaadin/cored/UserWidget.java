@@ -1,5 +1,7 @@
 package org.vaadin.cored;
 
+import org.vaadin.cored.model.User;
+
 import com.vaadin.terminal.ExternalResource;
 import com.vaadin.ui.AbstractComponent;
 import com.vaadin.ui.Alignment;

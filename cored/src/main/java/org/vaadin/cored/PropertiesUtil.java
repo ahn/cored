@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.VaadinProject;
+
 public class PropertiesUtil {
 
 	public static class CoredProperties {
@@ -29,7 +32,7 @@ public class PropertiesUtil {
 
 		/**
 		 * Only apply properties when none of the affected components have yet
-		 * been created! Eg. in Application static {} block.
+		 * been created! Eg. in Application init().
 		 */
 		public void apply() {
 			if (projectsRootDir != null) {

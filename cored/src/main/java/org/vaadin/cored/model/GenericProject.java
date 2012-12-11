@@ -1,4 +1,5 @@
-package org.vaadin.cored;
+package org.vaadin.cored.model;
+
 
 import com.vaadin.ui.Tree;
 import com.vaadin.ui.Window;

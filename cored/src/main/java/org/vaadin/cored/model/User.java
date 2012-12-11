@@ -1,4 +1,4 @@
-package org.vaadin.cored;
+package org.vaadin.cored.model;
 
 import java.awt.Color;
 import java.util.Arrays;

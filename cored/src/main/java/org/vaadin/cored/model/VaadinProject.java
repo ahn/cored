@@ -1,4 +1,4 @@
-package org.vaadin.cored;
+package org.vaadin.cored.model;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,13 +12,17 @@ import org.vaadin.aceeditor.ErrorChecker;
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.ErrorCheckTask;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
+import org.vaadin.aceeditor.java.CompilerErrorChecker;
 import org.vaadin.aceeditor.java.util.InMemoryCompiler;
+import org.vaadin.cored.BuildComponent;
+import org.vaadin.cored.VaadinBuildComponent;
 import org.vaadin.cored.VaadinBuildComponent.DeployType;
+import org.vaadin.cored.VaadinJarWindow;
+import org.vaadin.cored.VaadinNewFileWindow;
 import org.vaadin.diffsync.DiffTaskExecPolicy;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.data.validator.AbstractValidator;
-import com.vaadin.ui.Component;
 import com.vaadin.ui.MenuBar;
 import com.vaadin.ui.MenuBar.Command;
 import com.vaadin.ui.MenuBar.MenuItem;
@@ -56,11 +60,11 @@ public class VaadinProject extends Project {
 
 	private static File templateDir;
 	
-	private String packageName;
+	private final String packageName;
 	
 	private final LinkedList<String> classpathItems = new LinkedList<String>();
 	
-	private final File srcPackageDir;
+	private final ProjectFile srcPackageDir;
 	
 	private InMemoryCompiler compiler;
 	
@@ -75,14 +79,12 @@ public class VaadinProject extends Project {
 	
 	@Override
 	protected void projectDirCreated() {
-		synchronized (getVaadinProjectTemplateDir()) {
-			try {
-				FileUtils.copyDirectory(getVaadinProjectTemplateDir(), getProjectDir());
-			} catch (IOException e) {
-				System.err.println("WARNING: could not initialize dir of vaadin project "+ getName());
-			}
-			updateJarsFromDisk();
+		try {
+			FileUtils.copyDirectory(getVaadinProjectTemplateDir(), getProjectDir());
+		} catch (IOException e) {
+			System.err.println("WARNING: could not initialize dir of vaadin project "+ getName());
 		}
+		updateJarsFromDisk();
 		
 		try {
 			createWebXml();
@@ -91,14 +93,14 @@ public class VaadinProject extends Project {
 		}
 	}
 	
-	synchronized void updateJarsFromDisk() {
+	synchronized public void updateJarsFromDisk() {
 
 		File location = getLocationOfFile(jarDir);
 		if (!location.isDirectory()) {
 			return;
 		}
 		classpathItems.clear();
-		classpathItems.add(getClasspathPath());
+//		classpathItems.add(getProjectClasspathPath());
 		for (File f : location.listFiles()) {
 			classpathItems.add(f.getAbsolutePath());
 		}
@@ -111,10 +113,8 @@ public class VaadinProject extends Project {
 	protected VaadinProject(String name) {
 		super(name,ProjectType.vaadin);
 		packageName = "fi.tut.cs.cored."+getName();
-		srcPackageDir = new File(srcDir, dirFromPackage(packageName).getPath());
+		srcPackageDir = new ProjectFile(srcDir, dirFromPackage(packageName).getPath());
 	}
-	
-
 
 	synchronized public String getPackageName() {
 		return packageName;
@@ -187,11 +187,32 @@ public class VaadinProject extends Project {
 	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
 		String filename = file.getName();
 		if (filename.endsWith(".java")) {
-			ErrorChecker checker = new FileSavingCompilerErrorChecker(getCompiler(), fullJavaNameOf(filename), getLocationOfFile(file));
-			ErrorCheckTask task = new ErrorCheckTask(
-					sharedDoc.newCollaboratorId(), checker);
-			sharedDoc.addAsyncTask(task, DiffTaskExecPolicy.LATEST_CANCEL_RUNNING);
+			ErrorCheckTask task = createErrorCheckTaskFor(file, sharedDoc);
+			
+			sharedDoc.addAsyncTask(task, DiffTaskExecPolicy.LATEST_CANCEL_RUNNING);	
 		}
+	}
+	
+	private ErrorCheckTask createErrorCheckTaskFor(ProjectFile file, Shared<Doc,DocDiff> doc) {
+		String className = fullJavaNameOf(file.getName());
+		ErrorChecker checker = new CompilerErrorChecker(getCompiler(), className);//, getLocationOfClassFile(className));
+		ErrorCheckTask task = new ErrorCheckTask(doc.newCollaboratorId(), checker);
+		return task;
+	}
+	
+	synchronized public void checkErrors(ProjectFile file) {
+		if (!file.getName().endsWith(".java")) {
+			return;
+		}
+		Shared<Doc, DocDiff> doc = getDoc(file);
+		if (doc == null) {
+			return;
+		}
+		DocDiff d = createErrorCheckTaskFor(file, doc).exec(doc.getValue(), null, 0);
+		if (d!=null) {
+			doc.applyDiff(d);
+		}
+		
 	}
 	
 	private String fullJavaNameOf(String name) {
@@ -203,13 +224,15 @@ public class VaadinProject extends Project {
 	
 	synchronized public InMemoryCompiler getCompiler() {
 		if (compiler == null) {
-			compiler = new InMemoryCompiler(getPackageName());
+			compiler = new InMemoryCompiler();
 		}
 		return compiler;
 	}
 	
-	synchronized public String getClasspathPath() {
-		return getLocationOfFile(getSourceDir()).getAbsolutePath();
+	synchronized public String getProjectClasspathPath() {
+		// Add / to the end so that URLClassLoader understands that this is a dir.
+		// Slash / is correct in Windows too, I think.
+		return getLocationOfFile(getSourceDir()).getAbsolutePath()+"/";
 	}
 
 	public static String generateContent(String packageName, String className, String base) {
@@ -229,6 +252,10 @@ public class VaadinProject extends Project {
 		}
 	}
 	
+	
+	public ProjectFile getJavaFileOfClass(String fullClassName) {
+		return new ProjectFile(fullClassName.replace('.', File.separatorChar)+".java");
+	}
 
 	private static String generateClass(String name, String base) {
 		if (base.equals("java.lang.Object")) {
@@ -241,7 +268,21 @@ public class VaadinProject extends Project {
 		}
 	}
 	
-	protected boolean canBeDeleted(ProjectFile file) {
+	@Override
+	public Shared<Doc, DocDiff> createDoc(ProjectFile file, Doc doc,
+			long collaboratorId) {
+		Shared<Doc,DocDiff> shared = super.createDoc(file, doc, collaboratorId);
+		System.out.println("createDoc " + file);
+		return shared;
+	}
+
+	@Override
+	public void removeDoc(ProjectFile file) {
+		super.removeDoc(file);
+		System.out.println("removeFile " + file);
+	}
+
+	public boolean canBeDeleted(ProjectFile file) {
 		return !getApplicationFile().equals(file);
 	}
 
@@ -298,12 +339,14 @@ public class VaadinProject extends Project {
 
 	synchronized public boolean removeJar(String filename) {
 		for (String s : classpathItems) {
+			System.out.println("remjar " + filename + " --- " + s);
 			File jarFile = new File(s);
 			if (jarFile.getName().equals(filename)) {
 				boolean deleted = jarFile.delete();
 				if (deleted) {
 					updateJarsFromDisk();
 				}
+				System.out.println("remjar? " + deleted);
 				return deleted;
 			}
 		}
@@ -364,5 +407,6 @@ public class VaadinProject extends Project {
 			+ "<welcome-file>default.htm</welcome-file>\n"
 			+ "<welcome-file>default.jsp</welcome-file>\n"
 			+ "</welcome-file-list>\n" + "</web-app>\n";
+
 
 }

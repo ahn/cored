@@ -2,6 +2,7 @@ package org.vaadin.cored;
 
 import org.vaadin.chatbox.ChatBox;
 import org.vaadin.chatbox.SharedChat;
+import org.vaadin.cored.model.User;
 
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.VerticalLayout;

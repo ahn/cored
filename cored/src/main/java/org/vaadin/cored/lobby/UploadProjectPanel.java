@@ -9,8 +9,8 @@ import java.util.Properties;
 
 import org.vaadin.cored.Icons;
 import org.vaadin.cored.MyFileUtils;
-import org.vaadin.cored.Project;
-import org.vaadin.cored.Project.ProjectType;
+import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.Project.ProjectType;
 import org.vaadin.cored.PropertiesUtil;
 
 import com.vaadin.ui.Button;

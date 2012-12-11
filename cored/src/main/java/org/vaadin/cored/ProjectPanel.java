@@ -2,7 +2,9 @@ package org.vaadin.cored;
 
 import java.util.LinkedList;
 
-import org.vaadin.cored.Project.DocListener;
+import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.ProjectFile;
+import org.vaadin.cored.model.Project.DocListener;
 
 import com.vaadin.data.Property;
 import com.vaadin.data.Property.ValueChangeEvent;
@@ -85,7 +87,7 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 		delete.setIcon(Icons.CROSS_SCRIPT);
 		delete.addListener(new ClickListener() {
 			public void buttonClick(ClickEvent event) {
-				project.removeFile(pf);
+				project.removeDoc(pf);
 				main.removeWindow(w);
 			}
 		});
@@ -124,7 +126,7 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 		tree.removeListener((ItemClickEvent.ItemClickListener)this);
 	}
 
-	public void docCreated(ProjectFile file, long collaboratorId) {
+	public void docCreated(ProjectFile file) {
 		// "always synchronize on the application instance when accessing
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
@@ -134,7 +136,7 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 		}
 	}
 	
-	public void docRemoved(ProjectFile file, long collaboratorId) {
+	public void docRemoved(ProjectFile file) {
 		// "always synchronize on the application instance when accessing
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956

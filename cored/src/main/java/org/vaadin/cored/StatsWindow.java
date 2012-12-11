@@ -9,6 +9,8 @@ import java.util.TreeSet;
 import org.vaadin.cored.ProjectLog.ChatLogItem;
 import org.vaadin.cored.ProjectLog.LogItem;
 import org.vaadin.cored.ProjectLog.UserEditLogItem;
+import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.User;
 
 import com.vaadin.addon.timeline.Timeline;
 import com.vaadin.addon.timeline.Timeline.ChartMode;

@@ -5,6 +5,7 @@ import org.vaadin.aceeditor.collab.SuggestibleCollabAceEditor;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.aceeditor.gwt.ace.AceMode;
 import org.vaadin.aceeditor.gwt.ace.AceTheme;
+import org.vaadin.cored.model.ProjectFile;
 import org.vaadin.diffsync.Shared;
 
 public class EditorUtil {

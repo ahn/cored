@@ -3,6 +3,8 @@ package org.vaadin.cored;
 import java.io.File;
 import java.io.IOException;
 
+import org.vaadin.cored.model.Project;
+
 import com.vaadin.terminal.FileResource;
 import com.vaadin.ui.MenuBar;
 

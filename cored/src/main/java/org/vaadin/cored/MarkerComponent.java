@@ -6,6 +6,7 @@ import org.vaadin.aceeditor.gwt.shared.LockMarkerData;
 import org.vaadin.aceeditor.gwt.shared.Marker;
 import org.vaadin.chatbox.ChatBox;
 import org.vaadin.chatbox.SharedChat;
+import org.vaadin.cored.model.User;
 
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;

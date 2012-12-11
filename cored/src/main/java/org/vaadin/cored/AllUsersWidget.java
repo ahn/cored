@@ -2,7 +2,9 @@ package org.vaadin.cored;
 
 import java.util.Collection;
 
-import org.vaadin.cored.Team.TeamListener;
+import org.vaadin.cored.model.Team;
+import org.vaadin.cored.model.User;
+import org.vaadin.cored.model.Team.TeamListener;
 
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.CustomComponent;

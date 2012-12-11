@@ -2,6 +2,8 @@ package org.vaadin.cored;
 
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
+import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.ProjectFile;
 import org.vaadin.diffsync.DiffTask;
 
 public class LoggerTask implements DiffTask<Doc, DocDiff> {

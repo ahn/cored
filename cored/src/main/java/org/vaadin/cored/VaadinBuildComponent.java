@@ -8,6 +8,7 @@ import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.BuildListener;
 import org.apache.tools.ant.ProjectHelper;
 import org.apache.tools.ant.helper.ProjectHelper2;
+import org.vaadin.cored.model.VaadinProject;
 
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
@@ -91,13 +92,14 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 	}
 
 	private void doTheBuild() throws IOException {
-
-		project.writeToDisk();
-
-		if (this.deployType.equals(DeployType.war)){
-			antBuildWar();				
-		}else if (this.deployType.equals(DeployType.osgi)){
-			antBuildOsgi();				
+		synchronized (project) {
+			project.writeToDisk();
+	
+			if (this.deployType.equals(DeployType.war)){
+				antBuildWar();				
+			}else if (this.deployType.equals(DeployType.osgi)){
+				antBuildOsgi();				
+			}
 		}
 
 	}
