@@ -280,6 +280,14 @@ public class VaadinProject extends Project {
 	public void removeDoc(ProjectFile file) {
 		super.removeDoc(file);
 		System.out.println("removeFile " + file);
+		if (file.getName().endsWith(".java")) { 
+			getCompiler().removeClass(fullClassNameOf(file));
+		}
+	}
+	
+	private static String fullClassNameOf(ProjectFile javaFile) {
+		String n = javaFile.getName();
+		return n.replace(File.separatorChar, '.').substring(0, n.length()-5);
 	}
 
 	public boolean canBeDeleted(ProjectFile file) {

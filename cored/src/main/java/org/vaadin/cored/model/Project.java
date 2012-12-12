@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -126,6 +125,8 @@ public abstract class Project {
 	protected Project(String name, ProjectType type) {
 		name = name.toLowerCase();
 		
+		team = new Team(this);
+		
 		projName = name;
 		projectType = type;
 		projectChat = new SharedChat();
@@ -147,9 +148,8 @@ public abstract class Project {
 			}
 		});
 		projectChat.applyDiff(ChatDiff.newLiveLine("Started project "+name));
-
 		
-		team = new Team(this);
+		
 	}
 	
 	
@@ -206,7 +206,7 @@ public abstract class Project {
 	}
 	
 	static private Project createProjectFromDisk(String pn) {
-		synchronized (projectsRootDir) {
+		synchronized (allProjects) {
 			for (File f : projectsRootDir.listFiles()) {
 				if (f.isDirectory() && f.getName().equals(pn)) {
 					ProjectType type = getProjectType(f);
@@ -222,7 +222,7 @@ public abstract class Project {
 	}
 
 	public static List<String> getProjectDirNames() {
-		synchronized (projectsRootDir) {
+		synchronized (allProjects) {
 			if (!projectsRootDir.exists()) {
 				return Collections.emptyList();
 			}

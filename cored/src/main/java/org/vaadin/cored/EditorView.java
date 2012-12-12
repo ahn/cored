@@ -137,7 +137,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		userLayout.removeAllComponents();
 		Collection<User> users = project.getTeam().getUsersByFile(file);
 		for (User u : users) {
-			userLayout.addComponent(new UserWidget(u));
+			userLayout.addComponent(new UserWidget(u, false));
 		}
 	}
 	
@@ -156,14 +156,11 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	}
 
 	public void selectionChanged(int start, int end) {
-		System.out.println("selectionChanged. " + start + " ," + end);
-		// "always synchronize on the application instance when accessing
-		// Vaadin UI components or related data from another thread."
-		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
-		// Is this enough of synchronization?
-		synchronized (getApplication()) {
-			selectionChangedAfterSync(start, end);
-		}
+		selMin = Math.min(start, end);
+		selMax = Math.max(start, end);
+		DocDiff diff = user.cursorDiff(selMin, selMax, editor.getShadow().getText());
+		doc.applyDiff(diff);
+		checkMarkers();
 	}
 
 	public void docCreated(ProjectFile file) {
@@ -171,7 +168,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	}
 
 	public void docRemoved(ProjectFile file) {
-		System.out.println("docRemoved " + file);
+		// TODO
 		// "always synchronize on the application instance when accessing
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
@@ -184,14 +181,28 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		}
 
 	}
+	
+	
 
-	private void selectionChangedAfterSync(int start, int end) {
-		System.out.println("selectionChanged! " + start + " ," + end);
-		selMin = Math.min(start, end);
-		selMax = Math.max(start, end);
-		DocDiff diff = user.cursorDiff(selMin, selMax, editor.getShadow().getText());
-		doc.applyDiff(diff);
-		checkMarkers();
+	public void userFilesChanged(Set<User> users, Set<ProjectFile> files) {
+		// TODO
+		// "always synchronize on the application instance when accessing
+		// Vaadin UI components or related data from another thread."
+		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
+		// Is this enough of synchronization?
+		synchronized (getApplication()) {
+			if (files.contains(file)) {
+				showUsers();
+			}
+			if (users.contains(user) && !project.getTeam().hasUser(user)) {
+				layout.removeAllComponents();
+				getWindow().showNotification(user.getName()+ " has left");
+			}
+		}
+	}
+	
+	public void windowClose(CloseEvent e) {
+		project.getTeam().setUserFileClosed(file, user, editor.getCollaboratorId());
 	}
 	
 	private void checkMarkers() {
@@ -319,23 +330,15 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 				|| (m.getType() == Marker.Type.LOCK && (m.getData() != null));
 	}
 
-	synchronized public void windowClose(CloseEvent e) {
-		project.getTeam().setUserFileClosed(file, user, editor.getCollaboratorId());
-	}
+	
 
-	synchronized public void userFilesChanged(Set<User> users, Set<ProjectFile> files) {
-		if (files.contains(file)) {
-			showUsers();
-		}
-	}
-
-	synchronized public void addLock() {
+	public void addLock() {
 		Marker m = Marker.newLockMarker(selMin, selMax, user.getUserId(), "Locked for " + user.getName());
 		ChatLine line = new ChatLine(user.getName() + " locked this part.");
 		addMarker(m, line);
 	}
 	
-	synchronized public void addNote(String note) {
+	public void addNote(String note) {
 		ChatLine line = new ChatLine(note, user.getUserId(), user.getName(), user.getStyle());
 		Marker m = Marker.newNoteMarker(0, 0);
 		addMarker(m, line);

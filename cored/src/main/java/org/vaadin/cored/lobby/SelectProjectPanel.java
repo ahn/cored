@@ -3,8 +3,6 @@ package org.vaadin.cored.lobby;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import org.vaadin.cored.model.User;
-
 import com.vaadin.event.ItemClickEvent;
 import com.vaadin.event.ItemClickEvent.ItemClickListener;
 import com.vaadin.terminal.ThemeResource;

@@ -171,11 +171,11 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
 		// Is this enough of synchronization?
-		synchronized (getApplication()) {
+//		synchronized (getApplication()) {
 			if (!project.getTeam().hasUser(user)) {
 				leaveIDE();
 			}
-		}
+//		}
 	}
 	
 	public void leaveProject() {

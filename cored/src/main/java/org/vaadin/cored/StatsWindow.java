@@ -73,7 +73,7 @@ public class StatsWindow extends Window {
 		}
 		
 		timeline.setMarkerDataSource(markerCont, Timeline.PropertyId.TIMESTAMP, Timeline.PropertyId.CAPTION, Timeline.PropertyId.VALUE);
-//		timeline.setEventDataSource(markerCont, Timeline.PropertyId.TIMESTAMP, Timeline.PropertyId.CAPTION);
+		timeline.setEventDataSource(markerCont, Timeline.PropertyId.TIMESTAMP, Timeline.PropertyId.CAPTION);
 		
 		
 		addComponent(timeline);

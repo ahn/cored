@@ -5,15 +5,17 @@ import org.vaadin.cored.model.User;
 import com.vaadin.terminal.ExternalResource;
 import com.vaadin.ui.AbstractComponent;
 import com.vaadin.ui.Alignment;
+import com.vaadin.ui.Button;
 import com.vaadin.ui.Embedded;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.VerticalLayout;
 
 @SuppressWarnings("serial")
 public class UserWidget extends VerticalLayout {
-
 	
-	public UserWidget(User user) {
+	private final Button kickButton;
+	
+	public UserWidget(User user, boolean kickable) {
 		super();
 		setWidth("56px");
 		
@@ -32,6 +34,18 @@ public class UserWidget extends VerticalLayout {
 		}
 		addComponent(img);
 		img.setDescription(user.getName());
+		
+		if (kickable) {
+			kickButton = new Button("Kick");
+			addComponent(kickButton);
+		}
+		else {
+			kickButton = null;
+		}
+	}
+	
+	public Button getKickButton() {
+		return kickButton;
 	}
 	
 	private AbstractComponent createGenericImg() {

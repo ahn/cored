@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Team {
 
@@ -39,8 +38,6 @@ public class Team {
 	public void removeListener(UserFileListener li) {
 		ufListeners.remove(li);
 	}
-
-//	private HashMap<String, User> usersById = new HashMap<String, User>();
 	
 	private HashSet<User> users = new HashSet<User>();
 
@@ -48,11 +45,6 @@ public class Team {
 	private HashMap<String, User> allUsersById = new HashMap<String, User>();
 	
 	private TreeMap<User, TreeSet<ProjectFile>> userFiles = new TreeMap<User, TreeSet<ProjectFile>>();
-
-	// contains all the users ever added to this team
-//	private HashMap<Long, User> allUsersByCollabId = new HashMap<Long, User>();
-
-//	private HashMap<String, TreeSet<ProjectFile>> filesByUserId = new HashMap<String, TreeSet<ProjectFile>>();
 	
 	private HashMap<ProjectFile, TreeMap<User,TreeSet<Long>>> usersByFile
 			= new HashMap<ProjectFile, TreeMap<User,TreeSet<Long>>>();
@@ -112,7 +104,6 @@ public class Team {
 	}
 
 	synchronized public void setUserFileOpen(ProjectFile file, User user, long collabId) {
-		System.out.println("OPEN " + file + " --- " + user);
 		addFileUser(file, user, collabId);
 	}
 	
@@ -146,9 +137,7 @@ public class Team {
 	}
 
 	synchronized public void setUserFileClosed(ProjectFile file, User user, long collabId) {
-		System.out.println("CLOSE " + file + " --- " + user);
 		removeFileUser(file, user, collabId);
-		System.out.println("CLOSE end");
 	}
 	
 	private void removeFileUser(ProjectFile file, User user, long collabId) {
@@ -157,7 +146,6 @@ public class Team {
 		if (users!=null) {
 			TreeSet<Long> collabIds = users.get(user);
 			if (collabIds!=null) {
-				System.out.println("users " + user);
 				collabIds.remove(collabId);
 				if (collabIds.isEmpty()) {
 					users.remove(user);
@@ -183,11 +171,7 @@ public class Team {
 		}
 	}
 	
-	
-
-
 	private void fireTeamChanged() {
-		System.out.println("fireTeamChanged " + users);
 		for (TeamListener li : listeners) {
 			li.teamChanged();
 		}
