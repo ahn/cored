@@ -70,7 +70,6 @@ public class UploadProjectPanel extends Panel implements Upload.Receiver,
 	}
 
 	public void uploadSucceeded(SucceededEvent event) {
-		System.err.println("uploadSucceeded "+event.getFilename()+", "+event.getMIMEType());
 		
 		// Is this the right way to test if it's a zip file??
 		if ("application/x-zip-compressed".equals(event.getMIMEType())) {
@@ -116,18 +115,6 @@ public class UploadProjectPanel extends Panel implements Upload.Receiver,
 					}
 				}
 			});
-//			dia.rename.addListener(new ClickListener() {
-//				public void buttonClick(ClickEvent event) {
-//					main.removeWindow(dia);
-//					String newName = (String)dia.newName.getValue();
-//					if (Project.isValidProjectName(newName)) {
-//						createProject(newName, type, dir);
-//					}
-//					else {
-//						main.showNotification("Not a valid project name.");
-//					}
-//				}
-//			});
 			main.addWindow(dia);
 		}
 		else {
@@ -151,7 +138,6 @@ public class UploadProjectPanel extends Panel implements Upload.Receiver,
 		try {
 			dir = MyFileUtils.createTempDirectory();
 			MyFileUtils.unzip(file, dir);
-			System.err.println("Unzipped "+file+" to "+dir);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
@@ -165,7 +151,6 @@ public class UploadProjectPanel extends Panel implements Upload.Receiver,
 		try {
 			Properties props = PropertiesUtil.getProperties(f);
 			if (props.containsKey("PROJECT_TYPE")) {
-				System.out.println("Project: " + props.getProperty("PROJECT_TYPE") + ", " + props.getProperty("PROJECT_NAME"));
 				return props;
 			}
 		} catch (IOException e) {
@@ -197,9 +182,6 @@ public class UploadProjectPanel extends Panel implements Upload.Receiver,
 			ho.addComponent(overwrite);
 			overwrite.setCaption("Overwrite "+name);
 			VerticalLayout ho2 = new VerticalLayout();
-//			newName.setValue(name+"1");
-//			ho2.addComponent(newName);
-//			ho2.addComponent(rename);
 			addComponent(ho);
 			addComponent(ho2);
 			cancel.addListener(new ClickListener() {

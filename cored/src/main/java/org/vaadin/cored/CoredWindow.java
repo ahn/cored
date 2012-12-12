@@ -19,7 +19,7 @@ import org.vaadin.cored.model.ProjectFile;
 import org.vaadin.cored.model.User;
 import org.vaadin.facebookauth.FacebookAuth;
 
-import com.github.wolfie.refresher.Refresher;
+import com.google.gwt.editor.client.impl.Refresher;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
@@ -176,8 +176,8 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		clear();
 		project.getTeam().addUser(user);
 		Refresher ref = new Refresher();
-		ref.setRefreshInterval(1000);
-		mainLayout.addComponent(ref);
+//		ref.setRefreshInterval(1000);
+//		mainLayout.addComponent(ref);
 		IDE ide = new IDE(user, project, filename);
 		mainLayout.addComponent(ide);
 		mainLayout.setExpandRatio(ide, 10);
@@ -196,8 +196,8 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		mainLayout.addComponent(sfw);
 		mainLayout.setSizeFull();
 		Refresher ref = new Refresher();
-		ref.setRefreshInterval(1000);
-		mainLayout.addComponent(ref);
+//		ref.setRefreshInterval(1000);
+//		mainLayout.addComponent(ref);
 		mainLayout.setExpandRatio(sfw, 10);
 		setCaption(filename + " - " + project.getName() +" - CoRED");
 	}

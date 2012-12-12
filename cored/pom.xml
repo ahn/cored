@@ -289,11 +289,11 @@
 <!-- 		</dependency> -->
 
 
-<!-- 	<dependency> -->
-<!-- 		<groupId>org.vaadin</groupId> -->
-<!-- 		<artifactId>dontpush-addon-ozonelayer</artifactId> -->
-<!-- 		<version>0.4.9</version> -->
-<!-- 	</dependency> -->
+	<dependency>
+		<groupId>org.vaadin</groupId>
+		<artifactId>dontpush-addon-ozonelayer</artifactId>
+		<version>1.0.3</version>
+	</dependency>
 
 	<dependency>
 		<groupId>org.vaadin</groupId>
@@ -351,11 +351,11 @@
 		<version>1.8.2</version>
 	</dependency>
 
-	<dependency>
-		<groupId>org.vaadin.addons</groupId>
-		<artifactId>refresher</artifactId>
-		<version>1.1.1</version>
-	</dependency>
+<!-- 	<dependency> -->
+<!-- 		<groupId>org.vaadin.addons</groupId> -->
+<!-- 		<artifactId>refresher</artifactId> -->
+<!-- 		<version>1.1.1</version> -->
+<!-- 	</dependency> -->
 
 	</dependencies>
 	

@@ -21,7 +21,6 @@ public class PythonProject extends Project {
 		private static final Pattern validClass = Pattern.compile("^[A-Za-z1-9_]+$");
 		
 		public static boolean isValidPythonClass(String s) {
-			System.out.println("isValidClass(\""+s+"\");");
 			return validClass.matcher(s).matches();
 		}
 

@@ -109,43 +109,43 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 		antProj.setBasedir(project.getProjectDir().getAbsolutePath()); // TODO: turha?
 		antProj.init();
 		
-		antProj.addBuildListener(new BuildListener() {
-
-			public void buildFinished(BuildEvent arg0) {
-				System.out.println("buildFinished " +arg0.getTask()+" "+ arg0.getMessage());
-				
-			}
-
-			public void buildStarted(BuildEvent arg0) {
-				System.out.println("buildStarted " +arg0.getTask()+" "+ arg0.getMessage());
-				
-			}
-
-			public void messageLogged(BuildEvent arg0) {
-				System.out.println("messageLogged " +arg0.getTask()+" "+ arg0.getMessage());
-				
-			}
-
-			public void targetFinished(BuildEvent arg0) {
-				System.out.println("targetFinished " +arg0.getTask()+" "+ arg0.getMessage());
-				
-			}
-
-			public void targetStarted(BuildEvent arg0) {
-				System.out.println("targetStarted " +arg0.getTask()+" "+ arg0.getMessage());
-				
-			}
-
-			public void taskFinished(BuildEvent arg0) {
-				System.out.println("taskFinished " +arg0.getTask()+" "+ arg0.getMessage());
-				
-			}
-
-			public void taskStarted(BuildEvent arg0) {
-				System.out.println("taskStarted " +arg0.getTask()+" "+ arg0.getMessage());
-			}
-			
-		});
+//		antProj.addBuildListener(new BuildListener() {
+//
+//			public void buildFinished(BuildEvent arg0) {
+//				System.out.println("buildFinished " +arg0.getTask()+" "+ arg0.getMessage());
+//				
+//			}
+//
+//			public void buildStarted(BuildEvent arg0) {
+//				System.out.println("buildStarted " +arg0.getTask()+" "+ arg0.getMessage());
+//				
+//			}
+//
+//			public void messageLogged(BuildEvent arg0) {
+//				System.out.println("messageLogged " +arg0.getTask()+" "+ arg0.getMessage());
+//				
+//			}
+//
+//			public void targetFinished(BuildEvent arg0) {
+//				System.out.println("targetFinished " +arg0.getTask()+" "+ arg0.getMessage());
+//				
+//			}
+//
+//			public void targetStarted(BuildEvent arg0) {
+//				System.out.println("targetStarted " +arg0.getTask()+" "+ arg0.getMessage());
+//				
+//			}
+//
+//			public void taskFinished(BuildEvent arg0) {
+//				System.out.println("taskFinished " +arg0.getTask()+" "+ arg0.getMessage());
+//				
+//			}
+//
+//			public void taskStarted(BuildEvent arg0) {
+//				System.out.println("taskStarted " +arg0.getTask()+" "+ arg0.getMessage());
+//			}
+//			
+//		});
 
 		ProjectHelper ph = new ProjectHelper2();
 		ph.parse(antProj, buildXml);

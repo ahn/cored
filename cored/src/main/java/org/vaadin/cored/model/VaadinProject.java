@@ -37,7 +37,6 @@ public class VaadinProject extends Project {
 		private static final Pattern validClass = Pattern.compile("^[A-Z][A-Za-z1-9_]+$");
 		
 		public static boolean isValidJavaClass(String s) {
-			System.out.println("isValidClass(\""+s+"\");");
 			return validClass.matcher(s).matches();
 		}
 
@@ -272,14 +271,12 @@ public class VaadinProject extends Project {
 	public Shared<Doc, DocDiff> createDoc(ProjectFile file, Doc doc,
 			long collaboratorId) {
 		Shared<Doc,DocDiff> shared = super.createDoc(file, doc, collaboratorId);
-		System.out.println("createDoc " + file);
 		return shared;
 	}
 
 	@Override
 	public void removeDoc(ProjectFile file) {
 		super.removeDoc(file);
-		System.out.println("removeFile " + file);
 		if (file.getName().endsWith(".java")) { 
 			getCompiler().removeClass(fullClassNameOf(file));
 		}
@@ -347,14 +344,12 @@ public class VaadinProject extends Project {
 
 	synchronized public boolean removeJar(String filename) {
 		for (String s : classpathItems) {
-			System.out.println("remjar " + filename + " --- " + s);
 			File jarFile = new File(s);
 			if (jarFile.getName().equals(filename)) {
 				boolean deleted = jarFile.delete();
 				if (deleted) {
 					updateJarsFromDisk();
 				}
-				System.out.println("remjar? " + deleted);
 				return deleted;
 			}
 		}
@@ -372,7 +367,6 @@ public class VaadinProject extends Project {
 		String pakkage = getPackageName();
 
 		String fullClass = pakkage == null ? appClass : pakkage + "." + appClass;
-		System.err.println("fullClass=" + fullClass);
 		String wx = webXml(appClass, fullClass);
 		
 		File f = getLocationOfFile(webXml);

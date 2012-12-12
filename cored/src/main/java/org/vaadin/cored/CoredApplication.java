@@ -18,24 +18,29 @@ import com.vaadin.ui.Window;
 public class CoredApplication extends Application implements
 		HttpServletRequestListener {
 
+	// https://vaadin.com/wiki/-/wiki/Main/ThreadLocal%20Pattern
+	// XXX Not sure if this ThreadLocal pattern is needed...
 	private static ThreadLocal<CoredApplication> currentApplication = new ThreadLocal<CoredApplication>();
 
 	private static String facebookAppId;
 
 	private Window mainWindow;
 	
+	static {
+		readProps();
+	}
 	private static void readProps() {
 		CoredProperties props;
 		Map<String, String> env = System.getenv();
 		try {
 			if (env.containsKey("CORED_PROPERTIES_FILE")) {
 				String filename = env.get("CORED_PROPERTIES_FILE");
-				System.err.println("Reading CoRED properties from file: "
+				System.out.println("Reading CoRED properties from file: "
 						+ filename);
 				props = PropertiesUtil.getPropertiesFromFile(filename);
 			} else {
 				String cbFile = "cored.properties";
-				System.err.println("Reading CoRED properties from classpath: "
+				System.out.println("Reading CoRED properties from classpath: "
 						+ cbFile);
 				props = PropertiesUtil.getPropertiesFromClasspathFile(cbFile);
 			}
@@ -50,7 +55,7 @@ public class CoredApplication extends Application implements
 	@Override
 	public void init() {
 		System.err.println("moi");
-		readProps();
+		
 		setTheme("cored");
 		mainWindow = new CoredWindow(facebookAppId);
 		setMainWindow(mainWindow);

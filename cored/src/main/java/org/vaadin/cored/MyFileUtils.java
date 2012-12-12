@@ -143,7 +143,6 @@ public class MyFileUtils {
 	}
 
 	private static void copy(InputStream in, File file) throws IOException {
-		System.out.println("Copy to " + file);
 		file.getParentFile().mkdirs();
 		OutputStream out = new FileOutputStream(file);
 		try {
@@ -161,14 +160,12 @@ public class MyFileUtils {
 		try {
 			zip = new ZipFile(zipFile);
 			for (ZipEntry entry : Collections.list(zip.entries())) {
-				System.out.println("entry " + entry.getName());
 				InputStream input = zip.getInputStream(entry);
 				try {
 					if (!targetDir.exists())
 						targetDir.mkdirs();
 					File target = new File(targetDir, entry.getName());
 					if (entry.isDirectory()) {
-						System.out.println("mkdirs " + target);
 						target.mkdirs();
 					} else {
 						copy(input, target);

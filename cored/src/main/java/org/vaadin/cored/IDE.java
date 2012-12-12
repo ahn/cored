@@ -166,7 +166,6 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 	}
 
 	public void teamChanged() {
-		System.out.println("teamChanged");
 		// "always synchronize on the application instance when accessing
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
@@ -183,11 +182,9 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 	}
 
 	private void leaveIDE() {
-		System.out.println("leaveIDE");
 		Window win = getWindow();
 		CoredApplication app = CoredApplication.getInstance();
 		if (win!=null && app!=null) {
-			System.out.println("leaveIDE win.open " + app.getURL());
 			win.open(new ExternalResource(app.getURL()));
 		}
 	}

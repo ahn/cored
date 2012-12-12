@@ -482,7 +482,6 @@ public abstract class Project {
 	}
 
 	private boolean readFromDisk() {
-		System.out.println("readFromDisk");
 		TreeSet<File> files = getFilesIn(getProjectDir());
 		boolean isProjectDir = false;
 		for (File f : files) {

@@ -51,7 +51,6 @@ public class VaadinNewFileWindow extends Window {
 					form.setComponentError(new UserError("Please check the fields"));
 					return;
 				}
-				System.out.println("valid");
 				
 				String name = (String) form.getField("name").getValue();
 				

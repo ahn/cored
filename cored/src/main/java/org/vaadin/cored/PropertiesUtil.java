@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.vaadin.cored.model.Project;
@@ -71,7 +72,10 @@ public class PropertiesUtil {
 
 	private static CoredProperties readProperties(Properties props) {
 		
-		System.out.println("props="+props);
+		System.out.println("Properties:");
+		for (Entry<Object, Object> e : props.entrySet()) {
+			System.out.println("  "+e.getKey()+": " + e.getValue());
+		}
 
 		String rootDir = (String) props.get("PROJECTS_ROOT_DIR");
 		if (rootDir == null) {

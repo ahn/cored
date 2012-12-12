@@ -21,7 +21,7 @@
 
     
 
-    <inherits name="com.github.wolfie.refresher.RefresherApplicationWidgetset" />
+    
 
     <inherits name="org.vaadin.aceeditor.gwt.AceEditorWidgetSet" />
 
@@ -37,4 +37,6 @@
     
 
     
+
+    <inherits name="org.vaadin.dontpush.widgetset.DontPushOzoneWidgetset" />
 </module>

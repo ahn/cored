@@ -112,7 +112,6 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	@Override
 	public void attach() {
 		super.attach();
-		System.out.println("EV attach");
 		editor.addListener(this);
 		project.getTeam().setUserFileOpen(file, user, editor.getCollaboratorId());
 		getWindow().addListener(this);
@@ -125,7 +124,6 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	@Override
 	public void detach() {
 		super.detach();
-		System.out.println("EV detach");
 		editor.removeListener(this);
 		project.removeListener(this);
 		project.getTeam().removeListener(this);
@@ -349,7 +347,6 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		Doc v = doc.getValue();
 		// Adding the marker to the selection marker position, a bit of a hack.
 		Marker sema = v.getMarkers().get(user.getSelectionMarkerId());
-		System.out.println("markers: " + v.getMarkers().keySet());
 		if (sema==null) {
 			getWindow().showNotification("Something went wrong marker-wise :( Please try again.");
 			return;
@@ -358,7 +355,6 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		int start = sema.getStart();
 		int end = sema.getEnd();
 		m = m.withNewPos(start, end);
-		System.out.println("note: >>>" +text.substring(start, end)+"<<<");
 		
 		DocDiff d = DocDiff.addMarker(markerId, m, text);
 		doc.applyDiff(d);
