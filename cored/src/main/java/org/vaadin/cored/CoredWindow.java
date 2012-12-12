@@ -11,6 +11,7 @@ import org.vaadin.cored.lobby.CreateProjectPanel.ProjectCreatedListener;
 import org.vaadin.cored.lobby.LoginPanel;
 import org.vaadin.cored.lobby.LoginPanel.LoggedInUserListener;
 import org.vaadin.cored.lobby.ProjectDescription;
+import org.vaadin.cored.lobby.RemoveProjectWindow;
 import org.vaadin.cored.lobby.SelectProjectPanel;
 import org.vaadin.cored.lobby.UploadProjectPanel;
 import org.vaadin.cored.lobby.UploadProjectPanel.ProjectUploadListener;
@@ -260,7 +261,6 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	}
 	
 	public void close() {
-		System.err.println("CoredWindow.close()");
 		super.close();
 	}
 	
@@ -274,6 +274,16 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		user = null;
 		getApplication().setUser(null);
 		fragmentChanged(urifu.getFragment());
+	}
+
+	public void removeRequested(String projectName) {
+		Project p = Project.getProject(projectName);
+		if (p!=null && !p.getTeam().getUsers().isEmpty()) {
+			showNotification("Can not remove a project that has people in it!");
+		}
+		else {
+			addWindow(new RemoveProjectWindow(projectName));
+		}
 	}
 
 }

@@ -560,7 +560,6 @@ public abstract class Project {
 			if (EditorUtil.isEditableWithEditor(file)) {
 				addNewSharedDoc(file, new Doc(content));
 			}
-			//fireDocCreated(file); // XXX
 		}
 		
 		return true;
@@ -663,7 +662,32 @@ public abstract class Project {
 		return log;
 	}
 	
+	public void remove() {
+		synchronized (allProjects) {
+			allProjects.remove(this);
+		}
+		fireProjectReset();
+	}
 	
+	public static boolean removeProject(String projectName) {
+		synchronized (allProjects) {
+			Project p = allProjects.get(projectName);
+			if (p != null) {
+				allProjects.remove(p);
+				p.fireProjectReset();
+			}
+			if (projectsRootDir != null) {
+				File pf = new File(projectsRootDir, projectName);
+				try {
+					FileUtils.deleteDirectory(pf);
+				} catch (IOException e) {
+					System.err.println("WARNING: failed to delete dir " + pf);
+					return false;
+				}
+			}
+		}
+		return true;
+	}
 
 	
 	

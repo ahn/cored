@@ -53,9 +53,7 @@ public class CoredApplication extends Application implements
 	
 
 	@Override
-	public void init() {
-		System.err.println("moi");
-		
+	public void init() {		
 		setTheme("cored");
 		mainWindow = new CoredWindow(facebookAppId);
 		setMainWindow(mainWindow);
