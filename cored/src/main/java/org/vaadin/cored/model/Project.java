@@ -42,6 +42,9 @@ import com.vaadin.ui.Window;
 
 //TODO: check synchronization
 
+// TODO: refactor: create a CoredDocument class (containing Doc
+// and stuff such as marker chats, file writing, etc.)
+
 public abstract class Project {
 
 	private static final Pattern VALID_PROJECT_NAME = Pattern.compile("[a-z][a-z0-9]*");
@@ -418,6 +421,7 @@ public abstract class Project {
 		Shared<Doc, DocDiff> sharedDoc = new Shared<Doc, DocDiff>(doc);
 		decorateDoc(file, sharedDoc);
 		if (logging) {
+			log.logNewFile(file);
 			sharedDoc.addTask(new LoggerTask(this,file));
 		}
 		files.put(file, sharedDoc);
@@ -456,6 +460,9 @@ public abstract class Project {
 			}
 		}
 		if (removed) {
+			if (logging) {
+				log.logRemoveFile(file);
+			}
 			fireDocRemoved(file);
 		}
 	}
