@@ -22,7 +22,9 @@ public class ProjectLog {
 		MARKER_ADD,
 		MARKER_REMOVE,
 		OPEN_FILE,
-		CLOSE_FILE
+		CLOSE_FILE,
+		NEW_FILE,
+		REMOVE_FILE
 	}
 	
 	public static abstract class LogItem {
@@ -184,6 +186,37 @@ public class ProjectLog {
 		}
 	}
 	
+	public static class FileNewLogItem extends LogItem {
+		public final ProjectFile file;
+		private FileNewLogItem(ProjectFile file) {
+			this.file = file;
+		}
+		@Override
+		Type getType() {
+			return Type.NEW_FILE;
+		}
+		@Override
+		String logContentString() {
+			return file.getName();
+		}
+	}
+	
+	public static class FileRemoveLogItem extends LogItem {
+		public final ProjectFile file;
+		private FileRemoveLogItem(ProjectFile file) {
+			this.file = file;
+		}
+		@Override
+		Type getType() {
+			return Type.REMOVE_FILE;
+		}
+		@Override
+		String logContentString() {
+			return file.getName();
+		}
+	}
+	
+	
 	private final ArrayList<LogItem> log = new ArrayList<LogItem>();
 	private final File file;
 	
@@ -223,10 +256,16 @@ public class ProjectLog {
 		log(new FileCloseLogItem(f, collabId, user));
 	}
 	
+	public void logNewFile(ProjectFile pf) {
+		log(new FileNewLogItem(pf));
+	}
 	
+	public void logRemoveFile(ProjectFile pf) {
+		log(new FileRemoveLogItem(pf));
+	}
+
 	synchronized private void log(LogItem item) {
 		log.add(item);
-		System.out.println(item.logString());
 		if (file!=null) {
 			logToFile(item);
 		}
@@ -239,6 +278,8 @@ public class ProjectLog {
 			System.err.println("WARNING: could not write log to "+file);
 		}
 	}
+
+	
 
 	
 
