@@ -48,8 +48,8 @@ public abstract class Project {
 	
 	private static final String PROPERTY_FILE_NAME="project.properties";
 	
-	private boolean logging = true;
-	private ProjectLog log = new ProjectLog();
+	private boolean logging = false;
+	private final ProjectLog log;
 	
 	public enum ProjectType {
 		vaadin, python, generic;
@@ -119,7 +119,7 @@ public abstract class Project {
 
 	private File projectDir;
 
-	private static File projectsRootDir;
+	private static volatile File projectsRootDir;
 
 	private HashMap<ProjectFile, HashMap<String,SharedChat>> fileMarkerChats =
 			new HashMap<ProjectFile, HashMap<String,SharedChat>>();
@@ -128,10 +128,21 @@ public abstract class Project {
 
 	private static HashMap<String, Project> allProjects = new HashMap<String, Project>();
 
-	private LinkedList<Shared.Listener<Doc,DocDiff>> lissssss = new LinkedList<Shared.Listener<Doc,DocDiff>>();
+	private static volatile File logDir;
+
+	private LinkedList<Shared.Listener<Doc,DocDiff>> myDocValueChangeListeners = new LinkedList<Shared.Listener<Doc,DocDiff>>();
 	
 	protected Project(String name, ProjectType type) {
 		name = name.toLowerCase();
+		
+		if (logDir!=null) {
+			logging = true;
+			log = new ProjectLog(new File(logDir, name+".log"));
+		}
+		else {
+			logging = false;
+			log = null;
+		}
 		
 		team = new Team(this);
 		
@@ -141,16 +152,12 @@ public abstract class Project {
 		projectChat.addTask(new DiffTask<Chat, ChatDiff>() {
 			public ChatDiff exec(Chat value, ChatDiff diff, long collaboratorId) {
 				for (ChatLine li : diff.getAddedFrozen()) {
-					User u = getTeam().getUserByIdEvenIfKicked(li.getUserId());
 					if (li.getUserId()!=null) {
-						log.logChat(u, li.getText());
+						log.logChat(li.getUserId(), li.getText());
 					}
 				}
 				for (ChatLine li : diff.getAddedLive()) {
-					User u = getTeam().getUserByIdEvenIfKicked(li.getUserId());
-					if (li.getUserId()!=null) {
-						log.logChat(u, li.getText());
-					}
+					log.logChat(li.getUserId(), li.getText());
 				}
 				return null;
 			}
@@ -189,6 +196,10 @@ public abstract class Project {
 		synchronized (allProjects) {
 			return projectsRootDir;
 		}
+	}
+	
+	public static void setLogDir(File dir) {
+		logDir = dir;
 	}
 
 	public static List<String> getProjectNames() {
@@ -420,7 +431,7 @@ public abstract class Project {
 				fireDocValueChanged(file, newValue);
 			}
 		};
-		lissssss.add(li);
+		myDocValueChangeListeners.add(li);
 		sharedDoc.addListenerWeakRef(li);;
 	}
 	
@@ -440,16 +451,13 @@ public abstract class Project {
 			if (files.containsKey(file)) {
 				getLocationOfFile(file).delete();
 				files.remove(file);
+				removeMarkerChatsOf(file);
 				removed = true;
 			}
 		}
 		if (removed) {
-			fireDocRemoved(file);;
+			fireDocRemoved(file);
 		}
-	}
-
-	synchronized public boolean hasFile(String name) {
-		return files.containsKey(name);
 	}
 
 	synchronized public SharedChat getProjectChat() {
@@ -473,6 +481,12 @@ public abstract class Project {
 		SharedChat chat = markerChats.get(markerId);
 		if (chat == null) {
 			chat = new SharedChat(new Chat(initial));
+			if (logging) {
+				for (ChatLine li : initial) {
+					log.logMarkerChat(markerId, li.getUserId(), li.getText());
+				}
+				chat.addTask(new MarkerChatLogTask(markerId, log));
+			}
 			fileMarkerChats.get(file).put(markerId, chat);
 		}
 		return chat;
@@ -485,7 +499,10 @@ public abstract class Project {
 			return fileMarkerChats.get(file).remove(markerId);
 		}
 		return null;
-
+	}
+	
+	private HashMap<String, SharedChat> removeMarkerChatsOf(ProjectFile file) {
+		return fileMarkerChats.remove(file);
 	}
 
 	synchronized public Team getTeam() {
@@ -511,9 +528,8 @@ public abstract class Project {
 		FileUtils.write(dest, doc.getText());
 	}
 
-	synchronized public void log(String text) {
-		projectChat.applyDiff(ChatDiff.newLiveLine(new ChatLine(text)),
-				Shared.NO_COLLABORATOR_ID);
+	public void log(String text) {
+		getProjectChat().applyDiff(ChatDiff.newLiveLine(new ChatLine(text)));
 	}
 
 	private boolean readFromDisk() {
@@ -595,7 +611,6 @@ public abstract class Project {
 	}
 	
 	private void cleanupDocListeners() {
-		System.out.println("cleanupDocListeners");
 		LinkedList<WeakReference<DocListener>> toBeRemoved = new LinkedList<WeakReference<DocListener>>();
 		for (WeakReference<DocListener> ref : docListeners) {
 			if (ref.get()==null) {

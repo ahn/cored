@@ -174,7 +174,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		selMin = Math.min(start, end);
 		selMax = Math.max(start, end);
 		DocDiff diff = user.cursorDiff(selMin, selMax, editor.getShadow().getText());
-		doc.applyDiff(diff);
+		doc.applyDiff(diff, editor.getCollaboratorId());
 		checkMarkers();
 	}
 
@@ -325,7 +325,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	}
 	
 	private void removeMarkerById(String markerId) {
-		doc.applyDiff(DocDiff.removeMarker(markerId));
+		doc.applyDiff(DocDiff.removeMarker(markerId), editor.getCollaboratorId());
 	}
 	
 	private void showAddMarkerPopup(boolean notingEnabled, boolean lockingEnabled) {
@@ -391,7 +391,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		m = m.withNewPos(start, end);
 		
 		DocDiff d = DocDiff.addMarker(markerId, m, text);
-		doc.applyDiff(d);
+		doc.applyDiff(d, editor.getCollaboratorId());
 		
 		if (chatLine!=null) {
 			List<ChatLine> lines = Collections.singletonList(chatLine);

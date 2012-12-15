@@ -85,10 +85,10 @@ public class CoredMenuBar extends MenuBar {
 		}
 	}
 	
-	private class StatsCommand implements Command {
-		public void menuSelected(MenuItem selectedItem) {
+//	private class StatsCommand implements Command {
+//		public void menuSelected(MenuItem selectedItem) {
 //			StatsWindow win = new StatsWindow(ide.getProject());
 //			getWindow().addWindow(win);
-		}
-	}
+//		}
+//	}
 }

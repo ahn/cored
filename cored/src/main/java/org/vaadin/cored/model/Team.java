@@ -9,6 +9,10 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.vaadin.cored.ProjectLog;
+
+// TODO: check synchronization
+
 public class Team {
 
 	public interface TeamListener {
@@ -48,11 +52,16 @@ public class Team {
 	
 	private HashMap<ProjectFile, TreeMap<User,TreeSet<Long>>> usersByFile
 			= new HashMap<ProjectFile, TreeMap<User,TreeSet<Long>>>();
+	
+	private HashMap<FileCollaborator, User> fcUsers = new HashMap<FileCollaborator, User>();
 
-	private Project project;
+	private final Project project;
+	private final ProjectLog log;
+	
 
 	public Team(Project project) {
 		this.project = project;
+		this.log = project.getLog();
 	}
 
 	synchronized public void addUser(User user) {
@@ -105,6 +114,10 @@ public class Team {
 
 	synchronized public void setUserFileOpen(ProjectFile file, User user, long collabId) {
 		addFileUser(file, user, collabId);
+		fcUsers.put(new FileCollaborator(file, collabId), user);
+		if (log!=null) {
+			log.logOpenFile(file, collabId, user);
+		}
 	}
 	
 	private void addFileUser(ProjectFile file, User user, long collabId) {
@@ -138,6 +151,9 @@ public class Team {
 
 	synchronized public void setUserFileClosed(ProjectFile file, User user, long collabId) {
 		removeFileUser(file, user, collabId);
+		if (log!=null) {
+			log.logCloseFile(file, collabId, user);
+		}
 	}
 	
 	private void removeFileUser(ProjectFile file, User user, long collabId) {
@@ -195,4 +211,28 @@ public class Team {
 		return allUsersById.get(userId);
 	}
 
+	synchronized public User getUser(ProjectFile file, long collaboratorId) {
+		return fcUsers.get(new FileCollaborator(file, collaboratorId));
+	}
+	
+	private static class FileCollaborator {
+		private final ProjectFile file;
+		private final long collaboratorId;
+		public FileCollaborator(ProjectFile file, long collaboratorId) {
+			this.file = file;
+			this.collaboratorId = collaboratorId;
+		}
+		@Override
+		public boolean equals(Object other) {
+			if (other instanceof FileCollaborator) {
+				FileCollaborator ofc = (FileCollaborator)other;
+				return ofc.file.equals(file) && ofc.collaboratorId==collaboratorId;
+			}
+			return false;
+		}
+		@Override
+		public int hashCode() {
+			return (file.getPath()+collaboratorId).hashCode();
+		}
+	}
 }

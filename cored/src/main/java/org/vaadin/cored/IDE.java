@@ -1,7 +1,5 @@
 package org.vaadin.cored;
 
-import java.util.LinkedList;
-
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.chatbox.ChatBox;
@@ -9,8 +7,8 @@ import org.vaadin.chatbox.SharedChat;
 import org.vaadin.cored.ProjectPanel.FileSelectListener;
 import org.vaadin.cored.model.Project;
 import org.vaadin.cored.model.ProjectFile;
-import org.vaadin.cored.model.User;
 import org.vaadin.cored.model.Team.TeamListener;
+import org.vaadin.cored.model.User;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.terminal.ExternalResource;
@@ -173,11 +171,11 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
 		// Is this enough of synchronization?
-//		synchronized (getApplication()) {
+		synchronized (getApplication()) {
 			if (!project.getTeam().hasUser(user)) {
 				leaveIDE();
 			}
-//		}
+		}
 	}
 	
 	public void leaveProject() {
