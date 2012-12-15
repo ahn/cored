@@ -10,6 +10,8 @@ import java.util.Properties;
 import org.vaadin.cored.model.Project;
 import org.vaadin.cored.model.VaadinProject;
 
+// TODO: reorganize, some kind of enum of possible properties maybe, etc...
+
 public class PropertiesUtil {
 
 	public static class CoredProperties {
@@ -17,16 +19,18 @@ public class PropertiesUtil {
 		public final String warBuildTemplateDir;
 		public final String warDeployDir;
 		public final String warDeployUrl;
+		public final String warDeployPort;
 		public final String facebookAppId;
 		public final String logDir;
 		
 		private CoredProperties(String projectsRootDir,
 				String warBuildTemplateDir, String warDeployDir,
-				String warDeployUrl, String facebookAppId, String logDir) {
+				String warDeployUrl, String warDeployPort, String facebookAppId, String logDir) {
 			this.projectsRootDir = projectsRootDir;
 			this.warBuildTemplateDir = warBuildTemplateDir;
 			this.warDeployDir = warDeployDir;
 			this.warDeployUrl = warDeployUrl;
+			this.warDeployPort = warDeployPort;
 			this.facebookAppId = facebookAppId;
 			this.logDir = logDir;
 		}
@@ -48,8 +52,12 @@ public class PropertiesUtil {
 				VaadinBuildComponent.setDeployDir(warDeployDir);
 			}
 
+
 			if (warDeployUrl != null) {
 				VaadinBuildComponent.setDeployURL(warDeployUrl);
+			}
+			else if (warDeployPort != null) {
+				VaadinBuildComponent.setDeployPort(warDeployPort);
 			}
 
 			if (facebookAppId != null) {
@@ -89,11 +97,12 @@ public class PropertiesUtil {
 		String warBuildTemplateDir = (String) props.get("WAR_BUILD_TEMPLATE_DIR");
 		String warDeployDir = (String) props.get("WAR_DEPLOY_DIR");
 		String warDeployUrl = (String) props.get("WAR_DEPLOY_URL");
+		String warDeployPort = (String) props.get("WAR_DEPLOY_PORT");
 		String fbAppId = (String) props.get("FACEBOOK_APP_ID");
 		String logDir = (String) props.get("LOG_DIR");
 
 		return new CoredProperties(rootDir, warBuildTemplateDir, warDeployDir,
-				warDeployUrl, fbAppId, logDir);
+				warDeployUrl, warDeployPort, fbAppId, logDir);
 	}
 	
 	public static Properties getProperties(File file) throws IOException {

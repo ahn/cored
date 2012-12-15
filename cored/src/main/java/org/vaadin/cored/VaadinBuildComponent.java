@@ -25,10 +25,11 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 	};
 	
 	private final DeployType deployType;
-	private static File deployDir;
 	private final File buildXml;
 	
+	private static File deployDir;
 	private static String deployURL;
+	private static String deployPort;
 
 	public static void setDeployDir(String dir) {
 		deployDir = new File(dir);
@@ -40,6 +41,10 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 
 	public static void setDeployURL(String url) {
 		deployURL = url;
+	}
+	
+	public static void setDeployPort(String port) {
+		deployPort = port;
 	}
 
 	private final VaadinProject project;
@@ -87,12 +92,20 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 	}
 	
 	private String getAppUrl() {
-		if (deployURL == null) {
+		if (deployURL != null) {
+			return deployURL + "/apps/" + project.getName() + "?debug&restartApplication";
+		}
+		else if (deployPort != null) {
+			URL url = getWindow().getURL();
+			String x = url.getProtocol()+"://"+url.getHost()+":"+deployPort;
+			return x+"/apps/" + warDeployName + "?debug&restartApplication";
+		}
+		else {
 			URL url = getWindow().getURL();
 			String x = url.getProtocol()+"://"+url.getAuthority();
 			return x+"/apps/" + warDeployName + "?debug&restartApplication";
 		}
-		return deployURL + "/apps/" + project.getName() + "?debug&restartApplication";
+		
 	}
 
 	private void doTheBuild() throws IOException {
