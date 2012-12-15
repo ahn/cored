@@ -28,7 +28,6 @@ import org.vaadin.cored.model.VaadinProject;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.terminal.ExternalResource;
-import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Component;
@@ -98,18 +97,6 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		editor.scrollToPosition(pos);
 		ho.addComponent(editor);
 		ho.setExpandRatio(editor, 1);
-		
-		
-		
-		Button b = new Button("hmm");
-		b.addListener(new ClickListener() {
-			
-			public void buttonClick(ClickEvent event) {
-				editor.scrollToPosition(pos);
-			}
-		});
-		layout.addComponent(b);
-		
 		
 		VerticalLayout rightBar = new VerticalLayout();
 		rightBar.setWidth("64px");
