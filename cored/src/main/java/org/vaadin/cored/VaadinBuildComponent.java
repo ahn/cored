@@ -1,11 +1,12 @@
 package org.vaadin.cored;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.net.URL;
+import java.util.Date;
 
-import org.apache.tools.ant.BuildEvent;
 import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.BuildListener;
 import org.apache.tools.ant.ProjectHelper;
 import org.apache.tools.ant.helper.ProjectHelper2;
 import org.vaadin.cored.model.VaadinProject;
@@ -43,6 +44,7 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 
 	private final VaadinProject project;
 	private final Button buildButton = new Button("Deploy Application");
+	private String warDeployName;
 
 	public VaadinBuildComponent(VaadinProject project, DeployType deployType) {
 		buildButton.setIcon(Icons.PAPER_PLANE);
@@ -86,7 +88,9 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 	
 	private String getAppUrl() {
 		if (deployURL == null) {
-			return "/apps/" + project.getName() + "?debug&restartApplication";
+			URL url = getWindow().getURL();
+			String x = url.getProtocol()+"://"+url.getAuthority();
+			return x+"/apps/" + warDeployName + "?debug&restartApplication";
 		}
 		return deployURL + "/apps/" + project.getName() + "?debug&restartApplication";
 	}
@@ -96,7 +100,8 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 			project.writeToDisk();
 	
 			if (this.deployType.equals(DeployType.war)){
-				antBuildWar();				
+				warDeployName = null;
+				warDeployName = antBuildWar();				
 			}else if (this.deployType.equals(DeployType.osgi)){
 				antBuildOsgi();				
 			}
@@ -104,7 +109,13 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 
 	}
 
-	private void antBuildWar() {
+	/**
+	 * 
+	 * Returns deploy name, eg. myproj-252352352452
+	 * 
+	 * that'll be in deploy_url/apps/myproj-252352352452
+	 */
+	private String antBuildWar() {
 		org.apache.tools.ant.Project antProj = new org.apache.tools.ant.Project();
 		antProj.setBasedir(project.getProjectDir().getAbsolutePath()); // TODO: turha?
 		antProj.init();
@@ -149,14 +160,29 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 
 		ProjectHelper ph = new ProjectHelper2();
 		ph.parse(antProj, buildXml);
+		
+		final String projectName = project.getName();
+		final String deployName = projectName + "-" +(new Date()).getTime();
+		final String deployWarName = "apps#" + deployName + ".war";
 
-		File warFile = new File(deployDir, "apps#" + project.getName() + ".war");
+		File warFile = new File(deployDir, deployWarName);
 
 		antProj.setProperty("destfile", warFile.getAbsolutePath());
-
 		
 		antProj.executeTarget("war");
-
+		
+		String[] prevWars = deployDir.list(new FilenameFilter() {
+			public boolean accept(File dir, String name) {
+				return !name.equals(deployWarName) && name.startsWith("apps#"+projectName+"-") && name.endsWith(".war");
+			}
+		});
+		if (prevWars != null) {
+			for (String s : prevWars) {
+				new File(deployDir, s).delete();
+			}
+		}
+		
+		return deployName;
 	}
 
 	private void antBuildOsgi() {
