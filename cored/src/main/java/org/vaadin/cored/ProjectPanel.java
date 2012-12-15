@@ -1,10 +1,17 @@
 package org.vaadin.cored;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Set;
 
+import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.cored.model.Project;
-import org.vaadin.cored.model.ProjectFile;
 import org.vaadin.cored.model.Project.DocListener;
+import org.vaadin.cored.model.Project.DocValueChangeListener;
+import org.vaadin.cored.model.ProjectFile;
+import org.vaadin.cored.model.Team.UserFileListener;
+import org.vaadin.cored.model.User;
 
 import com.vaadin.data.Property;
 import com.vaadin.data.Property.ValueChangeEvent;
@@ -21,9 +28,10 @@ import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
 
 @SuppressWarnings("serial")
-public class ProjectPanel extends Panel implements DocListener, Property.ValueChangeListener, ItemClickEvent.ItemClickListener {
-	
-	
+public class ProjectPanel extends Panel implements DocListener,
+		DocValueChangeListener, Property.ValueChangeListener,
+		ItemClickEvent.ItemClickListener, UserFileListener {
+
 	private final Project project;
 
 	private VerticalLayout layout = new VerticalLayout();
@@ -33,6 +41,9 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 	private Tree tree = new Tree();
 
 	private Object selectedItemId;
+	
+	private HashMap<ProjectFile, Boolean> errors = new HashMap<ProjectFile, Boolean>();
+	private HashMap<ProjectFile, Collection<User>> fileUsers = new HashMap<ProjectFile, Collection<User>>();
 
 	public ProjectPanel(final Project project) {
 		super("Files");
@@ -109,21 +120,31 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 
 	@Override
 	public void attach() {
+		System.out.println("ProjectPanel.attach();");
 		super.attach();
 		refresh();
 		
 		tree.addListener((Property.ValueChangeListener)this);
 		tree.addListener((ItemClickEvent.ItemClickListener)this);
 
-		project.addListener(this);
+		project.addListenerWeakRef((DocListener)this);
+		project.addListenerWeakRef((DocValueChangeListener)this);
+		
+		project.getTeam().addListener(this);
 	}
 
 	@Override
 	public void detach() {
+		System.out.println("ProjectPanel.detach();");
 		super.detach();
-		project.removeListener(this);
+
 		tree.removeListener((Property.ValueChangeListener)this);
 		tree.removeListener((ItemClickEvent.ItemClickListener)this);
+		
+		project.removeListenerWeakRef((DocListener)this);
+		project.removeListenerWeakRef((DocValueChangeListener)this);
+		
+		project.getTeam().removeListener(this);
 	}
 
 	public void docCreated(ProjectFile file) {
@@ -132,9 +153,9 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
 		// Is this enough of synchronization?
-//		synchronized (getApplication()) {
+		synchronized (getApplication()) {
 			refresh();
-//		}
+		}
 	}
 	
 	public void docRemoved(ProjectFile file) {
@@ -143,9 +164,9 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
 		// Is this enough of synchronization?
-//		synchronized (getApplication()) {
+		synchronized (getApplication()) {
 			refresh();
-//		}
+		}
 	}
 	
 	private boolean canBeDeleted(Object obj) {
@@ -201,5 +222,55 @@ public class ProjectPanel extends Panel implements DocListener, Property.ValueCh
 		selectedItemId = event.getProperty().getValue();
 		deleteButton.setEnabled(canBeDeleted(selectedItemId));
 	}
+
+	public void docValueChanged(ProjectFile pf, Doc newValue) {
+		Boolean prev;
+		boolean hasErrors = newValue.hasErrors();
+		synchronized (errors) {
+			prev = errors.put(pf, hasErrors);
+		}
+		if (prev == null || prev != hasErrors) {
+			synchronized (getApplication()) {
+				setIconOf(pf, hasErrors);
+			}
+		}
+	}
+	
+	private void setIconOf(ProjectFile pf, Boolean hasErrors) {
+		if (hasErrors) {
+			tree.setItemIcon(pf, Icons.CROSS_CIRCLE);
+		}
+		else {
+			tree.setItemIcon(pf, Icons.TICK_SMALL);
+		}
+	}
+
+	public void userFilesChanged(Set<User> users, Set<ProjectFile> files) {
+		for (ProjectFile f : files) {
+			userFileChanged(f);
+		}
+	}
+	
+	private void userFileChanged(ProjectFile f) {
+		Collection<User> uf = project.getTeam().getUsersByFile(f);
+		synchronized (fileUsers) {
+			fileUsers.put(f, uf);
+		}
+		
+		int n = uf.size();
+		if (n==0) {
+			synchronized (getApplication()) {
+				tree.setItemCaption(f, f.getName());
+			}
+		}
+		else {
+			synchronized (getApplication()) {
+				tree.setItemCaption(f, f.getName()+" ("+n+")");
+			}
+		}
+		
+		
+	}
+
 
 }

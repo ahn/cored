@@ -2,6 +2,7 @@ package org.vaadin.cored.model;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
@@ -277,13 +278,14 @@ public class VaadinProject extends Project {
 	@Override
 	public void removeDoc(ProjectFile file) {
 		super.removeDoc(file);
-		if (file.getName().endsWith(".java")) { 
+		if (file.getName().endsWith(".java")) {
+			System.out.println("fullClassNameOf(file) == " + fullClassNameOf(file));
 			getCompiler().removeClass(fullClassNameOf(file));
 		}
 	}
 	
 	private static String fullClassNameOf(ProjectFile javaFile) {
-		String n = javaFile.getName();
+		String n = javaFile.getPath().substring(4); // strip "src/"
 		return n.replace(File.separatorChar, '.').substring(0, n.length()-5);
 	}
 
@@ -298,9 +300,15 @@ public class VaadinProject extends Project {
 		
 		for (ProjectFile pf : getSourceFiles()) {
 			tree.addItem(pf);
-			tree.setItemCaption(pf, pf.getName());
+			
 			tree.setChildrenAllowed(pf, false);
-//			tree.setItemIcon(pf, res);
+			Collection<User> uf = getTeam().getUsersByFile(pf);
+			if (uf.isEmpty()) {
+				tree.setItemCaption(pf, pf.getName());
+			}
+			else {
+				tree.setItemCaption(pf, pf.getName()+" ("+uf.size()+")");
+			}
 			tree.setParent(pf, getSourceDir());
 		}
 		tree.expandItem(getSourceDir());

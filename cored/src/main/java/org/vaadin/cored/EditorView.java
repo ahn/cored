@@ -28,6 +28,7 @@ import org.vaadin.cored.model.VaadinProject;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.terminal.ExternalResource;
+import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Component;
@@ -51,14 +52,14 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	private final VerticalLayout markerLayout = new VerticalLayout();
 
 	
-	EditorPopupWindow popup = new EditorPopupWindow();
+	EditorPopupWindow popup;
 	private int selMin;
 	private int selMax;
 	
 	private Map<String, Marker> latestMarkers = new TreeMap<String, Marker>();
 	private String activeMarker;
 	
-	public EditorView(ProjectFile file, Project project, User user, boolean inIde) {
+	public EditorView(ProjectFile file, Project project, User user, boolean inIde, int line) {
 		super();
 		this.file = file;
 		this.project = project;
@@ -86,14 +87,28 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 
 		doc = project.getDoc(file);
 		
+		
+		
 		editor = createEditor(file, project);
 		editor.setSizeFull();
 		editor.setEnabled(user != null);
 		editor.setUser(user.getUserId(), user.getStyle());
+		
+		final int pos = org.vaadin.aceeditor.gwt.shared.Util.cursorPosFromLineCol(doc.getValue().getText(), line, 0, 1);
+		editor.scrollToPosition(pos);
 		ho.addComponent(editor);
 		ho.setExpandRatio(editor, 1);
 		
-		popup.setVisible(false);
+		
+		
+		Button b = new Button("hmm");
+		b.addListener(new ClickListener() {
+			
+			public void buttonClick(ClickEvent event) {
+				editor.scrollToPosition(pos);
+			}
+		});
+		layout.addComponent(b);
 		
 		
 		VerticalLayout rightBar = new VerticalLayout();
@@ -112,23 +127,25 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	@Override
 	public void attach() {
 		super.attach();
-		editor.addListener(this);
 		project.getTeam().setUserFileOpen(file, user, editor.getCollaboratorId());
 		getWindow().addListener(this);
 		showUsers();
-		project.addListener(this);
+		editor.addListener(this);
+		project.addListenerWeakRef(this);
 		project.getTeam().addListener(this);
-		getWindow().addWindow(popup);
+		
 	}
 	
 	@Override
 	public void detach() {
 		super.detach();
 		editor.removeListener(this);
-		project.removeListener(this);
+		project.removeListenerWeakRef(this);
 		project.getTeam().removeListener(this);
 		project.getTeam().setUserFileClosed(file, user, editor.getCollaboratorId());
-		getWindow().removeWindow(popup);
+		if (popup != null) {
+			getWindow().removeWindow(popup);
+		}
 	}
 	
 	private void showUsers() {
@@ -254,20 +271,35 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 			showAddMarkerPopup(notingEnabled, lockingEnabled);
 		}
 		else {
-			popup.setVisible(false);
+			if (popup!=null) {
+				popup.setVisible(false);
+			}
 			activeMarker = null;
 		}
 	}
 	
 	private void showPopup(String title, Component content) {
 		int[] coords = editor.getCursorCoords();
+		if (popup==null) {
+			popup = new EditorPopupWindow();
+			popup.addListener(new CloseListener() {
+				public void windowClose(CloseEvent e) {
+					popup = null;
+				}
+			});
+			getWindow().addWindow(popup);
+		}
+		else {
+			popup.removeAllComponents();
+			popup.setVisible(true);
+		}
 		popup.setPositionX(coords[0]+200);
 		popup.setPositionY(coords[1]);
 		popup.setWidth("250px");
 		popup.setHeight("250px");
 		popup.setVisible(true);
 		popup.setCaption(title);
-		popup.removeAllComponents();
+		
 		popup.getContent().setSizeFull();
 		popup.addComponent(content);
 	}
@@ -280,7 +312,9 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		MarkerComponent mc = new MarkerComponent(m, user, chat);
 		mc.addListener(new MarkerComponentListener() {
 			public void removeMarker() {
-				popup.setVisible(false);
+				if (popup != null) {
+					popup.setVisible(false);
+				}
 				activeMarker = null;
 				latestMarkers.remove(markerId);
 				updateMarkers(latestMarkers);

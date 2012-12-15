@@ -7,7 +7,6 @@ public class EditorPopupWindow extends Window {
 
 	public EditorPopupWindow() {
 		super();
-		setClosable(false);
 		
 	}
 }

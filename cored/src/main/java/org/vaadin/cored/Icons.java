@@ -23,6 +23,9 @@ public class Icons {
 	public static final ThemeResource DOCUMENT_PLUS = new ThemeResource("icons/document--plus.png");
 
 	public static final ThemeResource CROSS_SCRIPT = new ThemeResource("icons/cross-script.png");
+	public static final Resource CROSS_CIRCLE = new ThemeResource("icons/cross-circle.png");
+	public static final Resource CROSS_SMALL = new ThemeResource("icons/cross-small.png");
+	public static final Resource CROSS_SMALL_CIRCLE = new ThemeResource("icons/cross-small-circle.png");
 	
 	public static final ThemeResource LOCK = new ThemeResource("icons/lock.png");
 	public static final ThemeResource LOCK_32 = new ThemeResource("icons/lock32.png");
@@ -33,6 +36,8 @@ public class Icons {
 	public static final ThemeResource PAPER_PLANE = new ThemeResource("icons/paper-plane.png");
 	
 	public static final Resource TICK_CIRCLE = new ThemeResource("icons/tick-circle.png");
+	public static final Resource TICK_SMALL = new ThemeResource("icons/tick-small.png");
+	public static final Resource TICK_SMALL_CIRCLE = new ThemeResource("icons/tick-small-circle.png");
 	
-	public static final Resource CROSS_CIRCLE = new ThemeResource("icons/cross-circle.png");
+	
 }

@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.TreeSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
@@ -32,10 +34,13 @@ import org.vaadin.cored.ProjectLog;
 import org.vaadin.cored.PropertiesUtil;
 import org.vaadin.diffsync.DiffTask;
 import org.vaadin.diffsync.Shared;
+import org.vaadin.diffsync.Shared.Listener;
 
 import com.vaadin.ui.MenuBar;
 import com.vaadin.ui.Tree;
 import com.vaadin.ui.Window;
+
+//TODO: check synchronization
 
 public abstract class Project {
 
@@ -55,8 +60,8 @@ public abstract class Project {
 		public void docRemoved(ProjectFile file);
 	}
 	
-	public interface ProjectListener {
-		public void projectReset();
+	public interface DocValueChangeListener {
+		public void docValueChanged(ProjectFile pf, Doc newValue);
 	}
 
 	abstract public void fillTree(Tree tree);	
@@ -99,9 +104,11 @@ public abstract class Project {
 		return null;
 	}
 	
-	
-	private LinkedList<DocListener> docListeners = new LinkedList<DocListener>();
-	private LinkedList<ProjectListener> projectListeners = new LinkedList<ProjectListener>();
+	// XXX Not sure if it makes sense to use WeakReference to store listeners.
+	// The idea is that storing a listener here wouldn't prevent the listener
+	// to be garbage-collected.
+	private CopyOnWriteArrayList<WeakReference<DocListener>> docListeners = new CopyOnWriteArrayList<WeakReference<DocListener>>();
+	private CopyOnWriteArrayList<WeakReference<DocValueChangeListener>> docValueChangeListeners = new CopyOnWriteArrayList<WeakReference<DocValueChangeListener>>();
 
 	private final String projName;
 
@@ -119,8 +126,9 @@ public abstract class Project {
 
 	private ProjectType projectType;
 
-	
 	private static HashMap<String, Project> allProjects = new HashMap<String, Project>();
+
+	private LinkedList<Shared.Listener<Doc,DocDiff>> lissssss = new LinkedList<Shared.Listener<Doc,DocDiff>>();
 	
 	protected Project(String name, ProjectType type) {
 		name = name.toLowerCase();
@@ -324,15 +332,29 @@ public abstract class Project {
 	}
 	
 	
-	public void addListener(DocListener li) {
-		synchronized (docListeners) {
-			docListeners.add(li);
-		}
+	public void addListenerWeakRef(DocListener li) {
+		docListeners.add(new WeakReference<DocListener>(li));
 	}
 
-	public void removeListener(DocListener li) {
-		synchronized (docListeners) {
-			docListeners.remove(li);
+	public void removeListenerWeakRef(DocListener li) {
+		for (WeakReference<DocListener> ref : docListeners) {
+			if (li.equals(ref.get())) {
+				docListeners.remove(ref);
+				break;
+			}
+		}
+	}
+	
+	public void addListenerWeakRef(DocValueChangeListener li) {
+		docValueChangeListeners.add(new WeakReference<DocValueChangeListener>(li));
+	}
+
+	public void removeListenerWeakRef(DocValueChangeListener li) {
+		for (WeakReference<DocValueChangeListener> ref : docValueChangeListeners) {
+			if (li.equals(ref.get())) {
+				docValueChangeListeners.remove(ref);
+				break;
+			}
 		}
 	}
 
@@ -388,9 +410,22 @@ public abstract class Project {
 			sharedDoc.addTask(new LoggerTask(this,file));
 		}
 		files.put(file, sharedDoc);
+		listenTo(file, sharedDoc);
 		return sharedDoc;
 	}
 
+	private void listenTo(final ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
+		Listener<Doc, DocDiff> li = new Listener<Doc, DocDiff>() {
+			public void changed(Doc newValue, DocDiff diff, long collaboratorId) {
+				fireDocValueChanged(file, newValue);
+			}
+		};
+		lissssss.add(li);
+		sharedDoc.addListenerWeakRef(li);;
+	}
+	
+	
+	
 	public Shared<Doc, DocDiff> createDoc(ProjectFile file, String content) {
 		return createDoc(file, new Doc(content), Shared.NO_COLLABORATOR_ID);
 	}
@@ -512,27 +547,75 @@ public abstract class Project {
 
 
 	private void fireDocCreated(ProjectFile file) {
-		synchronized (docListeners) {
-			for (DocListener li : docListeners) {
+		boolean cleanup = false;
+		for (WeakReference<DocListener> ref : docListeners) {
+			DocListener li = ref.get();
+			if (li == null) {
+				cleanup = true;
+			}
+			else {
 				li.docCreated(file);
 			}
+		}
+		if (cleanup) {
+			cleanupDocListeners();
 		}
 	}
 
 	private void fireDocRemoved(ProjectFile file) {
-		synchronized (docListeners) {
-			for (DocListener li : docListeners) {
+		boolean cleanup = false;
+		for (WeakReference<DocListener> ref : docListeners) {
+			DocListener li = ref.get();
+			if (li == null) {
+				cleanup = true;
+			}
+			else {
 				li.docRemoved(file);
 			}
 		}
+		if (cleanup) {
+			cleanupDocListeners();
+		}
 	}
-
-	private void fireProjectReset() {
-		synchronized (projectListeners) {
-			for (ProjectListener li : projectListeners) {
-				li.projectReset();
+	
+	private void fireDocValueChanged(ProjectFile file, Doc newValue) {
+		boolean cleanup = false;
+		for (WeakReference<DocValueChangeListener> ref : docValueChangeListeners) {
+			DocValueChangeListener li = ref.get();
+			if (li == null) {
+				cleanup = true;
+			}
+			else {
+				li.docValueChanged(file, newValue);
 			}
 		}
+		if (cleanup) {
+			cleanupDocValueChangeListeners();
+		}
+	}
+	
+	private void cleanupDocListeners() {
+		System.out.println("cleanupDocListeners");
+		LinkedList<WeakReference<DocListener>> toBeRemoved = new LinkedList<WeakReference<DocListener>>();
+		for (WeakReference<DocListener> ref : docListeners) {
+			if (ref.get()==null) {
+				toBeRemoved.add(ref);
+			}
+		}
+		boolean rem = docListeners.removeAll(toBeRemoved);
+		System.out.println("cleanupDocListeners "+toBeRemoved.size()+ " " + rem);
+	}
+	
+	private void cleanupDocValueChangeListeners() {
+		System.out.println("cleanupDocValueChangeListeners");
+		LinkedList<WeakReference<DocValueChangeListener>> toBeRemoved = new LinkedList<WeakReference<DocValueChangeListener>>();
+		for (WeakReference<DocValueChangeListener> ref : docValueChangeListeners) {
+			if (ref.get()==null) {
+				toBeRemoved.add(ref);
+			}
+		}
+		boolean rem = docValueChangeListeners.removeAll(toBeRemoved);
+		System.out.println("cleanupDocValueChangeListeners "+toBeRemoved.size()+ " " + rem);
 	}
 	
 	final protected File getLocationOfFile(ProjectFile file) {
@@ -597,13 +680,9 @@ public abstract class Project {
 		if (projectDir.equals(dir)) {
 			return;
 		}
-		fireProjectReset();
 		synchronized (this) {
 			team.removeAllUsers();
 			try {
-				for (File f : projectDir.listFiles()) {
-					System.err.println("file "+f);
-				}
 				FileUtils.deleteDirectory(projectDir);
 				FileUtils.copyDirectory(dir, projectDir);
 				readFromDisk();
@@ -666,7 +745,6 @@ public abstract class Project {
 		synchronized (allProjects) {
 			allProjects.remove(this);
 		}
-		fireProjectReset();
 	}
 	
 	public static boolean removeProject(String projectName) {
@@ -674,7 +752,6 @@ public abstract class Project {
 			Project p = allProjects.get(projectName);
 			if (p != null) {
 				allProjects.remove(p);
-				p.fireProjectReset();
 			}
 			if (projectsRootDir != null) {
 				File pf = new File(projectsRootDir, projectName);

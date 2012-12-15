@@ -20,7 +20,9 @@ import org.vaadin.cored.model.ProjectFile;
 import org.vaadin.cored.model.User;
 import org.vaadin.facebookauth.FacebookAuth;
 
-import com.google.gwt.editor.client.impl.Refresher;
+import com.github.wolfie.refresher.Refresher;
+import com.github.wolfie.refresher.Refresher.RefreshListener;
+import com.vaadin.ui.AbstractComponent;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
@@ -37,7 +39,7 @@ import com.vaadin.ui.themes.BaseTheme;
 @SuppressWarnings("serial")
 // http://dev.vaadin.com/ticket/2841
 public class CoredWindow extends Window implements SelectProjectPanel.Listener,
-		FragmentChangedListener, LoggedInUserListener {
+		FragmentChangedListener, LoggedInUserListener, RefreshListener {
 	
 	/**
 	 * The URI fragment determines project + file:
@@ -47,8 +49,10 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	 *     -> file.txt of project proj in standalone view
 	 * #proj/file.txt!
 	 *     -> file.txt of project proj in project view (note the !)
+	 * #proj/file.txt:20
+	 *     -> TODO
 	 */
-	private static final Pattern FRAGMENT = Pattern.compile("^([^/]+)(?:/([^!]*))?(!?)$");
+	private static final Pattern FRAGMENT = Pattern.compile("^([^/]+)(?:/([^!:]+))?(?::(\\d+))?(!?)$");
 
 	private UriFragmentUtility urifu = new UriFragmentUtility();
 
@@ -66,6 +70,11 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	private boolean ignoreNextFragmentChange = false;
 
 	private User user;
+
+	private Object componentToBeDetachedLock = new Object(); 
+	private  AbstractComponent componentToBeDetached;
+
+	private CleanupTimer hmm;
 
 	public CoredWindow(String facebookAppId) {
 		super("CoRED");
@@ -173,34 +182,48 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 		mainLayout.setExpandRatio(hl, 1);
 	}
 
-	private void openProject(Project project, String filename) {
+	private void openProject(Project project, String filename, int line) {
 		clear();
 		project.getTeam().addUser(user);
 		Refresher ref = new Refresher();
-//		ref.setRefreshInterval(1000);
-//		mainLayout.addComponent(ref);
+		ref.addListener(this);
+		ref.setRefreshInterval(1000);
+		mainLayout.addComponent(ref);
 		IDE ide = new IDE(user, project, filename);
 		mainLayout.addComponent(ide);
 		mainLayout.setExpandRatio(ide, 10);
 		setCaption(project.getName() + " - CoRED");
+		synchronized (componentToBeDetachedLock) {
+			componentToBeDetached = ide;
+		}
+		
 	}
 
 	public void projectSelected(String projectName) {
 		urifu.setFragment(projectName);
 	}
 	
-	private void openSingleFile(Project project, String filename) {
+	private void openSingleFile(Project project, String filename, int line) {
 		clear();
-		project.getTeam().addUser(user);
+		
 		ProjectFile file = project.getProjectFile(filename);
-		EditorView sfw = new EditorView(file, project, user, false);
+		if (file == null) {
+			urifu.setFragment("");
+			return;
+		}
+		project.getTeam().addUser(user);
+		EditorView sfw = new EditorView(file, project, user, false, line);
 		mainLayout.addComponent(sfw);
 		mainLayout.setSizeFull();
 		Refresher ref = new Refresher();
-//		ref.setRefreshInterval(1000);
-//		mainLayout.addComponent(ref);
+		ref.addListener(this);
+		ref.setRefreshInterval(1000);
+		mainLayout.addComponent(ref);
 		mainLayout.setExpandRatio(sfw, 10);
 		setCaption(filename + " - " + project.getName() +" - CoRED");
+		synchronized (componentToBeDetachedLock) {
+			componentToBeDetached = sfw;
+		}
 	}
 
 	public void fragmentChanged(FragmentChangedEvent source) {
@@ -213,6 +236,10 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	}
 	
 	public void fragmentChanged(String frag) {
+		synchronized (componentToBeDetachedLock) {
+			componentToBeDetached = null;
+		}
+		
 		if (user == null) {
 			showLoginPanel();
 			return;
@@ -231,14 +258,15 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 			}
 			else {
 				String filename = x.group(2);
-				boolean insideIde = !x.group(3).isEmpty();
+				int line = x.group(3) == null || x.group(3).isEmpty() ? 0 : Integer.valueOf(x.group(3));
+				boolean insideIde = !x.group(4).isEmpty();
 				if (filename==null || filename.isEmpty()) {
-					openProject(project, null);
+					openProject(project, null, line);
 				}
 				else if (insideIde) {
-					openProject(project, filename);
+					openProject(project, filename, line);
 				} else {
-					openSingleFile(project, filename);
+					openSingleFile(project, filename, line);
 				}
 			}
 
@@ -258,10 +286,6 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 	public void setFragment(String frag) {
 		ignoreNextFragmentChange = true;
 		urifu.setFragment(frag);
-	}
-	
-	public void close() {
-		super.close();
 	}
 	
 	private void setUser(User user) {
@@ -285,5 +309,40 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 			addWindow(new RemoveProjectWindow(projectName));
 		}
 	}
+
+	public void refresh(Refresher source) {
+		resetCleanupTimer();
+	}
+	
+	private void resetCleanupTimer() {
+		if (hmm == null) {
+			hmm = new CleanupTimer(new Runnable() {
+				public void run() {
+					cleanup();
+				}
+			}, 10);
+			hmm.start();
+		}
+		else {
+			hmm.reset();
+		}
+	}
+	
+	private void cleanup() {
+		AbstractComponent det;
+		synchronized (componentToBeDetachedLock) {
+			det = componentToBeDetached;
+		}
+		if (det != null) {
+			synchronized (getApplication()) {
+				System.out.println("detaching " + det);
+				det.detach();
+			}
+		}
+		
+			
+		
+	}
+
 
 }

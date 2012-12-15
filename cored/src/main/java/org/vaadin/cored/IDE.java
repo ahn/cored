@@ -1,5 +1,7 @@
 package org.vaadin.cored;
 
+import java.util.LinkedList;
+
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.chatbox.ChatBox;
@@ -36,6 +38,7 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 	private SharedChat sharedChat;
 
 	private ProjectPanel projectPanel;
+	
 
 	public IDE(User user, Project project, String initialFilename) {
 		super();
@@ -114,7 +117,7 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 	}
 
 	private void editDoc(Shared<Doc, DocDiff> doc, ProjectFile file) {
-		editorView = new EditorView(file, project, user, true);
+		editorView = new EditorView(file, project, user, true, 0);
 		editorView.setSizeFull();
 		
 		editorLayout.removeAllComponents();
@@ -183,9 +186,8 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 
 	private void leaveIDE() {
 		Window win = getWindow();
-		CoredApplication app = CoredApplication.getInstance();
-		if (win!=null && app!=null) {
-			win.open(new ExternalResource(app.getURL()));
+		if (win!=null) {
+			win.open(new ExternalResource(""));
 		}
 	}
 

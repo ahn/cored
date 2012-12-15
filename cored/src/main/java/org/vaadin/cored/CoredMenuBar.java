@@ -37,7 +37,7 @@ public class CoredMenuBar extends MenuBar {
 				projectItem.addItem("Deploy", new BuildCommand()).setIcon(Icons.PAPER_PLANE);
 			}
 			projectItem.addItem("Download as zip", new DownloadCommand()).setIcon(Icons.BOX_ZIPPER);
-			projectItem.addItem("Project timeline", new StatsCommand()).setIcon(Icons.APPLICATION_WAVE);
+//			projectItem.addItem("Project timeline", new StatsCommand()).setIcon(Icons.APPLICATION_WAVE);
 			projectItem.addItem("Leave project", new CloseCommand());
 		
 			project.addMenuItem(this);
@@ -87,8 +87,8 @@ public class CoredMenuBar extends MenuBar {
 	
 	private class StatsCommand implements Command {
 		public void menuSelected(MenuItem selectedItem) {
-			StatsWindow win = new StatsWindow(ide.getProject());
-			getWindow().addWindow(win);
+//			StatsWindow win = new StatsWindow(ide.getProject());
+//			getWindow().addWindow(win);
 		}
 	}
 }

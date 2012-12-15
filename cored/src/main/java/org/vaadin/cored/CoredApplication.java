@@ -1,6 +1,7 @@
 package org.vaadin.cored;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -13,16 +14,18 @@ import org.vaadin.cored.model.User;
 import com.vaadin.Application;
 import com.vaadin.terminal.gwt.server.HttpServletRequestListener;
 import com.vaadin.ui.Window;
+import com.vaadin.ui.Window.CloseEvent;
 
 @SuppressWarnings("serial")
-public class CoredApplication extends Application implements
-		HttpServletRequestListener {
+public class CoredApplication extends Application {
 
 	// https://vaadin.com/wiki/-/wiki/Main/ThreadLocal%20Pattern
 	// XXX Not sure if this ThreadLocal pattern is needed...
-	private static ThreadLocal<CoredApplication> currentApplication = new ThreadLocal<CoredApplication>();
+//	private static ThreadLocal<CoredApplication> currentApplication = new ThreadLocal<CoredApplication>();
 
 	private static String facebookAppId;
+	
+	private final LinkedList<Window> windows = new LinkedList<Window>();
 
 	private Window mainWindow;
 	
@@ -56,13 +59,19 @@ public class CoredApplication extends Application implements
 	public void init() {		
 		setTheme("cored");
 		mainWindow = new CoredWindow(facebookAppId);
+		mainWindow.addListener(new Window.CloseListener(){
+			public void windowClose(CloseEvent e) {
+				System.out.println("WINDOW CLOSE!!!!!!!!!!!!");
+			}	    
+		});
 		setMainWindow(mainWindow);
 	}
 
 	@Override
-	public Window getWindow(String name) {
+	synchronized public Window getWindow(String name) {
 		Window w = super.getWindow(name);
 		if (w == null) {
+			System.out.println("NEW WINDOW "+name);
 			w = new CoredWindow(facebookAppId);
 			w.setName(name);
 			addWindow(w);
@@ -70,33 +79,33 @@ public class CoredApplication extends Application implements
 		return w;
 	}
 
-	public static void setInstance(CoredApplication application) {
-		currentApplication.set(application);
-	}
-
-	public void onRequestStart(HttpServletRequest request,
-			HttpServletResponse response) {
-		CoredApplication.setInstance(this);
-	}
-
-	public void onRequestEnd(HttpServletRequest request,
-			HttpServletResponse response) {
-		currentApplication.remove();
-	}
-
-	public static CoredApplication getInstance() {
-		return currentApplication.get();
-	}
+//	public static void setInstance(CoredApplication application) {
+//		currentApplication.set(application);
+//	}
+//
+//	public void onRequestStart(HttpServletRequest request,
+//			HttpServletResponse response) {
+//		CoredApplication.setInstance(this);
+//	}
+//
+//	public void onRequestEnd(HttpServletRequest request,
+//			HttpServletResponse response) {
+//		currentApplication.remove();
+//	}
+//
+//	public static CoredApplication getInstance() {
+//		return currentApplication.get();
+//	}
 
 	public static void setFacebookAppId(String facebookAppId) {
 		CoredApplication.facebookAppId = facebookAppId;
 	}
 	
 	@Override
-	public void close() {
+	synchronized  public void close() {
+		System.out.println("CoredApplication.close()");
 		User u = (User)getUser();
 		if (u!=null) {
-			System.err.println("Kicking "+u.getName()+" from all projects.");
 			Project.kickFromAllProjects(u);
 		}
 		super.close();

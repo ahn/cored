@@ -12,8 +12,8 @@
 	<servlet>
 		<servlet-name>Vaadin Application Servlet</servlet-name>
 <!-- 		<servlet-class>org.vaadin.artur.icepush.ICEPushServlet</servlet-class> -->
-<!-- 		<servlet-class>com.vaadin.terminal.gwt.server.ApplicationServlet</servlet-class> -->
-        <servlet-class>org.vaadin.dontpush.server.DontPushOzoneServlet</servlet-class>
+		<servlet-class>com.vaadin.terminal.gwt.server.ApplicationServlet</servlet-class>
+<!--         <servlet-class>org.vaadin.dontpush.server.DontPushOzoneServlet</servlet-class> -->
 		<init-param>
 			<description>Vaadin application class to start</description>
 			<param-name>application</param-name>
@@ -31,24 +31,6 @@
 	</servlet-mapping>
 	
 	
-	
-	
-	<servlet>
-        <description>AtmosphereServlet</description>
-        <servlet-name>AtmosphereServlet</servlet-name>
-        <servlet-class>org.atmosphere.cpr.AtmosphereServlet</servlet-class>
-        <init-param>
-<!--             prevent deadlocks -->
-            <param-name>org.atmosphere.disableOnStateEvent</param-name>
-            <param-value>true</param-value>
-        </init-param>
-        <load-on-startup>1</load-on-startup>
-<!--         Uncomment if you want to use Servlet 3.0 Async Support -->
-        <async-supported>true</async-supported>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>AtmosphereServlet</servlet-name>
-        <url-pattern>/UIDL/*</url-pattern>
-    </servlet-mapping>
+
     
 </web-app>
