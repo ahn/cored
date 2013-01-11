@@ -3,19 +3,27 @@ package org.vaadin.cored.model;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+
+import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
 
 import org.apache.commons.io.FileUtils;
 import org.vaadin.aceeditor.ErrorChecker;
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.ErrorCheckTask;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
+import org.vaadin.aceeditor.gwt.shared.Marker;
 import org.vaadin.aceeditor.java.CompilerErrorChecker;
 import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.cored.BuildComponent;
+import org.vaadin.cored.Icons;
 import org.vaadin.cored.VaadinBuildComponent;
 import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.cored.VaadinJarWindow;
@@ -100,7 +108,6 @@ public class VaadinProject extends Project {
 			return;
 		}
 		classpathItems.clear();
-//		classpathItems.add(getProjectClasspathPath());
 		for (File f : location.listFiles()) {
 			classpathItems.add(f.getAbsolutePath());
 		}
@@ -109,7 +116,6 @@ public class VaadinProject extends Project {
 	}
 	
 	
-
 	protected VaadinProject(String name) {
 		super(name,ProjectType.vaadin);
 		packageName = "fi.tut.cs.cored."+getName();
@@ -134,13 +140,6 @@ public class VaadinProject extends Project {
 	
 	synchronized public ProjectFile getFileOfClass(String className) {
 		return new ProjectFile(srcPackageDir, className+".java");
-	}
-	
-	synchronized public void createSrcDoc(String pakkage, String name, String content) {
-		File dir = new File(srcDir, dirFromPackage(pakkage).getPath());
-		ProjectFile file = new ProjectFile(dir, name);
-		Shared<Doc, DocDiff> doc = createDoc(file, content);
-		decorateDoc(file, doc);
 	}
 	
 	private static File dirFromPackage(String pakkage) {
@@ -187,7 +186,13 @@ public class VaadinProject extends Project {
 	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
 		String filename = file.getName();
 		if (filename.endsWith(".java")) {
+	
 			ErrorCheckTask task = createErrorCheckTaskFor(file, sharedDoc);
+			
+//			DocDiff d = task.exec(sharedDoc.getValue(), null, Shared.NO_COLLABORATOR_ID);
+//			if (d!=null) {
+//				sharedDoc.applyDiff(d);
+//			}
 			
 			sharedDoc.addAsyncTask(task, DiffTaskExecPolicy.LATEST_CANCEL_RUNNING);	
 		}
@@ -279,7 +284,6 @@ public class VaadinProject extends Project {
 	public void removeDoc(ProjectFile file) {
 		super.removeDoc(file);
 		if (file.getName().endsWith(".java")) {
-			System.out.println("fullClassNameOf(file) == " + fullClassNameOf(file));
 			getCompiler().removeClass(fullClassNameOf(file));
 		}
 	}
@@ -287,6 +291,10 @@ public class VaadinProject extends Project {
 	private static String fullClassNameOf(ProjectFile javaFile) {
 		String n = javaFile.getPath().substring(4); // strip "src/"
 		return n.replace(File.separatorChar, '.').substring(0, n.length()-5);
+	}
+	
+	private static ProjectFile fromFullClassName(String cls) {
+		return new ProjectFile("src"+File.separator+cls.replace('.', File.separatorChar)+".java");
 	}
 
 	public boolean canBeDeleted(ProjectFile file) {
@@ -300,6 +308,15 @@ public class VaadinProject extends Project {
 		
 		for (ProjectFile pf : getSourceFiles()) {
 			tree.addItem(pf);
+			
+			Shared<Doc, DocDiff> doc = getDoc(pf);
+			if (doc != null) {
+				if (doc.getValue().hasErrors()) {
+					tree.setItemIcon(pf, Icons.CROSS_CIRCLE);
+				} else {
+					tree.setItemIcon(pf, Icons.TICK_SMALL);
+				}
+			}
 			
 			tree.setChildrenAllowed(pf, false);
 			Collection<User> uf = getTeam().getUsersByFile(pf);
@@ -333,6 +350,44 @@ public class VaadinProject extends Project {
 				menuBar.getWindow().addWindow(new VaadinJarWindow(VaadinProject.this));
 			}
 		});
+		mi.addItem("Compile all", new Command() {
+			public void menuSelected(MenuItem selectedItem) {
+				compileAll();
+				menuBar.getWindow().showNotification("Compiled");
+			}
+		});
+	}
+
+	// XXX: this compilation is a bit of a mess...
+	protected final void compileAll() {
+		Map<ProjectFile, Shared<Doc, DocDiff>> m;
+		synchronized (this) {
+			 m = new HashMap<ProjectFile, Shared<Doc, DocDiff>>(files);
+		}
+		
+		HashMap<String,String> ss = new HashMap<String,String>();
+		for (Entry<ProjectFile, Shared<Doc, DocDiff>> e : m.entrySet()) {
+			ss.put(fullClassNameOf(e.getKey()), e.getValue().getValue().getText());
+		}
+		
+		Map<String, List<Diagnostic<? extends JavaFileObject>>> xx = getCompiler().compileAll(ss);
+		for (Entry<String, List<Diagnostic<? extends JavaFileObject>>> e : xx.entrySet()) {
+			Shared<Doc, DocDiff> doc = getDoc(fromFullClassName(e.getKey()));
+			if (doc==null) {
+				continue;
+			}
+			final List<Diagnostic<? extends JavaFileObject>> errors = e.getValue();
+			DocDiff d = new ErrorCheckTask(doc.newCollaboratorId(), new ErrorChecker() {
+				public Collection<Marker> getErrors(String source) {
+					return CompilerErrorChecker.errorsFromDiagnostics(errors);
+				}
+			}).exec(doc.getValue(), null, Shared.NO_COLLABORATOR_ID);
+			doc.applyDiff(d);
+		}
+		
+		
+		
+		
 	}
 
 	synchronized public List<String> getJarNames() {
@@ -404,6 +459,11 @@ public class VaadinProject extends Project {
 			+ "<param-name>application</param-name>\n"
 			+ "<param-value>%s</param-value>\n"
 			+ "</init-param>\n"
+//			+ "<init-param>\n"
+//			+ "<description>Application widgetset</description>\n"
+//			+ "<param-name>widgetset</param-name>\n"
+//			+ "<param-value>org.vaadin.aceeditor.gwt.AceEditorWidgetSet</param-value>\n"
+//			+ "</init-param>\n"
 			+ "</servlet>\n"
 			+ "<servlet-mapping>\n"
 			+ "<servlet-name>%s</servlet-name>\n"

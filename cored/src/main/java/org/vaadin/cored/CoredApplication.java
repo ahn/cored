@@ -59,11 +59,6 @@ public class CoredApplication extends Application {
 	public void init() {		
 		setTheme("cored");
 		mainWindow = new CoredWindow(facebookAppId);
-		mainWindow.addListener(new Window.CloseListener(){
-			public void windowClose(CloseEvent e) {
-				System.out.println("WINDOW CLOSE!!!!!!!!!!!!");
-			}	    
-		});
 		setMainWindow(mainWindow);
 	}
 
@@ -71,7 +66,6 @@ public class CoredApplication extends Application {
 	synchronized public Window getWindow(String name) {
 		Window w = super.getWindow(name);
 		if (w == null) {
-			System.out.println("NEW WINDOW "+name);
 			w = new CoredWindow(facebookAppId);
 			w.setName(name);
 			addWindow(w);
@@ -109,5 +103,14 @@ public class CoredApplication extends Application {
 			Project.kickFromAllProjects(u);
 		}
 		super.close();
+	}
+	
+	// TODO: refactor
+	private volatile boolean annoyingPopup = false;
+	public void setAnnoyingPopup(boolean on) {
+		annoyingPopup = on;
+	}
+	public boolean getAnnoyingPopup() {
+		return annoyingPopup;
 	}
 }

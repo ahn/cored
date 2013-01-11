@@ -28,6 +28,7 @@ import org.vaadin.cored.model.VaadinProject;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.terminal.ExternalResource;
+import com.vaadin.terminal.gwt.server.WebApplicationContext;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Component;
@@ -175,12 +176,12 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
 		// Is this enough of synchronization?
-		synchronized (getApplication()) {
+//		synchronized (getApplication()) {
 			if (this.file.equals(file)) {
 				layout.removeAllComponents();
 				getWindow().showNotification("File "+file.getName()+" was deleted");
 			}
-		}
+//		}
 
 	}
 	
@@ -192,7 +193,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
 		// Is this enough of synchronization?
-		synchronized (getApplication()) {
+//		synchronized (getApplication()) {
 			if (files.contains(file)) {
 				showUsers();
 			}
@@ -200,7 +201,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 				layout.removeAllComponents();
 				getWindow().showNotification(user.getName()+ " has left");
 			}
-		}
+//		}
 	}
 	
 	public void windowClose(CloseEvent e) {
@@ -226,7 +227,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 				touchingMarkers.add(e.getKey());
 				if (m.getType() == Marker.Type.LOCK)
 					touchesLocks++;
-				if (m.getType() == Marker.Type.NOTE)
+				if (m.getType() == Marker.Type.COMMENT)
 					touchesNotes++;
 			}
 		}
@@ -265,8 +266,14 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		}
 	}
 	
-	private void showPopup(String title, Component content) {
-		int[] coords = editor.getCursorCoords();
+	
+	private void showPopup(String title, Component content, int yCoord) {
+		
+		//TODO: refactor
+		if (!((CoredApplication)getApplication()).getAnnoyingPopup()) {
+			return;
+		}
+		
 		if (popup==null) {
 			popup = new EditorPopupWindow();
 			popup.addListener(new CloseListener() {
@@ -280,8 +287,11 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 			popup.removeAllComponents();
 			popup.setVisible(true);
 		}
-		popup.setPositionX(coords[0]+200);
-		popup.setPositionY(coords[1]);
+		
+		int bw = ((WebApplicationContext)getApplication().getContext()).getBrowser().getScreenWidth();
+		
+		popup.setPositionX(bw-250-80);
+		popup.setPositionY(yCoord);
 		popup.setWidth("250px");
 		popup.setHeight("250px");
 		popup.setVisible(true);
@@ -292,10 +302,15 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	}
 	
 	private void showMarkerPopup() {
+		int[] coords = editor.getCursorCoords();
+		showMarkerPopup(coords[1]);
+	}
+	
+	private void showMarkerPopup(int yCoord) {
 		final String markerId = activeMarker;
-		String firstLine = project.getMarkerChat(file, activeMarker).getValue().getFrozenLines().get(0).getText();
-		Marker m = latestMarkers.get(activeMarker);
-		SharedChat chat = project.getMarkerChat(file, activeMarker);
+		String firstLine = project.getMarkerChat(file, markerId).getValue().getFrozenLines().get(0).getText();
+		Marker m = latestMarkers.get(markerId);
+		SharedChat chat = project.getMarkerChat(file, markerId);
 		MarkerComponent mc = new MarkerComponent(m, user, chat);
 		mc.addListener(new MarkerComponentListener() {
 			public void removeMarker() {
@@ -308,7 +323,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 				removeMarkerById(markerId);
 			}
 		});
-		showPopup(firstLine, mc);
+		showPopup(firstLine, mc, yCoord);
 	}
 	
 	private void removeMarkerById(String markerId) {
@@ -318,7 +333,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	private void showAddMarkerPopup(boolean notingEnabled, boolean lockingEnabled) {
 		AddMarkerComponent am = new AddMarkerComponent(this, notingEnabled, lockingEnabled);
 		String title = editor.getShadow().getText().substring(selMin, selMax);
-		showPopup(title, am);
+		showPopup(title, am, editor.getCursorCoords()[1]);
 	}
 
 	private void updateMarkers(Map<String, Marker> markers) {
@@ -336,6 +351,8 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 			MarkerButton b = new MarkerButton(e.getKey());
 			b.addListener(new ClickListener() {
 				public void buttonClick(ClickEvent event) {
+					activeMarker = markerId;
+					showMarkerPopup(100);
 					editor.scrollToMarkerId(markerId);
 				}
 			});
@@ -345,7 +362,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	}
 
 	private boolean isTabWorthyMarker(Marker m) {
-		return m.getType() == Marker.Type.NOTE
+		return m.getType() == Marker.Type.COMMENT
 				|| (m.getType() == Marker.Type.LOCK && (m.getData() != null));
 	}
 
@@ -359,7 +376,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	
 	public void addNote(String note) {
 		ChatLine line = new ChatLine(note, user.getUserId(), user.getName(), user.getStyle());
-		Marker m = Marker.newNoteMarker(0, 0);
+		Marker m = Marker.newCommentMarker(0, 0, note);
 		addMarker(m, line);
 	}
 	
@@ -390,6 +407,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		
 		updateMarkers(latestMarkers);
 		showMarkerPopup();
+		editor.requestRepaint();
 	}
 
 

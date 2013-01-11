@@ -6,27 +6,39 @@ import org.vaadin.chatbox.gwt.shared.ChatLine;
 import org.vaadin.cored.ProjectLog;
 import org.vaadin.diffsync.DiffTask;
 
-public class MarkerChatLogTask implements DiffTask<Chat, ChatDiff> {
+public class ChatLogTask implements DiffTask<Chat, ChatDiff> {
 
 	private final String markerId;
 	private final ProjectLog log;
 	
-	public MarkerChatLogTask(String markerId, ProjectLog log) {
+	public ChatLogTask(ProjectLog log) {
+		this.markerId = null;
+		this.log = log;
+	}
+	
+	public ChatLogTask(ProjectLog log, String markerId) {
 		this.markerId = markerId;
 		this.log = log;
 	}
 
 	public ChatDiff exec(Chat value, ChatDiff diff, long collaboratorId) {
-		if (diff==null || diff.getAddedLive().isEmpty()) {
-			return null;
-		}
+		
 		for (ChatLine li : diff.getAddedLive()) {
 			if (li.getUserId()==null) {
 				continue;
 			}
-			log.logMarkerChat(markerId, li.getUserId(), li.getText());
+			if (markerId==null) {
+				log.logChat(li.getUserId(), li.getText());
+			}
+			else {
+				log.logMarkerChat(markerId, li.getUserId(), li.getText());
+			}
 		}
 		return null;
+	}
+
+	public boolean needsToExec(Chat value, ChatDiff diff, long collaboratorId) {
+		return diff!=null && !diff.getAddedLive().isEmpty();
 	}
 
 }

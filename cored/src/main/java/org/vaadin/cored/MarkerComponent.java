@@ -36,6 +36,7 @@ public class MarkerComponent extends VerticalLayout {
 		this.marker = marker;
 		this.user = user;
 		this.chat = chat;
+		System.out.println("Marker component for " + marker);
 		initThis();
 		setSizeFull();
 	}
@@ -43,7 +44,7 @@ public class MarkerComponent extends VerticalLayout {
 	private void initThis() {
 		if (marker.getType() == Marker.Type.LOCK) {
 			initLockTab();
-		} else if (marker.getType() == Marker.Type.NOTE) {
+		} else if (marker.getType() == Marker.Type.COMMENT) {
 			initNoteTab();
 		}
 		if (chatBox != null) {

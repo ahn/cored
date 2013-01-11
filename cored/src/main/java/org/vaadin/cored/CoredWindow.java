@@ -334,10 +334,9 @@ public class CoredWindow extends Window implements SelectProjectPanel.Listener,
 			det = componentToBeDetached;
 		}
 		if (det != null) {
-			synchronized (getApplication()) {
-				System.out.println("detaching " + det);
+//			synchronized (getApplication()) {
 				det.detach();
-			}
+//			}
 		}
 		
 			

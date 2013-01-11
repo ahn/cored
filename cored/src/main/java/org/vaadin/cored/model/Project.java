@@ -115,7 +115,7 @@ public abstract class Project {
 
 	private final String projName;
 
-	private Map<ProjectFile, Shared<Doc, DocDiff>> files = new HashMap<ProjectFile, Shared<Doc, DocDiff>>();
+	protected Map<ProjectFile, Shared<Doc, DocDiff>> files = new HashMap<ProjectFile, Shared<Doc, DocDiff>>();
 
 	private SharedChat projectChat;
 	private Team team;
@@ -152,19 +152,8 @@ public abstract class Project {
 		projName = name;
 		projectType = type;
 		projectChat = new SharedChat();
-		projectChat.addTask(new DiffTask<Chat, ChatDiff>() {
-			public ChatDiff exec(Chat value, ChatDiff diff, long collaboratorId) {
-				for (ChatLine li : diff.getAddedFrozen()) {
-					if (li.getUserId()!=null) {
-						log.logChat(li.getUserId(), li.getText());
-					}
-				}
-				for (ChatLine li : diff.getAddedLive()) {
-					log.logChat(li.getUserId(), li.getText());
-				}
-				return null;
-			}
-		});
+		projectChat.addTask(new ChatLogTask(log));
+				
 		projectChat.applyDiff(ChatDiff.newLiveLine("Started project "+name));
 		
 		
@@ -228,19 +217,25 @@ public abstract class Project {
 	}
 	
 	static private Project createProjectFromDisk(String pn) {
+		Project p = null;
 		synchronized (allProjects) {
 			for (File f : projectsRootDir.listFiles()) {
 				if (f.isDirectory() && f.getName().equals(pn)) {
 					ProjectType type = getProjectType(f);
-					Project p = createProjectIfNotExist(pn, type, false);
-					if (p!=null) {
-						p.readFromDisk();
-						return p;
-					}
+					p = createProjectIfNotExist(pn, type, false);
+					break;
 				}
 			}
 		}
-		return null;
+		if (p!=null) {
+			p.readFromDisk();
+			
+			// XXX this should be somewhere else?
+			if (p instanceof VaadinProject) {
+				((VaadinProject)p).compileAll();
+			}
+		}
+		return p;
 	}
 
 	public static List<String> getProjectDirNames() {
@@ -492,7 +487,7 @@ public abstract class Project {
 				for (ChatLine li : initial) {
 					log.logMarkerChat(markerId, li.getUserId(), li.getText());
 				}
-				chat.addTask(new MarkerChatLogTask(markerId, log));
+				chat.addTask(new ChatLogTask(log, markerId));
 			}
 			fileMarkerChats.get(file).put(markerId, chat);
 		}
@@ -624,20 +619,17 @@ public abstract class Project {
 				toBeRemoved.add(ref);
 			}
 		}
-		boolean rem = docListeners.removeAll(toBeRemoved);
-		System.out.println("cleanupDocListeners "+toBeRemoved.size()+ " " + rem);
+		docListeners.removeAll(toBeRemoved);
 	}
 	
 	private void cleanupDocValueChangeListeners() {
-		System.out.println("cleanupDocValueChangeListeners");
 		LinkedList<WeakReference<DocValueChangeListener>> toBeRemoved = new LinkedList<WeakReference<DocValueChangeListener>>();
 		for (WeakReference<DocValueChangeListener> ref : docValueChangeListeners) {
 			if (ref.get()==null) {
 				toBeRemoved.add(ref);
 			}
 		}
-		boolean rem = docValueChangeListeners.removeAll(toBeRemoved);
-		System.out.println("cleanupDocValueChangeListeners "+toBeRemoved.size()+ " " + rem);
+		docValueChangeListeners.removeAll(toBeRemoved);
 	}
 	
 	final protected File getLocationOfFile(ProjectFile file) {

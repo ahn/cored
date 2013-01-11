@@ -120,7 +120,6 @@ public class ProjectPanel extends Panel implements DocListener,
 
 	@Override
 	public void attach() {
-		System.out.println("ProjectPanel.attach();");
 		super.attach();
 		refresh();
 		
@@ -135,7 +134,6 @@ public class ProjectPanel extends Panel implements DocListener,
 
 	@Override
 	public void detach() {
-		System.out.println("ProjectPanel.detach();");
 		super.detach();
 
 		tree.removeListener((Property.ValueChangeListener)this);
@@ -153,9 +151,9 @@ public class ProjectPanel extends Panel implements DocListener,
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
 		// Is this enough of synchronization?
-		synchronized (getApplication()) {
+//		synchronized (getApplication()) {
 			refresh();
-		}
+//		}
 	}
 	
 	public void docRemoved(ProjectFile file) {
@@ -164,9 +162,9 @@ public class ProjectPanel extends Panel implements DocListener,
 		// Vaadin UI components or related data from another thread."
 		// https://vaadin.com/forum/-/message_boards/view_message/1785789#_19_message_212956
 		// Is this enough of synchronization?
-		synchronized (getApplication()) {
+//		synchronized (getApplication()) {
 			refresh();
-		}
+//		}
 	}
 	
 	private boolean canBeDeleted(Object obj) {
@@ -230,9 +228,9 @@ public class ProjectPanel extends Panel implements DocListener,
 			prev = errors.put(pf, hasErrors);
 		}
 		if (prev == null || prev != hasErrors) {
-			synchronized (getApplication()) {
+//			synchronized (getApplication()) {
 				setIconOf(pf, hasErrors);
-			}
+//			}
 		}
 	}
 	
@@ -259,14 +257,14 @@ public class ProjectPanel extends Panel implements DocListener,
 		
 		int n = uf.size();
 		if (n==0) {
-			synchronized (getApplication()) {
+//			synchronized (getApplication()) {
 				tree.setItemCaption(f, f.getName());
-			}
+//			}
 		}
 		else {
-			synchronized (getApplication()) {
+//			synchronized (getApplication()) {
 				tree.setItemCaption(f, f.getName()+" ("+n+")");
-			}
+//			}
 		}
 		
 		

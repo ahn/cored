@@ -56,5 +56,9 @@ public class LoggerTask implements DiffTask<Doc, DocDiff> {
 		return null;
 	}
 
+	public boolean needsToExec(Doc value, DocDiff diff, long collaboratorId) {
+		return true;
+	}
+
 
 }

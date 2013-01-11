@@ -40,7 +40,11 @@ public class CoredMenuBar extends MenuBar {
 //			projectItem.addItem("Project timeline", new StatsCommand()).setIcon(Icons.APPLICATION_WAVE);
 			projectItem.addItem("Leave project", new CloseCommand());
 		
+			
+			
 			project.addMenuItem(this);
+			
+			
 			
 		}
 		
@@ -49,6 +53,21 @@ public class CoredMenuBar extends MenuBar {
 		userItem = addItem("User", null);
 		userItem.setIcon(Icons.USER_SILHOUETTE);
 		userItem.addItem("Log out", new LogoutCommand());
+		
+		MenuItem annoyingItem = addItem("Annoying popups", null);
+		
+		annoyingItem.addItem("On", new Command() {
+			public void menuSelected(MenuItem selectedItem) {
+				((CoredApplication)getApplication()).setAnnoyingPopup(true);
+			}
+		});
+		
+		annoyingItem.addItem("Off", new Command() {
+			public void menuSelected(MenuItem selectedItem) {
+				((CoredApplication)getApplication()).setAnnoyingPopup(false);
+			}
+		});
+		
 		
 	}
 	

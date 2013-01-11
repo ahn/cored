@@ -226,7 +226,6 @@ public class ProjectLog {
 	
 	synchronized private void log(LogItem item) {
 		log.add(item);
-		System.out.println(item.logString());
 		if (file!=null) {
 			logToFile(item);
 		}
