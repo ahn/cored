@@ -269,11 +269,6 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	
 	private void showPopup(String title, Component content, int yCoord) {
 		
-		//TODO: refactor
-		if (!((CoredApplication)getApplication()).getAnnoyingPopup()) {
-			return;
-		}
-		
 		if (popup==null) {
 			popup = new EditorPopupWindow();
 			popup.addListener(new CloseListener() {

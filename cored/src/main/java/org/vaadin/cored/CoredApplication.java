@@ -104,13 +104,4 @@ public class CoredApplication extends Application {
 		}
 		super.close();
 	}
-	
-	// TODO: refactor
-	private volatile boolean annoyingPopup = false;
-	public void setAnnoyingPopup(boolean on) {
-		annoyingPopup = on;
-	}
-	public boolean getAnnoyingPopup() {
-		return annoyingPopup;
-	}
 }
