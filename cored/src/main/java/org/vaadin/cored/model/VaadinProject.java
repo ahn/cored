@@ -420,6 +420,7 @@ public class VaadinProject extends Project {
 		return false;
 	}
 	
+	
 	@Override
 	public BuildComponent createBuildComponent() {
 		return new VaadinBuildComponent(this, DeployType.war);
