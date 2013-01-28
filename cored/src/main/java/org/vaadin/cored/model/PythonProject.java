@@ -2,6 +2,8 @@ package org.vaadin.cored.model;
 
 import java.util.regex.Pattern;
 
+import org.vaadin.aceeditor.collab.gwt.shared.Doc;
+
 
 import com.vaadin.data.validator.AbstractValidator;
 import com.vaadin.ui.Button;
@@ -45,7 +47,7 @@ public class PythonProject extends Project {
 	protected void projectInitialized(boolean createSkeleton) {
 		if (createSkeleton) {
 			String ske = createSkeletonCode();
-			createDoc(new ProjectFile("main.py"), ske);
+			addDoc(new ProjectFile("main.py"), new Doc(ske));
 		}
 	}
 
@@ -82,7 +84,7 @@ public class PythonProject extends Project {
 					if (!PythonUtils.isValidPythonClass(n)) {
 						return;
 					}
-					p.createDoc(new ProjectFile(n+".py"), "# "+n+".py\n");
+					p.addDoc(new ProjectFile(n+".py"), new Doc("# "+n+".py\n"));
 					NewPyFileWindow.this.close();
 				}
 			});

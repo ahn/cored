@@ -73,9 +73,9 @@ public abstract class Project {
 	/**
 	 * Adds things like error checkers and other things specific to project type to the doc.
 	 */
-	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
-		// Default implementation does nothing.
-	}
+//	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
+//		// Default implementation does nothing.
+//	}
 	
 	/**
 	 * Override in subclass if needed
@@ -115,7 +115,7 @@ public abstract class Project {
 
 	private final String projName;
 
-	protected Map<ProjectFile, Shared<Doc, DocDiff>> files = new HashMap<ProjectFile, Shared<Doc, DocDiff>>();
+	protected Map<ProjectFile, CoredDoc> files = new HashMap<ProjectFile, CoredDoc>();
 
 	private SharedChat projectChat;
 	private Team team;
@@ -371,7 +371,7 @@ public abstract class Project {
 		return projName;
 	}
 
-	synchronized public Shared<Doc, DocDiff> getDoc(ProjectFile file) {
+	synchronized public CoredDoc getDoc(ProjectFile file) {
 		return files.get(file);
 	}
 
@@ -387,41 +387,46 @@ public abstract class Project {
 		}
 		return null;
 	}
-
-	public Shared<Doc, DocDiff> createDoc(ProjectFile file, Doc doc,
-			long collaboratorId) {
-		Shared<Doc, DocDiff> sharedDoc;
-		synchronized (this) {
-			if (files.containsKey(file)) {
-				sharedDoc = files.get(file);
-				sharedDoc.setValue(doc, collaboratorId);
-				return sharedDoc;
-			}
-			
-			sharedDoc = addNewSharedDoc(file, doc);
-			
-			try {
-				writeFileToDisk(file, doc);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+	
+	public CoredDoc addDoc(ProjectFile file, Doc doc) {
+		CoredDoc cd;
+		if (files.containsKey(file)) {
+			cd = files.get(file);
+			cd.setValue(doc);
+			return cd;
 		}
-		fireDocCreated(file);
-		
-		return sharedDoc;
+		else {
+			cd = addNewCoredDoc(file, doc);
+		}
+		return cd;
 	}
 	
-	private Shared<Doc, DocDiff> addNewSharedDoc(ProjectFile file, Doc doc) {
-		Shared<Doc, DocDiff> sharedDoc = new Shared<Doc, DocDiff>(doc);
-		decorateDoc(file, sharedDoc);
+	final protected CoredDoc addNewCoredDoc(CoredDoc cd) {
+		ProjectFile file = cd.getProjectFile();
+		try {
+			cd.writeToDisk();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		if (logging) {
 			log.logNewFile(file);
-			sharedDoc.addTask(new LoggerTask(this,file));
+			cd.getShared().addTask(new LoggerTask(this,file));
 		}
-		files.put(file, sharedDoc);
-		listenTo(file, sharedDoc);
-		return sharedDoc;
+		files.put(file, cd);
+		listenTo(file, cd.getShared());
+		return cd;
+	}
+	
+	/**
+	 * 
+	 * @param file
+	 * @param doc
+	 * @return
+	 */
+	protected CoredDoc addNewCoredDoc(ProjectFile file, Doc doc) {
+		return addNewCoredDoc(new CoredDoc(getProjectDir(), file, doc));
+		
 	}
 
 	private void listenTo(final ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
@@ -435,22 +440,13 @@ public abstract class Project {
 	}
 	
 	
-	
-	public Shared<Doc, DocDiff> createDoc(ProjectFile file, String content) {
-		return createDoc(file, new Doc(content), Shared.NO_COLLABORATOR_ID);
-	}
-
-	public Shared<Doc, DocDiff> createDoc(ProjectFile file) {
-		return createDoc(file, new Doc(), Shared.NO_COLLABORATOR_ID);
-	}
-
 	public void removeDoc(ProjectFile file) {
 		boolean removed = false;
 		synchronized (this) {
-			if (files.containsKey(file)) {
-				getLocationOfFile(file).delete();
+			CoredDoc cd = files.get(file);
+			if (cd!=null) {
+				cd.delete();
 				files.remove(file);
-				removeMarkerChatsOf(file);
 				removed = true;
 			}
 		}
@@ -512,9 +508,9 @@ public abstract class Project {
 	}
 
 	synchronized public void writeToDisk() throws IOException {
-		for (Entry<ProjectFile, Shared<Doc, DocDiff>> e : files.entrySet()) {
+		for (Entry<ProjectFile, CoredDoc> e : files.entrySet()) {
 			if (e.getValue() != null) {
-				writeFileToDisk(e.getKey(), e.getValue().getValue());
+				e.getValue().writeToDisk();
 			}
 		}
 	}
@@ -542,7 +538,15 @@ public abstract class Project {
 				isProjectDir = true;
 			}
 			else if (isEditableFile(f)) {
-				readFileFromDisk(f);				
+				String rel = MyFileUtils.relativizePath(getProjectDir(), f);
+				ProjectFile pf = new ProjectFile(rel);
+				try {
+					Doc doc = CoredDoc.fromDisk(getProjectDir(), pf);
+					addNewCoredDoc(pf, doc);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}			
 			}
 		}
 		return isProjectDir;
@@ -636,31 +640,6 @@ public abstract class Project {
 		return new File(getProjectDir(), file.getPath());
 	}
 	
-	private boolean readFileFromDisk(File fileFullPath) {
-		String rel = MyFileUtils.relativizePath(getProjectDir(), fileFullPath);
-		return readFileFromDisk(new ProjectFile(rel));
-	}
-	
-	private boolean readFileFromDisk(ProjectFile file) {
-		String content;
-		try {
-			content = FileUtils.readFileToString(getLocationOfFile(file));
-		} catch (IOException e) {
-			return false;
-		}
-
-		if (files.containsKey(file)) {
-			Shared<Doc, DocDiff> shared = files.get(file);
-			shared.setValue(new Doc(content), Shared.NO_COLLABORATOR_ID);
-		}
-		else {
-			if (EditorUtil.isEditableWithEditor(file)) {
-				addNewSharedDoc(file, new Doc(content));
-			}
-		}
-		
-		return true;
-	}
 
 	synchronized public File getProjectDir() {
 		if (projectsRootDir == null) {
@@ -719,31 +698,16 @@ public abstract class Project {
 		}
 	}
 	
-	synchronized public void removeCursorMarkersOf(User user, ProjectFile file) {
-		Shared<Doc, DocDiff> doc;
-		synchronized (files) {
-			doc = files.get(file);
-		}
-		doc.applyDiff(user.getRemoveMarkersDiff());
-	}
-	
 	synchronized public void removeCursorMarkersOf(User user) {
 		DocDiff diff = user.getRemoveMarkersDiff();
-		for (Shared<Doc, DocDiff> doc : files.values()) {
-			doc.applyDiff(diff);
+		for (CoredDoc cd : files.values()) {
+			cd.getShared().applyDiff(diff);
 		}
 	}
 	
 	synchronized public void removeLocksOf(User user) {
-		for (Shared<Doc, DocDiff> doc : files.values()) {
-			for (Entry<String, Marker> e : doc.getValue().getMarkers().entrySet()) {
-				Marker m = e.getValue();
-				if (m.getType()==Marker.Type.LOCK &&
-						user.getUserId().equals(((LockMarkerData)m.getData()).getLockerId())) {
-					doc.applyDiff(DocDiff.removeMarker(e.getKey()));
-				}
-				
-			}
+		for (CoredDoc cd : files.values()) {
+			cd.removeLocksOf(user);
 		}
 	}
 	

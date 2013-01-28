@@ -1,5 +1,6 @@
 package org.vaadin.cored;
 
+import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.cored.model.VaadinProject;
 import org.vaadin.cored.model.VaadinProject.JavaUtils;
 
@@ -61,7 +62,7 @@ public class VaadinNewFileWindow extends Window {
 				}
 
 				String content = VaadinProject.generateContent(project.getPackageName(), name, base);
-				project.createDoc(project.getFileOfClass(name), content);
+				project.addDoc(project.getFileOfClass(name), new Doc(content));
 				
 				VaadinNewFileWindow.this.close();
 			}
