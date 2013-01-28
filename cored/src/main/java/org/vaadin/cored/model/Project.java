@@ -124,8 +124,7 @@ public abstract class Project {
 
 	private static volatile File projectsRootDir;
 
-	private HashMap<ProjectFile, HashMap<String,SharedChat>> fileMarkerChats =
-			new HashMap<ProjectFile, HashMap<String,SharedChat>>();
+
 
 	private ProjectType projectType;
 
@@ -415,6 +414,7 @@ public abstract class Project {
 		}
 		files.put(file, cd);
 		listenTo(file, cd.getShared());
+		fireDocCreated(file);
 		return cd;
 	}
 	
@@ -425,7 +425,7 @@ public abstract class Project {
 	 * @return
 	 */
 	protected CoredDoc addNewCoredDoc(ProjectFile file, Doc doc) {
-		return addNewCoredDoc(new CoredDoc(getProjectDir(), file, doc));
+		return addNewCoredDoc(new CoredDoc(getProjectDir(), file, doc, log));
 		
 	}
 
@@ -445,7 +445,7 @@ public abstract class Project {
 		synchronized (this) {
 			CoredDoc cd = files.get(file);
 			if (cd!=null) {
-				cd.delete();
+				cd.deleteFromDisk();
 				files.remove(file);
 				removed = true;
 			}
@@ -462,47 +462,6 @@ public abstract class Project {
 		return projectChat;
 	}
 
-	synchronized public SharedChat getMarkerChat(ProjectFile file, String markerId) {
-		if (fileMarkerChats.containsKey(file)) {
-			return fileMarkerChats.get(file).get(markerId);
-		}
-		return null;
-	}
-
-	synchronized public SharedChat getMarkerChatCreateIfNotExist(
-			ProjectFile file, String markerId, List<ChatLine> initial) {
-		HashMap<String, SharedChat> markerChats = fileMarkerChats.get(file);
-		if (markerChats == null) {
-			markerChats = new HashMap<String, SharedChat>();
-			fileMarkerChats.put(file, markerChats);
-		}
-		SharedChat chat = markerChats.get(markerId);
-		if (chat == null) {
-			chat = new SharedChat(new Chat(initial));
-			if (logging) {
-				for (ChatLine li : initial) {
-					log.logMarkerChat(markerId, li.getUserId(), li.getText());
-				}
-				chat.addTask(new ChatLogTask(log, markerId));
-			}
-			fileMarkerChats.get(file).put(markerId, chat);
-		}
-		return chat;
-
-	}
-
-	synchronized public Shared<Chat, ChatDiff> removeMarkerChat(
-			ProjectFile file, String markerId) {
-		if (fileMarkerChats.containsKey(file)) {
-			return fileMarkerChats.get(file).remove(markerId);
-		}
-		return null;
-	}
-	
-	private HashMap<String, SharedChat> removeMarkerChatsOf(ProjectFile file) {
-		return fileMarkerChats.remove(file);
-	}
-
 	synchronized public Team getTeam() {
 		return team;
 	}
@@ -514,18 +473,8 @@ public abstract class Project {
 			}
 		}
 	}
-
-	private void writeFileToDisk(ProjectFile file, Doc doc) throws IOException {
-		writeFileToDisk(file, doc, getLocationOfFile(file));
-	}
 	
-	private void writeFileToDisk(ProjectFile file, Doc doc, File dest) throws IOException {
-		if (doc == null) {
-			return;
-		}
-		FileUtils.write(dest, doc.getText());
-	}
-
+	
 	public void log(String text) {
 		getProjectChat().applyDiff(ChatDiff.newLiveLine(new ChatLine(text)));
 	}

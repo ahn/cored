@@ -305,9 +305,9 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	
 	private void showMarkerPopup(int yCoord) {
 		final String markerId = activeMarker;
-		String firstLine = project.getMarkerChat(file, markerId).getValue().getFrozenLines().get(0).getText();
+		SharedChat chat = project.getDoc(file).getMarkerChat(markerId);
+		String firstLine = chat.getValue().getFrozenLines().get(0).getText();
 		Marker m = latestMarkers.get(markerId);
-		SharedChat chat = project.getMarkerChat(file, markerId);
 		MarkerComponent mc = new MarkerComponent(m, user, chat);
 		mc.addListener(new MarkerComponentListener() {
 			public void removeMarker() {
@@ -396,7 +396,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		
 		if (chatLine!=null) {
 			List<ChatLine> lines = Collections.singletonList(chatLine);
-			project.getMarkerChatCreateIfNotExist(file, markerId, lines);
+			project.getDoc(file).getMarkerChatCreateIfNotExist(markerId, lines);
 		}
 		
 		latestMarkers.put(markerId, m);

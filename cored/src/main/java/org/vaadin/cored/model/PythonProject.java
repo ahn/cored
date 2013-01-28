@@ -50,16 +50,15 @@ public class PythonProject extends Project {
 			addDoc(new ProjectFile("main.py"), new Doc(ske));
 		}
 	}
-
-
+	
 	private static String createSkeletonCode() {
 		return "print \"Hello, World!\" \n";
-
 	}
 
 	@Override
 	public void fillTree(Tree tree) {
 		for (ProjectFile pf : super.getProjectFiles()) {
+			System.out.println("Python " + pf.getName());
 			tree.addItem(pf);
 			tree.setItemCaption(pf, pf.getName());
 			tree.setChildrenAllowed(pf, false);

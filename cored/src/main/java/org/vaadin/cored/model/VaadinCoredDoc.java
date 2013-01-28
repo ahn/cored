@@ -13,7 +13,7 @@ public class VaadinCoredDoc extends CoredDoc {
 	private final VaadinProject project;
 	
 	public VaadinCoredDoc(VaadinProject project, ProjectFile file, SharedDoc shared) {
-		super(project.getProjectDir(), file, shared);
+		super(project.getProjectDir(), file, shared, project.getLog());
 		this.project = project;
 		
 		System.out.println("Vaadin doc " + file);
