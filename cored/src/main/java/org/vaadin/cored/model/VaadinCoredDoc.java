@@ -16,7 +16,6 @@ public class VaadinCoredDoc extends CoredDoc {
 		super(project.getProjectDir(), file, shared, project.getLog());
 		this.project = project;
 		
-		System.out.println("Vaadin doc " + file);
 		if (file.getName().endsWith(".java")) {
 			
 			ErrorCheckTask task = createErrorCheckTaskFor(file, getShared());

@@ -20,6 +20,13 @@ import org.vaadin.cored.ProjectLog;
 import org.vaadin.diffsync.Shared;
 
 
+/**
+ * A document containing the Shared Doc as well as some related things such as marker chats.
+ * 
+ * Can be subclassed to create for example VaadinCoredDoc.
+ * 
+ *
+ */
 public class CoredDoc {
 	
 	private final File projectRoot;

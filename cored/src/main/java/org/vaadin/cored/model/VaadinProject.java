@@ -332,11 +332,6 @@ public class VaadinProject extends Project {
 	}
 	
 	@Override
-	protected boolean isEditableFile(File f) {
-		return f.getName().endsWith(".java");
-	}
-	
-	@Override
 	protected CoredDoc addNewCoredDoc(ProjectFile file, Doc doc) {
 		return addNewCoredDoc(new VaadinCoredDoc(this, file, doc));
 	}

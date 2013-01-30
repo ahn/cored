@@ -20,19 +20,14 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
-import org.vaadin.aceeditor.gwt.shared.LockMarkerData;
-import org.vaadin.aceeditor.gwt.shared.Marker;
 import org.vaadin.chatbox.SharedChat;
-import org.vaadin.chatbox.gwt.shared.Chat;
 import org.vaadin.chatbox.gwt.shared.ChatDiff;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
 import org.vaadin.cored.BuildComponent;
-import org.vaadin.cored.EditorUtil;
 import org.vaadin.cored.LoggerTask;
 import org.vaadin.cored.MyFileUtils;
 import org.vaadin.cored.ProjectLog;
 import org.vaadin.cored.PropertiesUtil;
-import org.vaadin.diffsync.DiffTask;
 import org.vaadin.diffsync.Shared;
 import org.vaadin.diffsync.Shared.Listener;
 
@@ -42,9 +37,12 @@ import com.vaadin.ui.Window;
 
 //TODO: check synchronization
 
-// TODO: refactor: create a CoredDocument class (containing Doc
-// and stuff such as marker chats, file writing, etc.)
-
+/**
+ * An abstract cored project containing the project files (CoredDoc's) as well as other related things.
+ * 
+ * Must subclassed to create projects of various types, eg. Vaadin, Python, ...
+ *
+ */
 public abstract class Project {
 
 	private static final Pattern VALID_PROJECT_NAME = Pattern.compile("[a-z][a-z0-9]*");
@@ -67,41 +65,51 @@ public abstract class Project {
 		public void docValueChanged(ProjectFile pf, Doc newValue);
 	}
 
-	abstract public void fillTree(Tree tree);	
+	/**
+	 * Must fill the tree (com.vaadin.ui.Tree) with the files of this project.
+	 * 
+	 * It's a tree so the files can be put to a hierarchy by type or something like that.
+	 * 
+	 */
+	abstract public void fillTree(Tree tree);
+	
+	/**
+	 * Returns a Window (com.vaadin.ui.Window) for creating a new File.
+	 * 
+	 * The window must have the needed functionality to actually create the file.
+	 * What kind of files to create depends on the project.
+	 * 
+	 */
 	abstract public Window createNewFileWindow();
 	
 	/**
-	 * Adds things like error checkers and other things specific to project type to the doc.
-	 */
-//	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
-//		// Default implementation does nothing.
-//	}
-	
-	/**
-	 * Override in subclass if needed
+	 * Called when the project has been initialized.
+	 * 
+	 * Override in subclass if needed. To for example create some default files in the project
+	 * at the beginning or something.
 	 */
 	protected void projectInitialized(boolean createSkeleton) { }
 	
-	/**
-	 * 
-	 * @return file is editable with editor
-	 */
-	protected boolean isEditableFile(File f) {
-		return true; // default implementation
-	}
 	
 	/**
-	 * Override in subclass if needed
+	 * Called when the project directory has been created on the disk.
+	 * 
+	 * Can be overridden in subclass if it needs to for example read some of the contents of
+	 * files to memory. 
 	 */
+	// TODO: is this really needed?
 	protected void projectDirCreated() { }
 	
 	/**
-	 * Override in subclass if needed
+	 * If the project has something it needs to add to the IDE menu,
+	 * it can override this method and add item(s) to the menubar.
 	 */
 	public void addMenuItem(MenuBar menuBar) { }
 	
 	/**
-	 * Override in subclass if needed
+	 * Returns a build component for the project.
+	 * 
+	 * Implement in subclass if the project needs to be built.
 	 */
 	public BuildComponent createBuildComponent() {
 		return null;
@@ -486,16 +494,19 @@ public abstract class Project {
 			if (f.getName().equals(PROPERTY_FILE_NAME)) {
 				isProjectDir = true;
 			}
-			else if (isEditableFile(f)) {
+			else {
 				String rel = MyFileUtils.relativizePath(getProjectDir(), f);
 				ProjectFile pf = new ProjectFile(rel);
-				try {
-					Doc doc = CoredDoc.fromDisk(getProjectDir(), pf);
-					addNewCoredDoc(pf, doc);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}			
+				if (pf.isEditable()) {
+					try {
+						Doc doc = CoredDoc.fromDisk(getProjectDir(), pf);
+						addNewCoredDoc(pf, doc);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				
 			}
 		}
 		return isProjectDir;

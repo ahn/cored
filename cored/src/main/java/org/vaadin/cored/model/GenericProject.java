@@ -2,7 +2,6 @@ package org.vaadin.cored.model;
 
 
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
-import org.vaadin.cored.model.PythonProject.PythonUtils;
 
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
