@@ -114,9 +114,28 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 	
 			if (this.deployType.equals(DeployType.war)){
 				warDeployName = null;
-				warDeployName = antBuildWar();				
+				warDeployName = antBuildWar();
 			}else if (this.deployType.equals(DeployType.osgi)){
+				//does not work yet :(
 				antBuildOsgi();				
+			}
+			
+			//Experimental implementation for using the  *-PaaS API implemented by 
+			//Mohamed Sellami, Telecom SudParis. 
+			//Sami Yangui, Telecom SudParis. 
+			//Mohamed Mohamed, Telecom SudParis. 
+			//Samir Tata, Telecom SudParis. 
+			//for deploying the applications
+			boolean deployToCloudFoundry = false;
+			if (deployToCloudFoundry){
+				//deployDir = polku warriin
+				//warDeployName + ".war" = warrin nimi 
+				String appName ="JanneTestaaApplication";
+				String warName ="jannetestaa2.war";
+				String warLocation="/home/jlautamaki/git";				
+				String paasApiUrl = "http://jlautamaki.dy.fi:8080/CF-api/rest/";
+				String date="2012-10-10";
+				APIClient.depployApp(appName, warName, warLocation,date,paasApiUrl);
 			}
 		}
 
