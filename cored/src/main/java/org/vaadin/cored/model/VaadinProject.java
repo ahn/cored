@@ -160,7 +160,7 @@ public class VaadinProject extends Project {
 	protected void projectInitialized(boolean createSkeleton) {
 		if (createSkeleton) {
 			String ske = createSkeletonCode(getPackageName(), getApplicationClassName());
-			createDoc(getApplicationFile(), ske);
+			addDoc(getApplicationFile(), new Doc(ske));
 		}
 		updateJarsFromDisk();
 	}
@@ -209,18 +209,20 @@ public class VaadinProject extends Project {
 		if (!file.getName().endsWith(".java")) {
 			return;
 		}
-		Shared<Doc, DocDiff> doc = getDoc(file);
+		CoredDoc doc = getDoc(file);
 		if (doc == null) {
 			return;
 		}
-		DocDiff d = createErrorCheckTaskFor(file, doc).exec(doc.getValue(), null, 0);
+		SharedDoc shared = doc.getShared();
+		DocDiff d = createErrorCheckTaskFor(file, shared)
+				.exec(shared.getValue(), null, 0);
 		if (d!=null) {
-			doc.applyDiff(d);
+			shared.applyDiff(d);
 		}
 		
 	}
 	
-	private String fullJavaNameOf(String name) {
+	String fullJavaNameOf(String name) {
 		if (!name.endsWith(".java")) {
 			return null;
 		}
@@ -272,13 +274,6 @@ public class VaadinProject extends Project {
 					+ "    \n}\n";
 		}
 	}
-	
-	@Override
-	public Shared<Doc, DocDiff> createDoc(ProjectFile file, Doc doc,
-			long collaboratorId) {
-		Shared<Doc,DocDiff> shared = super.createDoc(file, doc, collaboratorId);
-		return shared;
-	}
 
 	@Override
 	public void removeDoc(ProjectFile file) {
@@ -309,9 +304,9 @@ public class VaadinProject extends Project {
 		for (ProjectFile pf : getSourceFiles()) {
 			tree.addItem(pf);
 			
-			Shared<Doc, DocDiff> doc = getDoc(pf);
+			CoredDoc doc = getDoc(pf);
 			if (doc != null) {
-				if (doc.getValue().hasErrors()) {
+				if (doc.getShared().getValue().hasErrors()) {
 					tree.setItemIcon(pf, Icons.CROSS_CIRCLE);
 				} else {
 					tree.setItemIcon(pf, Icons.TICK_SMALL);
@@ -341,6 +336,11 @@ public class VaadinProject extends Project {
 		return f.getName().endsWith(".java");
 	}
 	
+	@Override
+	protected CoredDoc addNewCoredDoc(ProjectFile file, Doc doc) {
+		return addNewCoredDoc(new VaadinCoredDoc(this, file, doc));
+	}
+	
 	@SuppressWarnings("serial")
 	@Override
 	public void addMenuItem(final MenuBar menuBar) {
@@ -360,29 +360,30 @@ public class VaadinProject extends Project {
 
 	// XXX: this compilation is a bit of a mess...
 	protected final void compileAll() {
-		Map<ProjectFile, Shared<Doc, DocDiff>> m;
+		Map<ProjectFile, CoredDoc> m;
 		synchronized (this) {
-			 m = new HashMap<ProjectFile, Shared<Doc, DocDiff>>(files);
+			 m = new HashMap<ProjectFile, CoredDoc>(files);
 		}
 		
 		HashMap<String,String> ss = new HashMap<String,String>();
-		for (Entry<ProjectFile, Shared<Doc, DocDiff>> e : m.entrySet()) {
-			ss.put(fullClassNameOf(e.getKey()), e.getValue().getValue().getText());
+		for (Entry<ProjectFile, CoredDoc> e : m.entrySet()) {
+			ss.put(fullClassNameOf(e.getKey()), e.getValue().getShared().getValue().getText());
 		}
 		
 		Map<String, List<Diagnostic<? extends JavaFileObject>>> xx = getCompiler().compileAll(ss);
 		for (Entry<String, List<Diagnostic<? extends JavaFileObject>>> e : xx.entrySet()) {
-			Shared<Doc, DocDiff> doc = getDoc(fromFullClassName(e.getKey()));
+			CoredDoc doc = getDoc(fromFullClassName(e.getKey()));
 			if (doc==null) {
 				continue;
 			}
+			SharedDoc shared = doc.getShared();
 			final List<Diagnostic<? extends JavaFileObject>> errors = e.getValue();
-			DocDiff d = new ErrorCheckTask(doc.newCollaboratorId(), new ErrorChecker() {
+			DocDiff d = new ErrorCheckTask(shared.newCollaboratorId(), new ErrorChecker() {
 				public Collection<Marker> getErrors(String source) {
 					return CompilerErrorChecker.errorsFromDiagnostics(errors);
 				}
-			}).exec(doc.getValue(), null, Shared.NO_COLLABORATOR_ID);
-			doc.applyDiff(d);
+			}).exec(shared.getValue(), null, Shared.NO_COLLABORATOR_ID);
+			shared.applyDiff(d);
 		}
 		
 		
@@ -418,6 +419,7 @@ public class VaadinProject extends Project {
 		}
 		return false;
 	}
+	
 	
 	@Override
 	public BuildComponent createBuildComponent() {

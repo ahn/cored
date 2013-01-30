@@ -5,6 +5,7 @@ import org.vaadin.aceeditor.collab.gwt.shared.Doc;
 import org.vaadin.chatbox.ChatBox;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.cored.ProjectPanel.FileSelectListener;
+import org.vaadin.cored.model.CoredDoc;
 import org.vaadin.cored.model.Project;
 import org.vaadin.cored.model.ProjectFile;
 import org.vaadin.cored.model.Team.TeamListener;
@@ -100,7 +101,7 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 		if (file == null) {
 			editorLayout.removeAllComponents();
 		} else if (EditorUtil.isEditableWithEditor(file)) {
-			Shared<Doc, DocDiff> doc = project.getDoc(file);
+			CoredDoc doc = project.getDoc(file);
 			if (doc != null) {
 				editDoc(doc, file);
 			} else {
@@ -113,7 +114,7 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 		}
 	}
 
-	private void editDoc(Shared<Doc, DocDiff> doc, ProjectFile file) {
+	private void editDoc(CoredDoc cd, ProjectFile file) {
 		editorView = new EditorView(file, project, user, true, 0);
 		editorView.setSizeFull();
 		

@@ -1,7 +1,5 @@
 package org.vaadin.cored;
 
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
@@ -42,8 +40,8 @@ public class ProjectPanel extends Panel implements DocListener,
 
 	private Object selectedItemId;
 	
-	private HashMap<ProjectFile, Boolean> errors = new HashMap<ProjectFile, Boolean>();
-	private HashMap<ProjectFile, Collection<User>> fileUsers = new HashMap<ProjectFile, Collection<User>>();
+//	private HashMap<ProjectFile, Boolean> errors = new HashMap<ProjectFile, Boolean>();
+//	private HashMap<ProjectFile, Collection<User>> fileUsers = new HashMap<ProjectFile, Collection<User>>();
 
 	public ProjectPanel(final Project project) {
 		super("Files");
@@ -222,53 +220,57 @@ public class ProjectPanel extends Panel implements DocListener,
 	}
 
 	public void docValueChanged(ProjectFile pf, Doc newValue) {
-		Boolean prev;
-		boolean hasErrors = newValue.hasErrors();
-		synchronized (errors) {
-			prev = errors.put(pf, hasErrors);
-		}
-		if (prev == null || prev != hasErrors) {
-//			synchronized (getApplication()) {
-				setIconOf(pf, hasErrors);
-//			}
-		}
+		refresh();
+//		Boolean prev;
+//		boolean hasErrors = newValue.hasErrors();
+//		synchronized (errors) {
+//			prev = errors.put(pf, hasErrors);
+//		}
+//		if (prev == null || prev != hasErrors) {
+////			synchronized (getApplication()) {
+//				setIconOf(pf, hasErrors);
+////			}
+//		}
+//		
+//		project.fillTree(tree)
 	}
 	
-	private void setIconOf(ProjectFile pf, Boolean hasErrors) {
-		if (hasErrors) {
-			tree.setItemIcon(pf, Icons.CROSS_CIRCLE);
-		}
-		else {
-			tree.setItemIcon(pf, Icons.TICK_SMALL);
-		}
-	}
+//	private void setIconOf(ProjectFile pf, Boolean hasErrors) {
+//		if (hasErrors) {
+//			tree.setItemIcon(pf, Icons.CROSS_CIRCLE);
+//		}
+//		else {
+//			tree.setItemIcon(pf, Icons.TICK_SMALL);
+//		}
+//	}
 
 	public void userFilesChanged(Set<User> users, Set<ProjectFile> files) {
-		for (ProjectFile f : files) {
-			userFileChanged(f);
-		}
+		refresh();
+//		for (ProjectFile f : files) {
+//			userFileChanged(f);
+//		}
 	}
 	
-	private void userFileChanged(ProjectFile f) {
-		Collection<User> uf = project.getTeam().getUsersByFile(f);
-		synchronized (fileUsers) {
-			fileUsers.put(f, uf);
-		}
-		
-		int n = uf.size();
-		if (n==0) {
-//			synchronized (getApplication()) {
-				tree.setItemCaption(f, f.getName());
-//			}
-		}
-		else {
-//			synchronized (getApplication()) {
-				tree.setItemCaption(f, f.getName()+" ("+n+")");
-//			}
-		}
-		
-		
-	}
+//	private void userFileChanged(ProjectFile f) {
+//		Collection<User> uf = project.getTeam().getUsersByFile(f);
+//		synchronized (fileUsers) {
+//			fileUsers.put(f, uf);
+//		}
+//		
+//		int n = uf.size();
+//		if (n==0) {
+////			synchronized (getApplication()) {
+//				tree.setItemCaption(f, f.getName());
+////			}
+//		}
+//		else {
+////			synchronized (getApplication()) {
+//				tree.setItemCaption(f, f.getName()+" ("+n+")");
+////			}
+//		}
+//		
+//		
+//	}
 
 
 }
