@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.apache.tools.ant.BuildException;
@@ -70,18 +71,22 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 	public void build() {
 		VaadinBuildResultWindow resultWindow;
 		try {
-			doTheBuild();
-			String appUrl = getAppUrl();
-			resultWindow = VaadinBuildResultWindow.success(appUrl);
-			project.log("App deployed to " + appUrl);
+			String appUrl = doTheBuild();
+			if (appUrl.contains("fail")){
+				resultWindow = VaadinBuildResultWindow.failure(appUrl);				
+				project.log("App deployed failed: " + appUrl);
+			}else{
+				resultWindow = VaadinBuildResultWindow.success(appUrl);
+				project.log("App deployed to " + appUrl);
+			}
 		}
 		catch (IOException e) {
 			e.printStackTrace();
-			resultWindow = VaadinBuildResultWindow.failure();
+			resultWindow = VaadinBuildResultWindow.failure("Build failed");
 		}
 		catch (BuildException e) {
 			e.printStackTrace();
-			resultWindow = VaadinBuildResultWindow.failure();
+			resultWindow = VaadinBuildResultWindow.failure("Build failed");
 		}
 		resultWindow.center();
 		getWindow().addWindow(resultWindow);
@@ -108,7 +113,7 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 		
 	}
 
-	private void doTheBuild() throws IOException {
+	private String doTheBuild() throws IOException {
 		synchronized (project) {
 			project.writeToDisk();
 	
@@ -128,14 +133,15 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 			//for deploying the applications
 			boolean deployToCloudFoundry = false;
 			if (deployToCloudFoundry){
-				//deployDir = polku warriin
-				//warDeployName + ".war" = warrin nimi 
-				String appName ="JanneTestaaApplication";
-				String warName ="jannetestaa2.war";
-				String warLocation="/home/jlautamaki/git";				
-				String paasApiUrl = "http://jlautamaki.dy.fi:8080/CF-api/rest/";
-				String date="2012-10-10";
-				APIClient.depployApp(appName, warName, warLocation,date,paasApiUrl);
+				String appName = warDeployName+"Application";
+				String warName = "apps#" + warDeployName +".war";
+				String warLocation = deployDir.toString();
+				String paasApiUrl = "http://cf-paas-api.cloudfoundry.com/rest/";
+				Date today = new Date();
+				String date = new SimpleDateFormat("yyyy-MM-dd").format(today);
+				return APIClient.depployApp(appName, warName, warLocation,date,paasApiUrl);
+			}else{
+				return getAppUrl();
 			}
 		}
 
