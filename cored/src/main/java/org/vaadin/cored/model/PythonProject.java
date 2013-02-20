@@ -94,6 +94,11 @@ public class PythonProject extends Project {
 	public Window createNewFileWindow() {
 		return new NewPyFileWindow(this);
 	}
+
+	@Override
+	protected boolean isEditableFile(ProjectFile pf) {
+		return pf.getName().endsWith(".py");
+	}
 	
 
 }

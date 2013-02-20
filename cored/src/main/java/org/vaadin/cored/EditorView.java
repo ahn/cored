@@ -21,6 +21,7 @@ import org.vaadin.chatbox.SharedChat;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
 import org.vaadin.cored.MarkerComponent.MarkerComponentListener;
 import org.vaadin.cored.model.CoredDoc;
+import org.vaadin.cored.model.EditableCoredDoc;
 import org.vaadin.cored.model.Project;
 import org.vaadin.cored.model.ProjectFile;
 import org.vaadin.cored.model.Team;
@@ -45,7 +46,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 
 	private final VerticalLayout layout = new VerticalLayout();
 	private final SuggestibleCollabAceEditor editor;
-	private final CoredDoc cdoc;
+	private final EditableCoredDoc cdoc;
 	private final ProjectFile file;
 	private final User user;
 	private final Project project;
@@ -86,7 +87,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		layout.setExpandRatio(ho, 1);
 		ho.setSizeFull();
 
-		cdoc = project.getDoc(file);
+		cdoc = (EditableCoredDoc)project.getDoc(file);
 		
 		
 		
@@ -305,7 +306,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	
 	private void showMarkerPopup(int yCoord) {
 		final String markerId = activeMarker;
-		SharedChat chat = project.getDoc(file).getMarkerChat(markerId);
+		SharedChat chat = cdoc.getMarkerChat(markerId);
 		String firstLine = chat.getValue().getFrozenLines().get(0).getText();
 		Marker m = latestMarkers.get(markerId);
 		MarkerComponent mc = new MarkerComponent(m, user, chat);
@@ -396,7 +397,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		
 		if (chatLine!=null) {
 			List<ChatLine> lines = Collections.singletonList(chatLine);
-			project.getDoc(file).getMarkerChatCreateIfNotExist(markerId, lines);
+			cdoc.getMarkerChatCreateIfNotExist(markerId, lines);
 		}
 		
 		latestMarkers.put(markerId, m);

@@ -23,11 +23,4 @@ public class ProjectFile extends File {
 		super(parent, child);
 	}
 
-	/**
-	 * Can be overridden in subclass if needed.
-	 */
-	public boolean isEditable() {
-		return true;
-	}
-	
 }

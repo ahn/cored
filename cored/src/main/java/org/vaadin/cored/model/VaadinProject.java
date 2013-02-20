@@ -28,7 +28,6 @@ import org.vaadin.cored.VaadinBuildComponent;
 import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.cored.VaadinJarWindow;
 import org.vaadin.cored.VaadinNewFileWindow;
-import org.vaadin.diffsync.DiffTaskExecPolicy;
 import org.vaadin.diffsync.Shared;
 
 import com.vaadin.data.validator.AbstractValidator;
@@ -87,12 +86,20 @@ public class VaadinProject extends Project {
 	
 	@Override
 	protected void projectDirCreated() {
+		
+		
 		try {
 			FileUtils.copyDirectory(getVaadinProjectTemplateDir(), getProjectDir());
 		} catch (IOException e) {
 			System.err.println("WARNING: could not initialize dir of vaadin project "+ getName());
 		}
+		
+		System.err.println("mof3fi");
+		
+		
 		updateJarsFromDisk();
+		
+		
 		
 		try {
 			createWebXml();
@@ -102,7 +109,6 @@ public class VaadinProject extends Project {
 	}
 	
 	synchronized public void updateJarsFromDisk() {
-
 		File location = getLocationOfFile(jarDir);
 		if (!location.isDirectory()) {
 			return;
@@ -111,8 +117,8 @@ public class VaadinProject extends Project {
 		for (File f : location.listFiles()) {
 			classpathItems.add(f.getAbsolutePath());
 		}
+		
 		getCompiler().setClasspath(classpathItems);
-
 	}
 	
 	
@@ -180,46 +186,6 @@ public class VaadinProject extends Project {
 				+ "        main.addComponent(new Label(\"This is " + cls
 				+ "\"));\n" + "    }\n\n" + "}\n";
 
-	}
-	
-	
-	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
-		String filename = file.getName();
-		if (filename.endsWith(".java")) {
-	
-			ErrorCheckTask task = createErrorCheckTaskFor(file, sharedDoc);
-			
-//			DocDiff d = task.exec(sharedDoc.getValue(), null, Shared.NO_COLLABORATOR_ID);
-//			if (d!=null) {
-//				sharedDoc.applyDiff(d);
-//			}
-			
-			sharedDoc.addAsyncTask(task, DiffTaskExecPolicy.LATEST_CANCEL_RUNNING);	
-		}
-	}
-	
-	private ErrorCheckTask createErrorCheckTaskFor(ProjectFile file, Shared<Doc,DocDiff> doc) {
-		String className = fullJavaNameOf(file.getName());
-		ErrorChecker checker = new CompilerErrorChecker(getCompiler(), className);//, getLocationOfClassFile(className));
-		ErrorCheckTask task = new ErrorCheckTask(doc.newCollaboratorId(), checker);
-		return task;
-	}
-	
-	synchronized public void checkErrors(ProjectFile file) {
-		if (!file.getName().endsWith(".java")) {
-			return;
-		}
-		CoredDoc doc = getDoc(file);
-		if (doc == null) {
-			return;
-		}
-		SharedDoc shared = doc.getShared();
-		DocDiff d = createErrorCheckTaskFor(file, shared)
-				.exec(shared.getValue(), null, 0);
-		if (d!=null) {
-			shared.applyDiff(d);
-		}
-		
 	}
 	
 	String fullJavaNameOf(String name) {
@@ -295,6 +261,11 @@ public class VaadinProject extends Project {
 	public boolean canBeDeleted(ProjectFile file) {
 		return !getApplicationFile().equals(file);
 	}
+	
+	@Override
+	protected boolean isEditableFile(ProjectFile pf) {
+		return pf.getName().endsWith(".java");
+	}
 
 	@Override
 	public void fillTree(Tree tree) {
@@ -304,7 +275,8 @@ public class VaadinProject extends Project {
 		for (ProjectFile pf : getSourceFiles()) {
 			tree.addItem(pf);
 			
-			CoredDoc doc = getDoc(pf);
+			// We know it's editable because it's source file.
+			EditableCoredDoc doc = (EditableCoredDoc)getDoc(pf);
 			if (doc != null) {
 				if (doc.getShared().getValue().hasErrors()) {
 					tree.setItemIcon(pf, Icons.CROSS_CIRCLE);
@@ -355,23 +327,28 @@ public class VaadinProject extends Project {
 
 	// XXX: this compilation is a bit of a mess...
 	protected final void compileAll() {
-		Map<ProjectFile, CoredDoc> m;
+		Map<ProjectFile, EditableCoredDoc> m = new HashMap<ProjectFile, EditableCoredDoc>();
 		synchronized (this) {
-			 m = new HashMap<ProjectFile, CoredDoc>(files);
+			for (Entry<ProjectFile, CoredDoc> e : files.entrySet()) {
+				if (e.getValue() instanceof EditableCoredDoc) {
+					m.put(e.getKey(), (EditableCoredDoc)e.getValue());
+				}
+			}
 		}
 		
 		HashMap<String,String> ss = new HashMap<String,String>();
-		for (Entry<ProjectFile, CoredDoc> e : m.entrySet()) {
+		for (Entry<ProjectFile, EditableCoredDoc> e : m.entrySet()) {
+			
 			ss.put(fullClassNameOf(e.getKey()), e.getValue().getShared().getValue().getText());
 		}
 		
 		Map<String, List<Diagnostic<? extends JavaFileObject>>> xx = getCompiler().compileAll(ss);
 		for (Entry<String, List<Diagnostic<? extends JavaFileObject>>> e : xx.entrySet()) {
 			CoredDoc doc = getDoc(fromFullClassName(e.getKey()));
-			if (doc==null) {
+			if (doc==null || !(doc instanceof EditableCoredDoc)) {
 				continue;
 			}
-			SharedDoc shared = doc.getShared();
+			SharedDoc shared = ((EditableCoredDoc)doc).getShared();
 			final List<Diagnostic<? extends JavaFileObject>> errors = e.getValue();
 			DocDiff d = new ErrorCheckTask(shared.newCollaboratorId(), new ErrorChecker() {
 				public Collection<Marker> getErrors(String source) {

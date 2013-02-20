@@ -83,6 +83,11 @@ public abstract class Project {
 	abstract public Window createNewFileWindow();
 	
 	/**
+	 * 
+	 */
+	abstract protected boolean isEditableFile(ProjectFile pf);
+	
+	/**
 	 * Called when the project has been initialized.
 	 * 
 	 * Override in subclass if needed. To for example create some default files in the project
@@ -105,6 +110,8 @@ public abstract class Project {
 	 * it can override this method and add item(s) to the menubar.
 	 */
 	public void addMenuItem(MenuBar menuBar) { }
+	
+	
 	
 	/**
 	 * Returns a build component for the project.
@@ -399,8 +406,10 @@ public abstract class Project {
 		CoredDoc cd;
 		if (files.containsKey(file)) {
 			cd = files.get(file);
-			cd.setValue(doc);
-			return cd;
+			if (cd instanceof EditableCoredDoc) {
+				((EditableCoredDoc)cd).setValue(doc);
+				return cd;
+			}
 		}
 		else {
 			cd = addNewCoredDoc(file, doc);
@@ -409,19 +418,28 @@ public abstract class Project {
 	}
 	
 	final protected CoredDoc addNewCoredDoc(CoredDoc cd) {
+		
 		ProjectFile file = cd.getProjectFile();
-		try {
-			cd.writeToDisk();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		if (logging) {
 			log.logNewFile(file);
-			cd.getShared().addTask(new LoggerTask(this,file));
 		}
-		files.put(file, cd);
-		listenTo(file, cd.getShared());
+		
+		if (cd instanceof EditableCoredDoc) {
+			EditableCoredDoc ecd = (EditableCoredDoc)cd;
+			try {
+				ecd.writeToDisk();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (logging) {
+				ecd.getShared().addTask(new LoggerTask(this,file));
+			}
+			files.put(file, cd);
+			listenTo(file, ecd.getShared());
+			
+		}
+		
 		fireDocCreated(file);
 		return cd;
 	}
@@ -433,7 +451,7 @@ public abstract class Project {
 	 * @return
 	 */
 	protected CoredDoc addNewCoredDoc(ProjectFile file, Doc doc) {
-		return addNewCoredDoc(new CoredDoc(getProjectDir(), file, doc, log));
+		return addNewCoredDoc(new EditableCoredDoc(getProjectDir(), file, doc, log));
 		
 	}
 
@@ -476,8 +494,8 @@ public abstract class Project {
 
 	synchronized public void writeToDisk() throws IOException {
 		for (Entry<ProjectFile, CoredDoc> e : files.entrySet()) {
-			if (e.getValue() != null) {
-				e.getValue().writeToDisk();
+			if (e.getValue() instanceof EditableCoredDoc) {
+				((EditableCoredDoc)e.getValue()).writeToDisk();
 			}
 		}
 	}
@@ -497,7 +515,7 @@ public abstract class Project {
 			else {
 				String rel = MyFileUtils.relativizePath(getProjectDir(), f);
 				ProjectFile pf = new ProjectFile(rel);
-				if (pf.isEditable()) {
+				if (isEditableFile(pf)) {
 					try {
 						Doc doc = CoredDoc.fromDisk(getProjectDir(), pf);
 						addNewCoredDoc(pf, doc);
@@ -514,6 +532,8 @@ public abstract class Project {
 	
 
 	
+	
+
 	private TreeSet<File> getFilesIn(File dir) {
 		TreeSet<File> files = new TreeSet<File>();
 		for (File f : dir.listFiles()) {
@@ -661,13 +681,18 @@ public abstract class Project {
 	synchronized public void removeCursorMarkersOf(User user) {
 		DocDiff diff = user.getRemoveMarkersDiff();
 		for (CoredDoc cd : files.values()) {
-			cd.getShared().applyDiff(diff);
+			if (cd instanceof EditableCoredDoc) {
+				((EditableCoredDoc)cd).getShared().applyDiff(diff);
+			}
 		}
 	}
 	
 	synchronized public void removeLocksOf(User user) {
 		for (CoredDoc cd : files.values()) {
-			cd.removeLocksOf(user);
+			if (cd instanceof EditableCoredDoc) {
+				((EditableCoredDoc)cd).removeLocksOf(user);
+			}
+			
 		}
 	}
 	

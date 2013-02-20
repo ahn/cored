@@ -8,7 +8,7 @@ import org.vaadin.aceeditor.java.CompilerErrorChecker;
 import org.vaadin.diffsync.DiffTaskExecPolicy;
 import org.vaadin.diffsync.Shared;
 
-public class VaadinCoredDoc extends CoredDoc {
+public class VaadinCoredDoc extends EditableCoredDoc {
 	
 	private final VaadinProject project;
 	

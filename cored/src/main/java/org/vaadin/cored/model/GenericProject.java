@@ -62,4 +62,9 @@ public class GenericProject extends Project {
 			});
 		}
 	}
+
+	@Override
+	protected boolean isEditableFile(ProjectFile pf) {
+		return true;
+	}
 }
