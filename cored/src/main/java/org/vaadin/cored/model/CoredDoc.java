@@ -2,31 +2,20 @@ package org.vaadin.cored.model;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
-import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
-import org.vaadin.aceeditor.gwt.shared.LockMarkerData;
-import org.vaadin.aceeditor.gwt.shared.Marker;
-import org.vaadin.chatbox.SharedChat;
-import org.vaadin.chatbox.gwt.shared.Chat;
-import org.vaadin.chatbox.gwt.shared.ChatDiff;
-import org.vaadin.chatbox.gwt.shared.ChatLine;
-import org.vaadin.cored.ProjectLog;
-import org.vaadin.diffsync.Shared;
 
 
 /**
- * A document containing the Shared Doc as well as some related things such as marker chats.
+ * A document in a cored project. 
  * 
- * Can be subclassed to create for example VaadinCoredDoc.
- * 
+ * The instances of this class can not be edited.
+ * For editable documents, use EditableCoredDoc or one of its subclasses.
  *
  */
+// TODO: this project/doc thing should be cleaned
+// There's many project/doc classes whose responsibilities are not clear.
 public class CoredDoc {
 	
 	protected final File projectRoot;
@@ -45,16 +34,7 @@ public class CoredDoc {
 		this.file = file;
 		this.location = new File(projectRoot, file.getPath());
 	}
-	
-	/**
-	 * 
-	 * Override in subclass if needed
-	 */
-	protected boolean isEditable() {
-		return false;
-	}
-	
-	
+		
 	
 	public ProjectFile getProjectFile() {
 		return file;

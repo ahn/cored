@@ -19,6 +19,12 @@ import org.vaadin.chatbox.gwt.shared.ChatLine;
 import org.vaadin.cored.ProjectLog;
 import org.vaadin.diffsync.Shared;
 
+
+/**
+ * 
+ * An editable document, containing the Shared doc, marker chats, etc.
+ *
+ */
 public class EditableCoredDoc extends CoredDoc {
 
 
@@ -39,11 +45,6 @@ public class EditableCoredDoc extends CoredDoc {
 		this(root, file, new SharedDoc(doc), log);
 	}
 	
-	@Override
-	public boolean isEditable() {
-		return true;
-	}
-	
 	public SharedDoc getShared() {
 		return shared;
 	}
@@ -53,9 +54,7 @@ public class EditableCoredDoc extends CoredDoc {
 	}
 
 	public void writeToDisk() throws IOException {
-		if (isEditable()) {
-			FileUtils.write(location, shared.getValue().getText());
-		}
+		FileUtils.write(location, shared.getValue().getText());
 	}
 	
 	public SharedChat getMarkerChat(String markerId) {
