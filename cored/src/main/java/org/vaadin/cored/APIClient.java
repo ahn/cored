@@ -1,16 +1,12 @@
 package org.vaadin.cored;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -21,36 +17,70 @@ public class APIClient  {
 	public static String depployApp(String appName, String warName,
 			String warLocation,String date,String paasApiUrl)  {
 		try{
-			//see: http://.../CF-api/rest/application.wadl
-			 //almost working curl: curl -v -X POST -H 'Accept: application/xml' -H 'Content-Type: application/xml' -d message.xml http://jlautamaki.dy.fi:8080/CF-api/rest/environment
-			//Create an environment 
-			String serviceurl="";
-			String envID = parseEnvID(makeRequest(paasApiUrl+"environment",getCreateEnvironmentManifest(appName,date)));
-			if (envID.equals("-1")){return "creating env failed";}
-			//create the application
-			String appID = parseAppID(makeRequest(paasApiUrl+"app",getCreateApplicationManifest(appName,warName, warLocation, date)));
-			if (appID.equals("-1")){return "creating app failed";}
-			//Deploy the application
-			//responseXML = makeRequest(paasApiUrl+"app/"+appID+"/action/deploy/env/"+envID,null,warLocation+"\\"+warName);
-			boolean ok = uploadFile(paasApiUrl+"app/"+appID+"/action/deploy/env/"+envID,null,warLocation+"\\"+warName);
-			//Start the application
-			if (ok){serviceurl = parseUrl(makeRequest(paasApiUrl+"app/"+appID+"/start",null));}
-			else{
-				return "deploying app failed";
+			//Create an environment
+			String url = paasApiUrl+"environment";
+			HttpResponse response = makeRequest(url,getCreateEnvironmentManifest(appName,date),null);
+			if (response.getStatusLine().getStatusCode()!=200){
+				return "Creating environment with " + url + " failed: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
 			}
 			
-			if (serviceurl.equals("-1")){return "starting the app failed";}
-			else {
-				return "http://"+serviceurl;
+			String xmlData = getXML(response);
+			String envID = parseEnvID(xmlData);
+			if (envID.equals("-1")){
+				return "Creating environment with " + url + " failed; Data was: " + xmlData;
 			}
+			
+			//create the application
+			url = paasApiUrl+"app";
+			response = makeRequest(url,getCreateApplicationManifest(appName,warName, warLocation, date),null);
+			if (response.getStatusLine().getStatusCode()!=200){
+				return "Creating app with " + url + " failed: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
+			}
+
+			xmlData = getXML(response);
+			String appID = parseAppID(xmlData);
+			if (appID.equals("-1")){
+				return "Creating application with " + url + " failed; Data was: " + xmlData;
+			}
+
+			//Deploy the application
+			url = paasApiUrl+"app/"+appID+"/action/deploy/env/"+envID;
+			response = makeRequest(url,null,warLocation+"\\"+warName);
+			if (response.getStatusLine().getStatusCode()!=200){
+				return "Deploying app with " + url + " failed: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
+			}
+
+			url = paasApiUrl+"app/"+appID+"/start";
+			response = makeRequest(url,null,null);
+			if (response.getStatusLine().getStatusCode()!=200){
+				return "Starting app with " + url + " failed: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
+			}
+
+			xmlData = getXML(response);
+			String serviceurl = parseUrl(xmlData);
+			if (appID.equals("-1")){
+				return "Starting application with " + url + " failed; Data was: " + xmlData;
+			}
+			return "http://"+serviceurl;			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return "something else failed in deploying";
+			String output = "something else failed in deploying" + e.toString(); 
+			return output;
 		}
 
 	}
 
+	private static String getXML(HttpResponse response) {
+		ByteArrayOutputStream outstream = new ByteArrayOutputStream();
+		try {
+			response.getEntity().writeTo(outstream);
+		} catch (IOException e) {
+			return "IOException";
+		}
+		byte [] responseBody = outstream.toByteArray();
+		String responseBodyString = new String(responseBody);
+		return responseBodyString;
+	}
+	
 	private static String parseUrl(String response) {
 		String seekString = "<uris>";
 		int startIndex = response.indexOf(seekString)+seekString.length();
@@ -106,82 +136,58 @@ public class APIClient  {
 	}
 
 
+/*	
+	<?xml version="1.0" encoding="UTF8"?>
+	<paas_manifest name="ServletSampleApplicationManifest" xmlns="">
+	<paas_description></paas_description>
+		<paas_application>
+			<paas_environment name="JavaWebEnv" date_created="2012-10-10" date_uptaded="2012-10-10" description="JavaWebApplicationsEnv" config_template="TomcatEnvTemp" provider="CF"/>			
+			<paas_configuration_template name="TomcatEnvTemp" date_created="2012-10-10" date_uptaded="2012-10-10" description="TomcatServerEnvironmentTemplate">
+				<paas_node content_type="container" name="tomcat" version="6.0.35" provider="CF"/>
+				<paas_relation>
+				</paas_relation>	
+			</paas_configuration_template>
+		</paas_application>
+	</paas_manifest>*/
+	
 	private static String getCreateEnvironmentManifest(String appName, String date) {
-		String xml= "<?xml version=\"1.0\" encoding=\"UTF8\"?>"+
-		"<paas_manifest name=\""+appName+"Manifest\" xmlns=\"\">"+
-		"<paas_description></paas_description>"+
-		"        <paas_application>"+
-		"               <paas_environment name=\"JavaWebEnv\" date_created=\""+date+"\" date_uptaded=\""+date+"\" description=\"JavaWebApplicationsEnv\" config_template=\"TomcatEnvTemp\" provider=\"CF\"/>"+
-		"               <paas_configuration_template name=\"TomcatEnvTemp\" date_created=\""+date+"\" date_uptaded=\""+date+"\" description=\"TomcatServerEnvironmentTemplate\">"+
-		"                        <paas_node content_type=\"container\" name=\"tomcat\" version=\"6.0.35\" provider=\"CF\"/>"+
-		"                       <paas_relation>"+
-		"                        </paas_relation>"+
-		"                </paas_configuration_template>"+
-		"        </paas_application>" +
+		String xml= "<?xml version=\"1.0\" encoding=\"UTF8\"?>\n"+
+		"<paas_manifest name=\""+appName+"Manifest\" xmlns=\"\">\n"+
+		"<paas_description></paas_description>\n"+
+		"        <paas_application>\n"+
+		"               <paas_environment name=\"JavaWebEnv\" date_created=\""+date+"\" date_uptaded=\""+date+"\" description=\"JavaWebApplicationsEnv\" config_template=\"TomcatEnvTemp\" provider=\"CF\"/>\n"+
+		"               <paas_configuration_template name=\"TomcatEnvTemp\" date_created=\""+date+"\" date_uptaded=\""+date+"\" description=\"TomcatServerEnvironmentTemplate\">\n"+
+		"                        <paas_node content_type=\"container\" name=\"tomcat\" version=\"6.0.35\" provider=\"CF\"/>\n"+
+		"                       <paas_relation>\n"+
+		"                        </paas_relation>\n"+
+		"                </paas_configuration_template>\n"+
+		"        </paas_application>\n"+
 		"</paas_manifest>";
 		return xml;
 	}
 
-	private static boolean uploadFile(String urlString, String requestXML,String pathToFileArtefact) throws IOException{
+	private static HttpResponse makeRequest(String urlString, String requestXML,String pathToFileArtefact) throws IOException{
 		
-		File file = new File(pathToFileArtefact);		
+		HttpPost post = new HttpPost(urlString);
 
-		// The execution:
-		DefaultHttpClient httpclient = new DefaultHttpClient();
-		 
-		HttpPost method = new HttpPost(urlString);
-		MultipartEntity entity = new MultipartEntity();
-//		entity.addPart("title", new StringBody(title, Charset.forName("UTF-8")));
-//		entity.addPart("desc", new StringBody(desc, Charset.forName("UTF-8")));
-		FileBody fileBody = new FileBody(file);
-		entity.addPart("file", fileBody);
-		method.setEntity(entity);
-		 
-		HttpResponse response = httpclient.execute(method);
-		if (response.getStatusLine().getStatusCode()==200){
-			return true;}
-		else {return false;}
-	}
-	
-	private static String makeRequest(String urlString, String requestXML) throws IOException{
-		
-		URL url = new URL(urlString); 
-		HttpURLConnection connection = (HttpURLConnection) url.openConnection();           
-		connection.setDoInput(true);
-		connection.setInstanceFollowRedirects(false); 
-		connection.setRequestMethod("POST"); 
-		connection.setUseCaches (false);
-		
-		//in future, may needed to be combined :(
 		if (requestXML!=null){
-			connection.setDoOutput(true);
-			connection.setRequestProperty("Content-Type", "application/xml"); 
-			connection.setRequestProperty("charset", "utf-8");
-			connection.setRequestProperty("Content-Length", "" + Integer.toString(requestXML.getBytes().length));
-			DataOutputStream wr = new DataOutputStream(connection.getOutputStream ());
-			wr.writeBytes(requestXML);
-			wr.flush();
-			wr.close();			
+			StringEntity data = new StringEntity(requestXML);
+			data.setContentType("application/xml");
+			post.setEntity(data);
 		}
+		
+		if (pathToFileArtefact!=null){
+			MultipartEntity entity = new MultipartEntity();
+			File file = new File(pathToFileArtefact);		
+//			FileEntity entity = new FileEntity(file, "binary/octet-stream");	//415 unsupported mediatype
+//			FileEntity entity = new FileEntity(file, "file");	//500 internal server error
 
-		int code = connection.getResponseCode();
-		String message = connection.getResponseMessage();
-		if (code==200){			
-			//Get Response	
-			InputStream is = connection.getInputStream();
-			BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-			String line;
-			StringBuffer response = new StringBuffer(); 
-			while((line = rd.readLine()) != null) {
-				response.append(line);
-				response.append("\r");
-			}
-			rd.close();
-			connection.disconnect();	
-			return response.toString();		
-		}else{
-			connection.disconnect();
-			return "";
+			FileBody fileBody = new FileBody(file);
+			entity.addPart("file", fileBody);
+			post.setEntity(entity);
 		}
-	}
+	
+		DefaultHttpClient httpclient = new DefaultHttpClient();
+		return httpclient.execute(post);
+	}	
 }
