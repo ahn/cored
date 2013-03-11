@@ -13,60 +13,100 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 public class APIClient  {
 
+	private static DefaultHttpClient httpclient = new DefaultHttpClient();;
+
 	//return url to deployed app
 	public static String depployApp(String appName, String warName,
-			String warLocation,String date,String paasApiUrl)  {
+			String warLocation,String deployLocation,String date,String paasApiUrl,String memory)  {
 		try{
-			//Create an environment
-			String url = paasApiUrl+"environment";
-			HttpResponse response = makeRequest(url,getCreateEnvironmentManifest(appName,date),null);
-			if (response.getStatusLine().getStatusCode()!=200){
-				return "Creating environment with " + url + " failed: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
+			HttpResponse response = null;
+			final String appID;
+			final String envID;
+			String url = "";
+			String xmlData = "";
+			
+			//this is for testing without creating new envs or apps
+			boolean createEnvAndApp=true;
+			if (createEnvAndApp){
+				//Create an environment
+				url = paasApiUrl+"environment";
+				String manifest = createManifest(appName,warName, warLocation, deployLocation, date,memory);
+				response = makeRequest(url,manifest,null);
+				if (response.getStatusLine().getStatusCode()!=200){
+					return "Creating environment with " + url + " failed: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
+				}
+				xmlData = getXML(response);
+				envID = parseEnvID(xmlData);
+				if (envID.equals("-1")){
+					return "Creating environment with " + url + " failed; Data was: " + xmlData;
+				}
+				
+				//create the application
+				url = paasApiUrl+"app";
+				response = makeRequest(url,manifest,null);
+				if (response.getStatusLine().getStatusCode()!=200){
+					return "Creating app with " + url + " failed: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
+				}
+				xmlData = getXML(response);
+				appID = parseAppID(xmlData);
+				if (appID.equals("-1")){
+					return "Creating application with " + url + " failed; Data was: " + xmlData;
+				}
+			}else{
+				//these are for testing... Remember to change
+				appID="1";
+				envID="1";
 			}
 			
-			String xmlData = getXML(response);
-			String envID = parseEnvID(xmlData);
-			if (envID.equals("-1")){
-				return "Creating environment with " + url + " failed; Data was: " + xmlData;
-			}
-			
-			//create the application
-			url = paasApiUrl+"app";
-			response = makeRequest(url,getCreateApplicationManifest(appName,warName, warLocation, date),null);
-			if (response.getStatusLine().getStatusCode()!=200){
-				return "Creating app with " + url + " failed: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
-			}
-
-			xmlData = getXML(response);
-			String appID = parseAppID(xmlData);
-			if (appID.equals("-1")){
-				return "Creating application with " + url + " failed; Data was: " + xmlData;
-			}
-
 			//Deploy the application
 			url = paasApiUrl+"app/"+appID+"/action/deploy/env/"+envID;
-			response = makeRequest(url,null,warLocation+"\\"+warName);
+			response = makeRequest(url,null,new File(warLocation,warName));
+			xmlData = getXML(response);
 			if (response.getStatusLine().getStatusCode()!=200){
 				return "Deploying app with " + url + " failed: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
 			}
-
+			
+			//Start the application
 			url = paasApiUrl+"app/"+appID+"/start";
 			response = makeRequest(url,null,null);
 			if (response.getStatusLine().getStatusCode()!=200){
 				return "Starting app with " + url + " failed: " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
 			}
-
 			xmlData = getXML(response);
 			String serviceurl = parseUrl(xmlData);
 			if (appID.equals("-1")){
 				return "Starting application with " + url + " failed; Data was: " + xmlData;
 			}
+			
 			return "http://"+serviceurl;			
-		} catch (IOException e) {
+			
+		} catch (Exception e) {
 			String output = "something else failed in deploying" + e.toString(); 
 			return output;
 		}
+	}
 
+	private static String createManifest(String appName, String warName,
+			String warLocation, String deployLocation, String date, String memory) {
+		String xml = ""+
+		"<?xml version=\"1.0\" encoding=\"UTF8\"?>\n"+
+		"<paas_application_manifest name=\"" + appName +"Manifest\">\n"+
+		"<description>This manifest describes a " + appName + ".</description>\n"+
+		"	<paas_application name=\"" + appName + "\" environement=\"JavaWebEnv\">\n"+
+		"		<description>"+appName+" description.</description>\n"+
+		"		<paas_application_version name=\"version1.0\" label=\"1.0\">\n"+
+		"			<paas_application_deployable name=\""+warName+"\" content_type=\"artifact\" location=\""+deployLocation+"\" multitenancy_level=\"SharedInstance\"/>\n"+
+		"			<paas_application_version_instance name=\"Instance1\" initial_state=\"1\" default_instance=\"true\"/>\n"+
+		"		</paas_application_version>\n"+
+		"	</paas_application>\n"+
+		"	<paas_environment name=\"JavaWebEnv\" template=\"TomcatEnvTemp\">\n"+			
+		"		<paas_environment_template name=\"TomcatEnvTemp\" memory=\"" + memory + "\">\n"+
+		"			<description>TomcatServerEnvironmentTemplate</description>\n"+
+		"			<paas_environment_node content_type=\"container\" name=\"tomcat\" version=\"\" provider=\"CF\"/>\n"+			
+		"		</paas_environment_template>\n"+
+		"	</paas_environment>\n"+
+		"</paas_application_manifest>\n";		
+		return xml;
 	}
 
 	private static String getXML(HttpResponse response) {
@@ -105,21 +145,7 @@ public class APIClient  {
 		String appId = response.substring(0, endIndex-1);
 		return appId;
 	}
-
 	
-	private static String getCreateApplicationManifest(String appName, String warName, String warLocation, String date) {
-		String xml = "<?xml version=\"1.0\" encoding=\"UTF8\"?>\n"+
-		"<paas_manifest name=\""+appName+"Manifest\" xmlns=\"\">\n"+
-		"        <paas_description>This manifest describes a simple display Servlet to deploy on CF.</paas_description>\n"+
-		"        <paas_application name=\""+appName+"\" date_created=\""+date+"\" description=\""+appName+"\" environement=\"JavaWebEnv\">\n"+
-		"		 	<paas_version label=\"1.0\" date_uptaded=\""+date+"\" description=\"Version1.0\">\n"+
-		"				<paas_deployable name=\""+warName+"\" content_type=\"artifact\" location=\""+warLocation+"\" multitenancy_level=\"SharedInstance\"/>\n"+
-		"				<paas_version_instance name=\"Instance1\" date_instantiated=\""+date+"\" description=\"instance1Version1.0\" state=\"RUNNING\" default_instance=\"true\"/>\n"+
-		"			</paas_version>\n"+		
-		"        </paas_application>\n"+
-		"</paas_manifest>\n"	;
-		return xml;
-		}
 
 
 	//should parse envID number from XML... could also be done with somekind of xmlparser :)
@@ -135,59 +161,24 @@ public class APIClient  {
 		return envId;
 	}
 
-
-/*	
-	<?xml version="1.0" encoding="UTF8"?>
-	<paas_manifest name="ServletSampleApplicationManifest" xmlns="">
-	<paas_description></paas_description>
-		<paas_application>
-			<paas_environment name="JavaWebEnv" date_created="2012-10-10" date_uptaded="2012-10-10" description="JavaWebApplicationsEnv" config_template="TomcatEnvTemp" provider="CF"/>			
-			<paas_configuration_template name="TomcatEnvTemp" date_created="2012-10-10" date_uptaded="2012-10-10" description="TomcatServerEnvironmentTemplate">
-				<paas_node content_type="container" name="tomcat" version="6.0.35" provider="CF"/>
-				<paas_relation>
-				</paas_relation>	
-			</paas_configuration_template>
-		</paas_application>
-	</paas_manifest>*/
-	
-	private static String getCreateEnvironmentManifest(String appName, String date) {
-		String xml= "<?xml version=\"1.0\" encoding=\"UTF8\"?>\n"+
-		"<paas_manifest name=\""+appName+"Manifest\" xmlns=\"\">\n"+
-		"<paas_description></paas_description>\n"+
-		"        <paas_application>\n"+
-		"               <paas_environment name=\"JavaWebEnv\" date_created=\""+date+"\" date_uptaded=\""+date+"\" description=\"JavaWebApplicationsEnv\" config_template=\"TomcatEnvTemp\" provider=\"CF\"/>\n"+
-		"               <paas_configuration_template name=\"TomcatEnvTemp\" date_created=\""+date+"\" date_uptaded=\""+date+"\" description=\"TomcatServerEnvironmentTemplate\">\n"+
-		"                        <paas_node content_type=\"container\" name=\"tomcat\" version=\"6.0.35\" provider=\"CF\"/>\n"+
-		"                       <paas_relation>\n"+
-		"                        </paas_relation>\n"+
-		"                </paas_configuration_template>\n"+
-		"        </paas_application>\n"+
-		"</paas_manifest>";
-		return xml;
-	}
-
-	private static HttpResponse makeRequest(String urlString, String requestXML,String pathToFileArtefact) throws IOException{
+	private static HttpResponse makeRequest(String urlString, String requestXML,File file) throws IOException{
 		
 		HttpPost post = new HttpPost(urlString);
 
+		//create new post with xml data
 		if (requestXML!=null){
 			StringEntity data = new StringEntity(requestXML);
 			data.setContentType("application/xml");
 			post.setEntity(data);
-		}
-		
-		if (pathToFileArtefact!=null){
-			MultipartEntity entity = new MultipartEntity();
-			File file = new File(pathToFileArtefact);		
-//			FileEntity entity = new FileEntity(file, "binary/octet-stream");	//415 unsupported mediatype
-//			FileEntity entity = new FileEntity(file, "file");	//500 internal server error
-
+		}//create new post with filecontent  
+		else if (file!=null){			
+			MultipartEntity entity = new MultipartEntity();	// Should work! 200 OK
 			FileBody fileBody = new FileBody(file);
-			entity.addPart("file", fileBody);
+			entity.addPart("file", fileBody);	
 			post.setEntity(entity);
 		}
-	
-		DefaultHttpClient httpclient = new DefaultHttpClient();
+
+		//make post
 		return httpclient.execute(post);
 	}	
 }

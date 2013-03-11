@@ -133,13 +133,17 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 			//for deploying the applications
 			boolean deployToCloudFoundry = false;
 			if (deployToCloudFoundry){
-				String appName = warDeployName+"Application";
-				String warName = "apps#" + warDeployName +".war";
+				String appName = warDeployName.replace(".war", "");
+				String warName = warDeployName;
 				String warLocation = deployDir.toString();
-				String paasApiUrl = "http://cf-paas-api.cloudfoundry.com/rest/";
+				String deployLocation = "/home/jlautamaki/cored";
+				String memory = "128";
+//				String paasApiUrl = "http://cf-paas-api.cloudfoundry.com/rest/";
+				String paasApiUrl = "http://localhost:8080/cf-api/rest/";
+//				String paasApiUrl = "http://jlautamaki.dy.fi:8080/cf-api/rest/";
 				Date today = new Date();
 				String date = new SimpleDateFormat("yyyy-MM-dd").format(today);
-				return APIClient.depployApp(appName, warName, warLocation,date,paasApiUrl);
+				return APIClient.depployApp(appName, warName, warLocation,deployLocation,date,paasApiUrl,memory);
 			}else{
 				return getAppUrl();
 			}
@@ -198,11 +202,21 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 
 		ProjectHelper ph = new ProjectHelper2();
 		ph.parse(antProj, buildXml);
-		
-		final String projectName = project.getName();
-		final String deployName = projectName + "-" +(new Date()).getTime();
-		final String deployWarName = "apps#" + deployName + ".war";
 
+		//create name for war
+		final String projectName = project.getName();
+		final String deployName;
+		final String deployWarName;
+
+		boolean complexName = false;
+		if (complexName){
+			deployName = projectName + "-" +(new Date()).getTime();
+			deployWarName = "apps#" + deployName + ".war";
+		}else{
+			deployName = projectName + "" +(new Date()).getTime();
+			deployWarName = deployName + ".war";
+		}
+		
 		File warFile = new File(deployDir, deployWarName);
 
 		antProj.setProperty("destfile", warFile.getAbsolutePath());
@@ -220,7 +234,7 @@ public class VaadinBuildComponent extends CustomComponent implements BuildCompon
 			}
 		}
 		
-		return deployName;
+		return deployWarName;
 	}
 
 	private void antBuildOsgi() {
