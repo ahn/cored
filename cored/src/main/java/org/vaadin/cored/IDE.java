@@ -137,7 +137,7 @@ public class IDE extends VerticalLayout implements TeamListener, FileSelectListe
 
 		if (buildComponent!=null) {
 			buildComponent.setWidth("90%");
-			buildComponent.setHeight("50px");
+//			buildComponent.setHeight("100px");
 			leftBar.addComponent(buildComponent);
 			leftBar.setComponentAlignment(buildComponent, Alignment.MIDDLE_CENTER);
 		}

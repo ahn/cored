@@ -24,8 +24,8 @@ import org.vaadin.aceeditor.java.CompilerErrorChecker;
 import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.cored.BuildComponent;
 import org.vaadin.cored.Icons;
+import org.vaadin.cored.PropertiesUtil;
 import org.vaadin.cored.VaadinBuildComponent;
-import org.vaadin.cored.VaadinBuildComponent.DeployType;
 import org.vaadin.cored.VaadinJarWindow;
 import org.vaadin.cored.VaadinNewFileWindow;
 import org.vaadin.diffsync.Shared;
@@ -61,11 +61,12 @@ public class VaadinProject extends Project {
 		}
 	}
 
-	private final static ProjectFile srcDir = new ProjectFile("src");
-	private final static ProjectFile jarDir = new ProjectFile("WebContent", new File("WEB-INF", "lib").getPath());
-	private final static ProjectFile webXml = new ProjectFile("WebContent", new File("WEB-INF", "web.xml").getPath());
+	private static ProjectFile srcDir;
+	private static ProjectFile jarDir;
+	private static ProjectFile webXml;
 
 	private static File templateDir;
+	private static Project.ProjectType type;
 	
 	private final String packageName;
 	
@@ -75,21 +76,34 @@ public class VaadinProject extends Project {
 	
 	private InMemoryCompiler compiler;
 	
-	synchronized public static void setVaadinProjectTemplateDir(File dir) {
-		templateDir  = dir;
-	}
-	
-	synchronized private static File getVaadinProjectTemplateDir() {
-		return templateDir;
-	}
-	
+	//sets right projectFiles and sets compilation target
+	synchronized public static void setProjectFiles(Project.ProjectType t){
+		type = t;
+		if (type.equals(Project.ProjectType.vaadin)){		
+			srcDir = new ProjectFile("src");
+			jarDir = new ProjectFile("WebContent", new File("WEB-INF", "lib").getPath());
+			webXml = new ProjectFile("WebContent", new File("WEB-INF", "web.xml").getPath());		
+		}else if (type.equals(Project.ProjectType.vaadinOSGi)){		
+				srcDir = new ProjectFile("src");
+				jarDir = new ProjectFile("WebContent", new File("WEB-INF", "lib").getPath());
+				webXml = new ProjectFile("WebContent", new File("WEB-INF", "web.xml").getPath());		
+		}else if (type.equals(Project.ProjectType.vaadinAppEngine)){
+			srcDir = new ProjectFile("src");
+			jarDir = new ProjectFile(FileUtils.getFile("war","WEB-INF", "lib").getPath());
+			webXml = new ProjectFile(FileUtils.getFile("war","WEB-INF", "web.xml").getPath());
+		}else{
+			System.out.print("no compilation Target defined");
+		}
+	}	
 	
 	@Override
 	protected void projectDirCreated() {
 		
 		
 		try {
-			FileUtils.copyDirectory(getVaadinProjectTemplateDir(), getProjectDir());
+			File source = new File(PropertiesUtil.getTemplateDir(projectType));
+			File target = getProjectDir();
+			FileUtils.copyDirectory(source, target);
 		} catch (IOException e) {
 			System.err.println("WARNING: could not initialize dir of vaadin project "+ getName());
 		}
@@ -122,8 +136,10 @@ public class VaadinProject extends Project {
 	}
 	
 	
-	protected VaadinProject(String name) {
-		super(name,ProjectType.vaadin);
+	protected VaadinProject(String name,ProjectType type) {
+		super(name,type);
+		//sets projectfiles (paths to jar files and so on)
+		VaadinProject.setProjectFiles(type);
 		packageName = "fi.tut.cs.cored."+getName();
 		srcPackageDir = new ProjectFile(srcDir, dirFromPackage(packageName).getPath());
 	}
@@ -165,8 +181,13 @@ public class VaadinProject extends Project {
 	@Override
 	protected void projectInitialized(boolean createSkeleton) {
 		if (createSkeleton) {
-			String ske = createSkeletonCode(getPackageName(), getApplicationClassName());
-			addDoc(getApplicationFile(), new Doc(ske));
+			String ske = "";
+			if (projectType.equals(Project.ProjectType.vaadinOSGi)){
+				ske = createOSGiSkeletonCode(getPackageName(), getApplicationClassName());
+			}else if (projectType.equals(Project.ProjectType.vaadin)||
+					projectType.equals(Project.ProjectType.vaadinAppEngine)){
+				ske = createSkeletonCode(getPackageName(), getApplicationClassName());				
+			}			addDoc(getApplicationFile(), new Doc(ske));
 		}
 		updateJarsFromDisk();
 	}
@@ -176,16 +197,57 @@ public class VaadinProject extends Project {
 				+ name.substring(1).toLowerCase() + "Application";
 	}
 
-	private static String createSkeletonCode(String pakkage, String cls) {
-		return "package "+pakkage+";\n\nimport com.vaadin.ui.Window;\n"
-				+ "import com.vaadin.ui.Label;\n\n" + "public class " + cls
-				+ " extends com.vaadin.Application {\n\n"
-				+ "    public void init() {\n"
+	private static String createPackageAndBasicImports(String pakkage){
+		return "package "+pakkage+";\n\n"
+				+ "import com.vaadin.ui.*;\n";
+	}
+
+	private static String createOSGiImports(){
+		return 	"import com.vaadin.terminal.gwt.server.AbstractApplicationServlet;\n\n"
+				+  "import javax.servlet.ServletException;\n" 
+				+ "import javax.servlet.annotation.WebServlet;\n" 
+				+ "import javax.servlet.http.HttpServletRequest;\n"; 
+	}
+
+	private static String createApplicationClass(String cls){
+		return 	"\npublic class " + cls
+				+ " extends com.vaadin.Application {\n\n";
+	}
+
+	private static String createOSGiMethods(String cls){
+		return 	"	@WebServlet(urlPatterns=\"/*\")\n"
+				+ "	public static class Servlet extends AbstractApplicationServlet {\n"
+				+ "		@Override\n"
+				+ "		protected Class<? extends com.vaadin.Application> getApplicationClass() {\n"
+				+ "			return " + cls + ".class;\n"
+				+ "		}\n\n"
+				+ "		@Override\n"
+				+ "		protected com.vaadin.Application getNewApplication(HttpServletRequest request) throws ServletException {\n"
+				+ "			return new " + cls + "();\n"
+				+ "		}\n"
+				+ "	}\n\n";
+	}
+
+	private static String createRestOfTheClass(String cls){
+		return 	"    public void init() {\n"
 				+ "        Window main = new Window(\"" + cls + "\");\n"
 				+ "        setMainWindow(main);\n"
 				+ "        main.addComponent(new Label(\"This is " + cls
 				+ "\"));\n" + "    }\n\n" + "}\n";
+	}
+	
+	private static String createSkeletonCode(String pakkage, String cls) {
+		return createPackageAndBasicImports(pakkage) 
+				+ createApplicationClass(cls) 
+				+ createRestOfTheClass(cls);
+	}
 
+	private static String createOSGiSkeletonCode(String pakkage, String cls) {
+		return createPackageAndBasicImports(pakkage) 
+				+ createOSGiImports()
+				+ createApplicationClass(cls)				
+				+ createOSGiMethods(cls)
+				+ createRestOfTheClass(cls);
 	}
 	
 	String fullJavaNameOf(String name) {
@@ -395,7 +457,7 @@ public class VaadinProject extends Project {
 	
 	@Override
 	public BuildComponent createBuildComponent() {
-		return new VaadinBuildComponent(this, DeployType.war);
+		return new VaadinBuildComponent(this);
 	}
 	
 	private void createWebXml() throws IOException {

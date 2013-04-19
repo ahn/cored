@@ -3,7 +3,9 @@ package org.vaadin.cored.lobby;
 import java.util.Arrays;
 import java.util.LinkedList;
 
+import org.vaadin.cored.VaadinBuildComponent;
 import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.VaadinProject;
 import org.vaadin.cored.model.Project.ProjectType;
 
 import com.vaadin.event.FieldEvents.TextChangeEvent;
@@ -22,7 +24,7 @@ import com.vaadin.ui.VerticalLayout;
 public class CreateProjectPanel extends Panel {
 
 	private OptionGroup projectTypeGroup = new OptionGroup("Project type:",
-			Arrays.asList(new String[] {"Vaadin", "Python", "Generic"}));
+			Arrays.asList(new String[] {"Vaadin","VaadinOSGi","VaadinAppEngine", "Python", "Generic"}));
 	
 	private static final ThemeResource ICON = new ThemeResource("icons/box--plus.png");
 	
@@ -79,12 +81,19 @@ public class CreateProjectPanel extends Panel {
 					if ("Vaadin".equals(typeStr)) {
 						type = ProjectType.vaadin;
 					}
+					else if ("VaadinOSGi".equals(typeStr)) {
+						type = ProjectType.vaadinOSGi;
+					}
+					else if ("VaadinAppEngine".equals(typeStr)) {
+						type = ProjectType.vaadinAppEngine;
+					}
 					else if ("Python".equals(typeStr)) {
 						type = ProjectType.python;
 					}
 					else {
 						type = ProjectType.generic;
 					}
+					
 					p = Project.createProjectIfNotExist(name, type, skBox.booleanValue());
 					if (p!=null) {
 						fireProjectCreated(p);

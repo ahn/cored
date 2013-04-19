@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="helloworld" default="all" basedir=".">
+
+	<!-- Change this property to point to your GlassFish 3  directory -->
+	<property name="glassfish.dir" value="C:/Users/delga/InstalledApps/glassfish3"/>
+	
+	<property name="vaadin.jar" value="${basedir}/vaadin-6.1.development-osgi.jar"/>
+	<property name="build.dir" value="${basedir}/build"/>
+	<property name="src.dir" value="${basedir}/src"/>
+	<property name="dist.dir" value="${basedir}/dist"/>
+
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+		<delete dir="${dist.dir}"/>
+	</target>
+
+	<target name="compile">
+		<mkdir dir="${build.dir}"/>
+		<javac srcdir="${src.dir}" destdir="${build.dir}">
+			<classpath>
+				<pathelement location="${vaadin.jar}"/>
+				<pathelement location="${glassfish.dir}/glassfish/modules/javax.servlet-api.jar"/>
+			</classpath>
+		</javac>
+	</target>
+	
+	<target name="package-with-vaadin" depends="compile">
+		<mkdir dir="${dist.dir}"/>
+		<war destfile="${dist.dir}/helloworld-with-vaadin.war" needxmlfile="false">
+			<lib file="${vaadin.jar}"/>
+			<classes dir="${build.dir}"/>
+		</war>
+	</target>
+	
+	<target name="package-without-vaadin" depends="compile">
+		<mkdir dir="${dist.dir}"/>
+		<war destfile="${dist.dir}/helloworld-without-vaadin.war" needxmlfile="false">
+			<classes dir="${build.dir}"/>
+		</war>	
+	</target>
+	
+	<target name="package-as-osgi" depends="compile">
+		<mkdir dir="${dist.dir}"/>
+		<war destfile="${dist.dir}/helloworld-osgi.war" needxmlfile="false">
+			<classes dir="${build.dir}"/>
+			<manifest>
+				<attribute name="Bundle-ManifestVersion" value="2"/>
+				<attribute name="Bundle-Name" value="Hello World OSGi"/>
+				<attribute name="Bundle-SymbolicName" value="helloworld"/>
+				<attribute name="Bundle-Version" value="1.0.0"/>
+				<attribute name="Bundle-Vendor" value="IT Mill Ltd"/>
+				<attribute name="Require-Bundle" value="com.vaadin;bundle-version=&quot;6.1.0&quot;"/>
+				<attribute name="Web-ContextPath" value="/HelloWorldOSGi"/>
+				<attribute name="Export-Package" value="helloworld"/>
+				<attribute name="Import-Package" value="javax.servlet,javax.servlet.annotation,javax.servlet.http"/>
+				<attribute name="Bundle-ClassPath" value="WEB-INF/classes/"/>
+			</manifest>
+		</war>
+	</target>
+
+	<target name="all" depends="clean,package-with-vaadin,package-without-vaadin,package-as-osgi"/>
+
+	<target name="dist-src">
+		<mkdir dir="${dist.dir}"/>
+		<tar destfile="${dist.dir}/helloworld.tar.gz" basedir="${basedir}/../" compression="gzip">
+			<include name="${ant.project.name}/*.jar"/>
+			<include name="${ant.project.name}/src/**"/>
+			<include name="${ant.project.name}/build.xml"/>
+		</tar>
+	</target>
+</project>

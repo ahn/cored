@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.vaadin.cored.model.Project;
+import org.vaadin.cored.model.Project.ProjectType;
 import org.vaadin.cored.model.VaadinProject;
 
 // TODO: reorganize, some kind of enum of possible properties maybe, etc...
@@ -15,39 +16,40 @@ import org.vaadin.cored.model.VaadinProject;
 public class PropertiesUtil {
 
 	public static class CoredProperties {
-		public final String projectsRootDir;
-		public final String warBuildTemplateDir;
-		public final String warDeployDir;
-		public final String warDeployUrl;
-		public final String warDeployPort;
-		public final String facebookAppId;
-		public final String logDir;
+		public static String projectsRootDir;
+		public static String templateDirVaadin;
+		public static String templateDirVaadinAppEngine;
+		public static String templateDirVaadinOSGi;
+		public static String warDeployDir;
+		public static String warDeployUrl;
+		public static String warDeployPort;
+		public static String facebookAppId;
+		public static String logDir;
 		
-		private CoredProperties(String projectsRootDir,
-				String warBuildTemplateDir, String warDeployDir,
-				String warDeployUrl, String warDeployPort, String facebookAppId, String logDir) {
-			this.projectsRootDir = projectsRootDir;
-			this.warBuildTemplateDir = warBuildTemplateDir;
-			this.warDeployDir = warDeployDir;
-			this.warDeployUrl = warDeployUrl;
-			this.warDeployPort = warDeployPort;
-			this.facebookAppId = facebookAppId;
-			this.logDir = logDir;
+		private CoredProperties(String projectsRootDir_,
+				String templateDirVaadin_,String templateDirVaadinAppEngine_,String templateDirVaadinOSGi_, String warDeployDir_,
+				String warDeployUrl_, String warDeployPort_, String facebookAppId_, String logDir_) {
+			projectsRootDir = projectsRootDir_;
+			templateDirVaadin = templateDirVaadin_;
+			templateDirVaadinOSGi = templateDirVaadinOSGi_;
+			templateDirVaadinAppEngine = templateDirVaadinAppEngine_;
+			warDeployDir = warDeployDir_;
+			warDeployUrl = warDeployUrl_;
+			warDeployPort = warDeployPort_;
+			facebookAppId = facebookAppId_;
+			logDir = logDir_;
 		}
 
 		/**
 		 * Only apply properties when none of the affected components have yet
 		 * been created! Eg. in Application init().
+		 * @throws Exception 
 		 */
 		public void apply() {
 			if (projectsRootDir != null) {
 				Project.setProjectsRootDir(projectsRootDir);
 			}
-
-			if (warBuildTemplateDir != null) {
-				VaadinProject.setVaadinProjectTemplateDir(new File(warBuildTemplateDir));
-			}
-
+		
 			if (warDeployDir != null) {
 				VaadinBuildComponent.setDeployDir(warDeployDir);
 			}
@@ -94,14 +96,16 @@ public class PropertiesUtil {
 			throw new RuntimeException("PROJECTS_ROOT_DIR not defined!");
 		}
 
-		String warBuildTemplateDir = (String) props.get("WAR_BUILD_TEMPLATE_DIR");
+		String templateDirs = (String) props.get("WAR_BUILD_TEMPLATES_DIR");
+		String templateDirVaadin = templateDirs + (String) props.get("BUILD_TEMPLATE_VAADIN");
+		String templateDirAppEngine = templateDirs + (String) props.get("BUILD_TEMPLATE_VAADIN_APP_ENGINE");
+		String templateDirOSGi = templateDirs + (String) props.get("BUILD_TEMPLATE_VAADIN_OSGI");
 		String warDeployDir = (String) props.get("WAR_DEPLOY_DIR");
 		String warDeployUrl = (String) props.get("WAR_DEPLOY_URL");
 		String warDeployPort = (String) props.get("WAR_DEPLOY_PORT");
 		String fbAppId = (String) props.get("FACEBOOK_APP_ID");
 		String logDir = (String) props.get("LOG_DIR");
-
-		return new CoredProperties(rootDir, warBuildTemplateDir, warDeployDir,
+		return new CoredProperties(rootDir, templateDirVaadin, templateDirAppEngine,templateDirOSGi, warDeployDir,
 				warDeployUrl, warDeployPort, fbAppId, logDir);
 	}
 	
@@ -122,5 +126,16 @@ public class PropertiesUtil {
 
 	public static CoredProperties getPropertiesFromFile(String filename) throws IOException {
 		return readProperties(getProperties(new File(filename)));
+	}
+
+	public synchronized static String getTemplateDir(ProjectType projectType) {
+		if (projectType.equals(Project.ProjectType.vaadin)){
+			return CoredProperties.templateDirVaadin;
+		}else if (projectType.equals(Project.ProjectType.vaadinOSGi)){
+			return CoredProperties.templateDirVaadinOSGi;
+		}else if (projectType.equals(Project.ProjectType.vaadinAppEngine)){
+			return CoredProperties.templateDirVaadinAppEngine;
+		}
+		return null;
 	}
 }

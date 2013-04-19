@@ -28,6 +28,7 @@ import org.vaadin.cored.LoggerTask;
 import org.vaadin.cored.MyFileUtils;
 import org.vaadin.cored.ProjectLog;
 import org.vaadin.cored.PropertiesUtil;
+import org.vaadin.cored.VaadinBuildComponent;
 import org.vaadin.diffsync.Shared;
 import org.vaadin.diffsync.Shared.Listener;
 
@@ -53,7 +54,7 @@ public abstract class Project {
 	private final ProjectLog log;
 	
 	public enum ProjectType {
-		vaadin, python, generic;
+		vaadin, vaadinAppEngine, vaadinOSGi, python, generic;
 	}
 	
 	public interface DocListener {
@@ -139,9 +140,7 @@ public abstract class Project {
 
 	private static volatile File projectsRootDir;
 
-
-
-	private ProjectType projectType;
+	protected ProjectType projectType;
 
 	private static HashMap<String, Project> allProjects = new HashMap<String, Project>();
 
@@ -168,9 +167,7 @@ public abstract class Project {
 		projectChat = new SharedChat();
 		projectChat.addTask(new ChatLogTask(log));
 				
-		projectChat.applyDiff(ChatDiff.newLiveLine("Started project "+name));
-		
-		
+		projectChat.applyDiff(ChatDiff.newLiveLine("Started project "+name));		
 	}
 	
 	
@@ -273,8 +270,10 @@ public abstract class Project {
 		if (ProjectType.python.equals(type)) {
 			p = new PythonProject(name);
 		}
-		else if (ProjectType.vaadin.equals(type)){
-			p = new VaadinProject(name);
+		else if (ProjectType.vaadin.equals(type)||
+				ProjectType.vaadinAppEngine.equals(type)||
+				ProjectType.vaadinOSGi.equals(type)){
+			p = new VaadinProject(name,type);
 		}
 		else if (ProjectType.generic.equals(type)){
 			p = new GenericProject(name);
@@ -299,7 +298,7 @@ public abstract class Project {
 		projectInitialized(false);
 	}
 	
-	private ProjectType getProjectType() {
+	public ProjectType getProjectType() {
 		return this.projectType;
 	}
 	

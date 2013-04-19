@@ -4,12 +4,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 
 public class APIClient  {
 
@@ -180,5 +182,18 @@ public class APIClient  {
 
 		//make post
 		return httpclient.execute(post);
+	}
+
+	public static String formPost(String deployLocation, File file) {
+		try {
+			HttpResponse response = makeRequest(deployLocation,null,file);
+			HttpEntity entity = response.getEntity();
+			String value = EntityUtils.toString(entity);
+			return value;
+		} catch (IOException e) {
+			String output = e.toString(); 
+			return output;
+		}
+		
 	}	
 }
