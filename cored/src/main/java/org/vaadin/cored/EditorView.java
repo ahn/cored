@@ -20,6 +20,7 @@ import org.vaadin.aceeditor.java.util.InMemoryCompiler;
 import org.vaadin.chatbox.SharedChat;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
 import org.vaadin.cored.MarkerComponent.MarkerComponentListener;
+import org.vaadin.cored.model.CoredDoc;
 import org.vaadin.cored.model.Project;
 import org.vaadin.cored.model.ProjectFile;
 import org.vaadin.cored.model.Team;
@@ -44,7 +45,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 
 	private final VerticalLayout layout = new VerticalLayout();
 	private final SuggestibleCollabAceEditor editor;
-	private final Shared<Doc, DocDiff> doc;
+	private final CoredDoc cdoc;
 	private final ProjectFile file;
 	private final User user;
 	private final Project project;
@@ -85,7 +86,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		layout.setExpandRatio(ho, 1);
 		ho.setSizeFull();
 
-		doc = project.getDoc(file);
+		cdoc = project.getDoc(file);
 		
 		
 		
@@ -94,7 +95,8 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		editor.setEnabled(user != null);
 		editor.setUser(user.getUserId(), user.getStyle());
 		
-		final int pos = org.vaadin.aceeditor.gwt.shared.Util.cursorPosFromLineCol(doc.getValue().getText(), line, 0, 1);
+		final int pos = org.vaadin.aceeditor.gwt.shared.Util.cursorPosFromLineCol(
+				cdoc.getShared().getValue().getText(), line, 0, 1);
 		editor.scrollToPosition(pos);
 		ho.addComponent(editor);
 		ho.setExpandRatio(editor, 1);
@@ -149,7 +151,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	}
 	
 	private SuggestibleCollabAceEditor createEditor(ProjectFile file, Project project) {
-		SuggestibleCollabAceEditor ed = EditorUtil.createEditorFor(doc, file);
+		SuggestibleCollabAceEditor ed = EditorUtil.createEditorFor(cdoc.getShared(), file);
 		if (file.getName().endsWith(".java") && project instanceof VaadinProject) {
 			InMemoryCompiler compiler = ((VaadinProject)project).getCompiler();
 			String className = ((VaadinProject)project).getPackageName()+"."+file.getName().substring(0, file.getName().length()-5);
@@ -162,7 +164,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		selMin = Math.min(start, end);
 		selMax = Math.max(start, end);
 		DocDiff diff = user.cursorDiff(selMin, selMax, editor.getShadow().getText());
-		doc.applyDiff(diff, editor.getCollaboratorId());
+		cdoc.getShared().applyDiff(diff, editor.getCollaboratorId());
 		checkMarkers();
 	}
 
@@ -303,9 +305,9 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	
 	private void showMarkerPopup(int yCoord) {
 		final String markerId = activeMarker;
-		String firstLine = project.getMarkerChat(file, markerId).getValue().getFrozenLines().get(0).getText();
+		SharedChat chat = project.getDoc(file).getMarkerChat(markerId);
+		String firstLine = chat.getValue().getFrozenLines().get(0).getText();
 		Marker m = latestMarkers.get(markerId);
-		SharedChat chat = project.getMarkerChat(file, markerId);
 		MarkerComponent mc = new MarkerComponent(m, user, chat);
 		mc.addListener(new MarkerComponentListener() {
 			public void removeMarker() {
@@ -322,7 +324,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	}
 	
 	private void removeMarkerById(String markerId) {
-		doc.applyDiff(DocDiff.removeMarker(markerId), editor.getCollaboratorId());
+		cdoc.getShared().applyDiff(DocDiff.removeMarker(markerId), editor.getCollaboratorId());
 	}
 	
 	private void showAddMarkerPopup(boolean notingEnabled, boolean lockingEnabled) {
@@ -377,7 +379,7 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 	
 	private void addMarker(Marker m, ChatLine chatLine) {
 		String markerId = editor.newItemId();
-		Doc v = doc.getValue();
+		Doc v = cdoc.getShared().getValue();
 		// Adding the marker to the selection marker position, a bit of a hack.
 		Marker sema = v.getMarkers().get(user.getSelectionMarkerId());
 		if (sema==null) {
@@ -390,11 +392,11 @@ public class EditorView extends CustomComponent implements SelectionChangeListen
 		m = m.withNewPos(start, end);
 		
 		DocDiff d = DocDiff.addMarker(markerId, m, text);
-		doc.applyDiff(d, editor.getCollaboratorId());
+		cdoc.getShared().applyDiff(d, editor.getCollaboratorId());
 		
 		if (chatLine!=null) {
 			List<ChatLine> lines = Collections.singletonList(chatLine);
-			project.getMarkerChatCreateIfNotExist(file, markerId, lines);
+			project.getDoc(file).getMarkerChatCreateIfNotExist(markerId, lines);
 		}
 		
 		latestMarkers.put(markerId, m);

@@ -36,7 +36,6 @@ public class MarkerComponent extends VerticalLayout {
 		this.marker = marker;
 		this.user = user;
 		this.chat = chat;
-		System.out.println("Marker component for " + marker);
 		initThis();
 		setSizeFull();
 	}

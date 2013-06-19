@@ -22,7 +22,7 @@ import com.vaadin.ui.VerticalLayout;
 public class CreateProjectPanel extends Panel {
 
 	private OptionGroup projectTypeGroup = new OptionGroup("Project type:",
-			Arrays.asList(new String[] {"Vaadin", "Python", "Generic"}));
+			Arrays.asList(new String[] {"Vaadin", "Python", "Generic", "Django"}));
 	
 	private static final ThemeResource ICON = new ThemeResource("icons/box--plus.png");
 	
@@ -81,6 +81,9 @@ public class CreateProjectPanel extends Panel {
 					}
 					else if ("Python".equals(typeStr)) {
 						type = ProjectType.python;
+					}
+					else if ("Django".equals(typeStr)) {
+						type = ProjectType.django;
 					}
 					else {
 						type = ProjectType.generic;

@@ -20,19 +20,14 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.vaadin.aceeditor.collab.DocDiff;
 import org.vaadin.aceeditor.collab.gwt.shared.Doc;
-import org.vaadin.aceeditor.gwt.shared.LockMarkerData;
-import org.vaadin.aceeditor.gwt.shared.Marker;
 import org.vaadin.chatbox.SharedChat;
-import org.vaadin.chatbox.gwt.shared.Chat;
 import org.vaadin.chatbox.gwt.shared.ChatDiff;
 import org.vaadin.chatbox.gwt.shared.ChatLine;
 import org.vaadin.cored.BuildComponent;
-import org.vaadin.cored.EditorUtil;
 import org.vaadin.cored.LoggerTask;
 import org.vaadin.cored.MyFileUtils;
 import org.vaadin.cored.ProjectLog;
 import org.vaadin.cored.PropertiesUtil;
-import org.vaadin.diffsync.DiffTask;
 import org.vaadin.diffsync.Shared;
 import org.vaadin.diffsync.Shared.Listener;
 
@@ -42,9 +37,12 @@ import com.vaadin.ui.Window;
 
 //TODO: check synchronization
 
-// TODO: refactor: create a CoredDocument class (containing Doc
-// and stuff such as marker chats, file writing, etc.)
-
+/**
+ * An abstract cored project containing the project files (CoredDoc's) as well as other related things.
+ * 
+ * Must subclassed to create projects of various types, eg. Vaadin, Python, ...
+ *
+ */
 public abstract class Project {
 
 	private static final Pattern VALID_PROJECT_NAME = Pattern.compile("[a-z][a-z0-9]*");
@@ -55,7 +53,7 @@ public abstract class Project {
 	private final ProjectLog log;
 	
 	public enum ProjectType {
-		vaadin, python, generic;
+		vaadin, python, generic, django;
 	}
 	
 	public interface DocListener {
@@ -67,41 +65,51 @@ public abstract class Project {
 		public void docValueChanged(ProjectFile pf, Doc newValue);
 	}
 
-	abstract public void fillTree(Tree tree);	
+	/**
+	 * Must fill the tree (com.vaadin.ui.Tree) with the files of this project.
+	 * 
+	 * It's a tree so the files can be put to a hierarchy by type or something like that.
+	 * 
+	 */
+	abstract public void fillTree(Tree tree);
+	
+	/**
+	 * Returns a Window (com.vaadin.ui.Window) for creating a new File.
+	 * 
+	 * The window must have the needed functionality to actually create the file.
+	 * What kind of files to create depends on the project.
+	 * 
+	 */
 	abstract public Window createNewFileWindow();
 	
 	/**
-	 * Adds things like error checkers and other things specific to project type to the doc.
-	 */
-	protected void decorateDoc(ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
-		// Default implementation does nothing.
-	}
-	
-	/**
-	 * Override in subclass if needed
+	 * Called when the project has been initialized.
+	 * 
+	 * Override in subclass if needed. To for example create some default files in the project
+	 * at the beginning or something.
 	 */
 	protected void projectInitialized(boolean createSkeleton) { }
 	
-	/**
-	 * 
-	 * @return file is editable with editor
-	 */
-	protected boolean isEditableFile(File f) {
-		return true; // default implementation
-	}
 	
 	/**
-	 * Override in subclass if needed
+	 * Called when the project directory has been created on the disk.
+	 * 
+	 * Can be overridden in subclass if it needs to for example read some of the contents of
+	 * files to memory. 
 	 */
+	// TODO: is this really needed?
 	protected void projectDirCreated() { }
 	
 	/**
-	 * Override in subclass if needed
+	 * If the project has something it needs to add to the IDE menu,
+	 * it can override this method and add item(s) to the menubar.
 	 */
 	public void addMenuItem(MenuBar menuBar) { }
 	
 	/**
-	 * Override in subclass if needed
+	 * Returns a build component for the project.
+	 * 
+	 * Implement in subclass if the project needs to be built.
 	 */
 	public BuildComponent createBuildComponent() {
 		return null;
@@ -115,7 +123,7 @@ public abstract class Project {
 
 	private final String projName;
 
-	protected Map<ProjectFile, Shared<Doc, DocDiff>> files = new HashMap<ProjectFile, Shared<Doc, DocDiff>>();
+	protected Map<ProjectFile, CoredDoc> files = new HashMap<ProjectFile, CoredDoc>();
 
 	private SharedChat projectChat;
 	private Team team;
@@ -124,8 +132,7 @@ public abstract class Project {
 
 	private static volatile File projectsRootDir;
 
-	private HashMap<ProjectFile, HashMap<String,SharedChat>> fileMarkerChats =
-			new HashMap<ProjectFile, HashMap<String,SharedChat>>();
+
 
 	private ProjectType projectType;
 
@@ -265,6 +272,9 @@ public abstract class Project {
 		else if (ProjectType.generic.equals(type)){
 			p = new GenericProject(name);
 		}
+		else if (ProjectType.django.equals(type)){
+			p = new DjangoProject(name);
+		}
 		else {
 			throw new IllegalStateException("???");
 		}
@@ -371,7 +381,7 @@ public abstract class Project {
 		return projName;
 	}
 
-	synchronized public Shared<Doc, DocDiff> getDoc(ProjectFile file) {
+	synchronized public CoredDoc getDoc(ProjectFile file) {
 		return files.get(file);
 	}
 
@@ -387,41 +397,47 @@ public abstract class Project {
 		}
 		return null;
 	}
-
-	public Shared<Doc, DocDiff> createDoc(ProjectFile file, Doc doc,
-			long collaboratorId) {
-		Shared<Doc, DocDiff> sharedDoc;
-		synchronized (this) {
-			if (files.containsKey(file)) {
-				sharedDoc = files.get(file);
-				sharedDoc.setValue(doc, collaboratorId);
-				return sharedDoc;
-			}
-			
-			sharedDoc = addNewSharedDoc(file, doc);
-			
-			try {
-				writeFileToDisk(file, doc);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+	
+	public CoredDoc addDoc(ProjectFile file, Doc doc) {
+		CoredDoc cd;
+		if (files.containsKey(file)) {
+			cd = files.get(file);
+			cd.setValue(doc);
+			return cd;
 		}
-		fireDocCreated(file);
-		
-		return sharedDoc;
+		else {
+			cd = addNewCoredDoc(file, doc);
+		}
+		return cd;
 	}
 	
-	private Shared<Doc, DocDiff> addNewSharedDoc(ProjectFile file, Doc doc) {
-		Shared<Doc, DocDiff> sharedDoc = new Shared<Doc, DocDiff>(doc);
-		decorateDoc(file, sharedDoc);
+	final protected CoredDoc addNewCoredDoc(CoredDoc cd) {
+		ProjectFile file = cd.getProjectFile();
+		try {
+			cd.writeToDisk();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		if (logging) {
 			log.logNewFile(file);
-			sharedDoc.addTask(new LoggerTask(this,file));
+			cd.getShared().addTask(new LoggerTask(this,file));
 		}
-		files.put(file, sharedDoc);
-		listenTo(file, sharedDoc);
-		return sharedDoc;
+		files.put(file, cd);
+		listenTo(file, cd.getShared());
+		fireDocCreated(file);
+		return cd;
+	}
+	
+	/**
+	 * 
+	 * @param file
+	 * @param doc
+	 * @return
+	 */
+	protected CoredDoc addNewCoredDoc(ProjectFile file, Doc doc) {
+		return addNewCoredDoc(new CoredDoc(getProjectDir(), file, doc, log));
+		
 	}
 
 	private void listenTo(final ProjectFile file, Shared<Doc, DocDiff> sharedDoc) {
@@ -435,22 +451,13 @@ public abstract class Project {
 	}
 	
 	
-	
-	public Shared<Doc, DocDiff> createDoc(ProjectFile file, String content) {
-		return createDoc(file, new Doc(content), Shared.NO_COLLABORATOR_ID);
-	}
-
-	public Shared<Doc, DocDiff> createDoc(ProjectFile file) {
-		return createDoc(file, new Doc(), Shared.NO_COLLABORATOR_ID);
-	}
-
 	public void removeDoc(ProjectFile file) {
 		boolean removed = false;
 		synchronized (this) {
-			if (files.containsKey(file)) {
-				getLocationOfFile(file).delete();
+			CoredDoc cd = files.get(file);
+			if (cd!=null) {
+				cd.deleteFromDisk();
 				files.remove(file);
-				removeMarkerChatsOf(file);
 				removed = true;
 			}
 		}
@@ -466,83 +473,43 @@ public abstract class Project {
 		return projectChat;
 	}
 
-	synchronized public SharedChat getMarkerChat(ProjectFile file, String markerId) {
-		if (fileMarkerChats.containsKey(file)) {
-			return fileMarkerChats.get(file).get(markerId);
-		}
-		return null;
-	}
-
-	synchronized public SharedChat getMarkerChatCreateIfNotExist(
-			ProjectFile file, String markerId, List<ChatLine> initial) {
-		HashMap<String, SharedChat> markerChats = fileMarkerChats.get(file);
-		if (markerChats == null) {
-			markerChats = new HashMap<String, SharedChat>();
-			fileMarkerChats.put(file, markerChats);
-		}
-		SharedChat chat = markerChats.get(markerId);
-		if (chat == null) {
-			chat = new SharedChat(new Chat(initial));
-			if (logging) {
-				for (ChatLine li : initial) {
-					log.logMarkerChat(markerId, li.getUserId(), li.getText());
-				}
-				chat.addTask(new ChatLogTask(log, markerId));
-			}
-			fileMarkerChats.get(file).put(markerId, chat);
-		}
-		return chat;
-
-	}
-
-	synchronized public Shared<Chat, ChatDiff> removeMarkerChat(
-			ProjectFile file, String markerId) {
-		if (fileMarkerChats.containsKey(file)) {
-			return fileMarkerChats.get(file).remove(markerId);
-		}
-		return null;
-	}
-	
-	private HashMap<String, SharedChat> removeMarkerChatsOf(ProjectFile file) {
-		return fileMarkerChats.remove(file);
-	}
-
 	synchronized public Team getTeam() {
 		return team;
 	}
 
 	synchronized public void writeToDisk() throws IOException {
-		for (Entry<ProjectFile, Shared<Doc, DocDiff>> e : files.entrySet()) {
+		for (Entry<ProjectFile, CoredDoc> e : files.entrySet()) {
 			if (e.getValue() != null) {
-				writeFileToDisk(e.getKey(), e.getValue().getValue());
+				e.getValue().writeToDisk();
 			}
 		}
 	}
-
-	private void writeFileToDisk(ProjectFile file, Doc doc) throws IOException {
-		writeFileToDisk(file, doc, getLocationOfFile(file));
-	}
 	
-	private void writeFileToDisk(ProjectFile file, Doc doc, File dest) throws IOException {
-		if (doc == null) {
-			return;
-		}
-		FileUtils.write(dest, doc.getText());
-	}
-
+	
 	public void log(String text) {
 		getProjectChat().applyDiff(ChatDiff.newLiveLine(new ChatLine(text)));
 	}
 
-	private boolean readFromDisk() {
+	public boolean readFromDisk() {
 		TreeSet<File> files = getFilesIn(getProjectDir());
 		boolean isProjectDir = false;
 		for (File f : files) {
 			if (f.getName().equals(PROPERTY_FILE_NAME)) {
 				isProjectDir = true;
 			}
-			else if (isEditableFile(f)) {
-				readFileFromDisk(f);				
+			else {
+				String rel = MyFileUtils.relativizePath(getProjectDir(), f);
+				ProjectFile pf = new ProjectFile(rel);
+				if (pf.isEditable()) {
+					try {
+						Doc doc = CoredDoc.fromDisk(getProjectDir(), pf);
+						addNewCoredDoc(pf, doc);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				
 			}
 		}
 		return isProjectDir;
@@ -636,31 +603,6 @@ public abstract class Project {
 		return new File(getProjectDir(), file.getPath());
 	}
 	
-	private boolean readFileFromDisk(File fileFullPath) {
-		String rel = MyFileUtils.relativizePath(getProjectDir(), fileFullPath);
-		return readFileFromDisk(new ProjectFile(rel));
-	}
-	
-	private boolean readFileFromDisk(ProjectFile file) {
-		String content;
-		try {
-			content = FileUtils.readFileToString(getLocationOfFile(file));
-		} catch (IOException e) {
-			return false;
-		}
-
-		if (files.containsKey(file)) {
-			Shared<Doc, DocDiff> shared = files.get(file);
-			shared.setValue(new Doc(content), Shared.NO_COLLABORATOR_ID);
-		}
-		else {
-			if (EditorUtil.isEditableWithEditor(file)) {
-				addNewSharedDoc(file, new Doc(content));
-			}
-		}
-		
-		return true;
-	}
 
 	synchronized public File getProjectDir() {
 		if (projectsRootDir == null) {
@@ -719,31 +661,16 @@ public abstract class Project {
 		}
 	}
 	
-	synchronized public void removeCursorMarkersOf(User user, ProjectFile file) {
-		Shared<Doc, DocDiff> doc;
-		synchronized (files) {
-			doc = files.get(file);
-		}
-		doc.applyDiff(user.getRemoveMarkersDiff());
-	}
-	
 	synchronized public void removeCursorMarkersOf(User user) {
 		DocDiff diff = user.getRemoveMarkersDiff();
-		for (Shared<Doc, DocDiff> doc : files.values()) {
-			doc.applyDiff(diff);
+		for (CoredDoc cd : files.values()) {
+			cd.getShared().applyDiff(diff);
 		}
 	}
 	
 	synchronized public void removeLocksOf(User user) {
-		for (Shared<Doc, DocDiff> doc : files.values()) {
-			for (Entry<String, Marker> e : doc.getValue().getMarkers().entrySet()) {
-				Marker m = e.getValue();
-				if (m.getType()==Marker.Type.LOCK &&
-						user.getUserId().equals(((LockMarkerData)m.getData()).getLockerId())) {
-					doc.applyDiff(DocDiff.removeMarker(e.getKey()));
-				}
-				
-			}
+		for (CoredDoc cd : files.values()) {
+			cd.removeLocksOf(user);
 		}
 	}
 	
